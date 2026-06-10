@@ -3,6 +3,9 @@ name: Update Tracker
 on:
   workflow_dispatch:
 
+  schedule:
+    - cron: '0,15,30,45 * * * *'
+
 jobs:
   update:
     runs-on: ubuntu-latest
