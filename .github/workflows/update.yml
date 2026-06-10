@@ -1,0 +1,51 @@
+name: Update Tracker
+
+on:
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run GT
+        run: python gtleagues_api.py
+
+      - name: Run Eadriatic
+        run: python eadriatic_leagues.py
+
+      - name: Analyze GT
+        run: python analyze_gt.py
+
+      - name: Analyze Eadriatic
+        run: python analyze_eadriatic.py
+
+      - name: Generate Site
+        run: python web_tracker/generate_site.py
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add .
+
+          git diff --cached --quiet || git commit -m "Auto update"
+
+          git push
