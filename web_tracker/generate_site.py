@@ -169,8 +169,11 @@ table td:last-child {{
 </html>
 """
 
+docs_dir = BASE / "docs"
+docs_dir.mkdir(exist_ok=True)
+
 with open(
-    BASE / "web_tracker" / "docs" / "index.html",
+    docs_dir / "index.html",
     "w",
     encoding="utf-8"
 ) as f:
