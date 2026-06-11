@@ -1,112 +1,193 @@
-@echo off
-setlocal
+from playwright.sync_api import sync_playwright
+from datetime import datetime, timedelta
+import sys
+import os
 
-cd /d C:\apuestas
-
-REM =========================
-REM FECHA A REPARAR
-REM =========================
-
-set REPAIR_DATE=%1
-
-echo.
-echo =====================================
-echo LIMPIANDO CAMBIOS AUTOMATICOS
-echo =====================================
-echo.
-
-git restore gt\data\*.txt 2>nul
-git restore eadriatic\data\*.txt 2>nul
-
-echo.
-echo =====================================
-echo ACTUALIZANDO REPOSITORIO
-echo =====================================
-echo.
-
-git pull --rebase origin main
-
-if errorlevel 1 (
-    echo.
-    echo ERROR DURANTE EL REBASE
-    pause
-    exit /b 1
+from eadriatic_leagues import (
+    parse_matches,
+    process,
+    build_df
 )
 
-echo.
-echo =====================================
-echo REPARANDO EADRIATIC
-echo =====================================
-echo.
 
-if "%REPAIR_DATE%"=="" (
-    echo Reparando dia anterior...
-    python repair_eadriatic_day.py
-    set COMMIT_MSG=Repair Eadriatic previous day
-) else (
-    echo Reparando fecha %REPAIR_DATE%...
-    python repair_eadriatic_day.py %REPAIR_DATE%
-    set COMMIT_MSG=Repair Eadriatic %REPAIR_DATE%
-)
+# -------------------------
+# FECHA OBJETIVO
+# -------------------------
+def get_target_date():
 
-if errorlevel 1 (
-    echo.
-    echo ERROR EN REPAIR
-    pause
-    exit /b 1
-)
+    if len(sys.argv) > 1:
+        return datetime.strptime(
+            sys.argv[1],
+            "%d%m%Y"
+        )
 
-echo.
-echo =====================================
-echo ANALIZANDO DATOS
-echo =====================================
-echo.
+    return datetime.now() - timedelta(days=1)
 
-python analyze_eadriatic.py
 
-if errorlevel 1 (
-    echo.
-    echo ERROR EN ANALYZE
-    pause
-    exit /b 1
-)
+# -------------------------
+# DESCARGA HTML DE UNA FECHA
+# -------------------------
+def download_day(date):
 
-echo.
-echo =====================================
-echo GENERANDO WEB
-echo =====================================
-echo.
+    code = (
+        f"year{date.year}_"
+        f"month{date.month:02d}_"
+        f"day{date.day:02d}"
+    )
 
-python web_tracker\generate_site.py
+    url = "https://eadriaticleague2.leaguerepublic.com/index.html"
 
-if errorlevel 1 (
-    echo.
-    echo ERROR GENERANDO WEB
-    pause
-    exit /b 1
-)
+    with sync_playwright() as p:
 
-echo.
-echo =====================================
-echo SUBIENDO CAMBIOS
-echo =====================================
-echo.
+        browser = p.chromium.launch(
+            headless=True
+        )
 
-git add .
+        page = browser.new_page()
 
-git diff --cached --quiet
+        page.goto(
+            url,
+            wait_until="networkidle"
+        )
 
-if errorlevel 1 (
-    git commit -m "%COMMIT_MSG%"
-    git push
-) else (
-    echo No hay cambios para subir.
-)
+        html = page.content()
 
-echo.
-echo =====================================
-echo FINALIZADO
-echo =====================================
-echo.
+        with open(
+            r"C:\apuestas\headless_test.html",
+            "w",
+            encoding="utf-8"
+        ) as f:
+            f.write(html)
 
-pause
+
+        print(f"Seleccionando {code}")
+
+        page.wait_for_timeout(3000)
+
+        button = page.locator(
+            f'button[value="{code}"]'
+        )
+
+        button.wait_for(timeout=30000)
+
+        button.click()
+
+        page.wait_for_load_state("networkidle")
+
+        html = page.content()
+
+        browser.close()
+
+    return html
+
+
+# -------------------------
+# GUARDAR TXT FECHA CONCRETA
+# -------------------------
+def save_txt_for_date(df, vs_text, date):
+
+    output_dir = r"C:\apuestas\eadriatic\data"
+
+    filename = (
+        date.strftime("%Y%m%d")
+        + "_eadriatic_player_stats.txt"
+    )
+
+    path = os.path.join(
+        output_dir,
+        filename
+    )
+
+    with open(
+        path,
+        "w",
+        encoding="utf-8"
+    ) as f:
+
+        f.write(
+            f"ESTADÍSTICAS "
+            f"{date.strftime('%Y-%m-%d')}\n\n"
+        )
+
+        f.write(
+            f"{'player':<12} "
+            f"{'W':>3} "
+            f"{'D':>3} "
+            f"{'L':>3} "
+            f"{'played':>6} "
+            f"{'stk':>4} "
+            f"seq\n"
+        )
+
+        for _, row in df.iterrows():
+
+            f.write(
+                f"{row['player']:<12} "
+                f"{row['W']:>3} "
+                f"{row['D']:>3} "
+                f"{row['L']:>3} "
+                f"{row['played']:>6} "
+                f"{row['current_streak']:>4} "
+                f"{row['seq']}\n"
+            )
+
+        f.write("\n\nVS RIVALES\n")
+
+        for player in df["player"]:
+
+            f.write(f"\n{player}\n")
+            f.write(vs_text[player] + "\n")
+
+    print(f"\n✔ Guardado en {path}")
+
+
+# -------------------------
+# MAIN
+# -------------------------
+def main():
+
+    date = get_target_date()
+
+    print(
+        f"\nReparando día "
+        f"{date.strftime('%d/%m/%Y')}"
+    )
+
+    html = download_day(date)
+
+    matches = parse_matches(html)
+
+    print(
+        f"Partidos encontrados: "
+        f"{len(matches)}"
+    )
+
+    stats = process(matches)
+
+    df, vs_text = build_df(stats)
+
+    print("\n🏆 RESULTADOS\n")
+
+    for _, row in df.iterrows():
+        print(
+            f"{row['player']:<12} "
+            f"{row['W']:>3} "
+            f"{row['D']:>3} "
+            f"{row['L']:>3} "
+            f"{row['played']:>6} "
+            f"{row['current_streak']:>3} "
+            f"{row['seq']}"
+        )
+
+    # OJO: aquí todavía generará el TXT con la fecha actual
+    # porque save_txt() en eadriatic_leagues.py usa datetime.now()
+
+    save_txt_for_date(
+        df,
+        vs_text,
+        date
+    )
+
+
+if __name__ == "__main__":
+    main()
