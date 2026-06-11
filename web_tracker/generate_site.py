@@ -3,6 +3,7 @@ from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
 
+
 def load_daily_stats(txt_file):
     rows = []
 
@@ -41,11 +42,25 @@ def load_daily_stats(txt_file):
 
     if not df.empty:
         df = df.sort_values(
-                "played",
-                ascending=False
-            )
+            "played",
+            ascending=False
+        )
 
     return df
+
+
+# =========================
+# OBTENER ÚLTIMO TXT POR FECHA
+# =========================
+
+def latest_stats_file(folder):
+
+    files = list(folder.glob("*player_stats.txt"))
+
+    return max(
+        files,
+        key=lambda p: p.name[:8]
+    )
 
 
 # =========================
@@ -65,9 +80,8 @@ ead = pd.read_csv(
 # RANKING DIARIO GT
 # =========================
 
-gt_txt = max(
-    (BASE / "gt" / "data").glob("*player_stats.txt"),
-    key=lambda p: p.stat().st_mtime
+gt_txt = latest_stats_file(
+    BASE / "gt" / "data"
 )
 
 gt_today = load_daily_stats(gt_txt)
@@ -77,9 +91,8 @@ gt_today = load_daily_stats(gt_txt)
 # RANKING DIARIO EADRIATIC
 # =========================
 
-ead_txt = max(
-    (BASE / "eadriatic" / "data").glob("*player_stats.txt"),
-    key=lambda p: p.stat().st_mtime
+ead_txt = latest_stats_file(
+    BASE / "eadriatic" / "data"
 )
 
 ead_today = load_daily_stats(ead_txt)

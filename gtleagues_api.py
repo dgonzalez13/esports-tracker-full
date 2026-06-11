@@ -252,8 +252,7 @@ def save_txt(df, vs_text, date):
 # -------------------------
 # MAIN
 # -------------------------
-def main():
-    date = get_date()
+def process_date(date, show_results=False):
 
     print(f"\nDescargando partidos de {date.date()}...")
 
@@ -265,20 +264,35 @@ def main():
 
     df, vs_text = build_df(stats)
 
-    print("\n🏆 RESULTADOS\n")
+    if show_results:
 
-    for _, row in df.iterrows():
-        print(
-            f"{row['player']:<12} "
-            f"{row['W']:>3} "
-            f"{row['D']:>3} "
-            f"{row['L']:>3} "
-            f"{row['played']:>6} "
-            f"{row['current_streak']:>3} "
-            f"{row['seq']}"
-        )
+        print("\n🏆 RESULTADOS\n")
+
+        for _, row in df.iterrows():
+            print(
+                f"{row['player']:<12} "
+                f"{row['W']:>3} "
+                f"{row['D']:>3} "
+                f"{row['L']:>3} "
+                f"{row['played']:>6} "
+                f"{row['current_streak']:>3} "
+                f"{row['seq']}"
+            )
 
     save_txt(df, vs_text, date)
+
+
+def main():
+
+    today = datetime.now()
+
+    yesterday = today - timedelta(days=1)
+
+    # Repara ayer silenciosamente
+    process_date(yesterday)
+
+    # Muestra la clasificación actual
+    process_date(today, show_results=True)
 
 
 if __name__ == "__main__":
