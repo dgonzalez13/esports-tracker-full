@@ -11,15 +11,6 @@ set REPAIR_DATE=%1
 
 echo.
 echo =====================================
-echo LIMPIANDO CAMBIOS AUTOMATICOS
-echo =====================================
-echo.
-
-git restore gt\data\*.txt 2>nul
-git restore eadriatic\data\*.txt 2>nul
-
-echo.
-echo =====================================
 echo ACTUALIZANDO REPOSITORIO
 echo =====================================
 echo.
