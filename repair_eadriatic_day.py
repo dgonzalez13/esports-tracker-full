@@ -40,7 +40,7 @@ def download_day(date):
     with sync_playwright() as p:
 
         browser = p.chromium.launch(
-            headless=True
+            headless=False
         )
 
         page = browser.new_page()
@@ -49,15 +49,6 @@ def download_day(date):
             url,
             wait_until="networkidle"
         )
-
-        html = page.content()
-
-        with open(
-            r"C:\apuestas\headless_test.html",
-            "w",
-            encoding="utf-8"
-        ) as f:
-            f.write(html)
 
 
         print(f"Seleccionando {code}")
