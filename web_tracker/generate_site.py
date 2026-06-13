@@ -98,6 +98,105 @@ ead_txt = latest_stats_file(
 ead_today = load_daily_stats(ead_txt)
 
 
+# =========================
+# TRACKED PLAYERS
+# =========================
+
+tracked_file = BASE / "tracked_players.txt"
+
+tracked_rows = []
+
+if tracked_file.exists():
+
+    with open(tracked_file, encoding="utf-8") as f:
+
+        for line in f:
+
+            line = line.strip()
+
+            if not line or "|" not in line:
+                continue
+
+            league, player = line.split("|", 1)
+
+            league = league.strip().lower()
+            player = player.strip()
+
+            if league == "gt":
+
+                hist = gt[
+                    gt["player"].str.lower() == player.lower()
+                ]
+
+                today = gt_today[
+                    gt_today["player"].str.lower() == player.lower()
+                ]
+
+            elif league == "eadriatic":
+
+                hist = ead[
+                    ead["player"].str.lower() == player.lower()
+                ]
+
+                today = ead_today[
+                    ead_today["player"].str.lower() == player.lower()
+                ]
+
+            else:
+                continue
+
+            if hist.empty or today.empty:
+                continue
+
+            entry = int(hist.iloc[0]["recommended_entry"])
+            streak = int(today.iloc[0]["stk"])
+
+            remaining = max(
+                0,
+                entry - streak
+            )
+
+            if streak < entry:
+
+                stake = "-"
+
+            else:
+
+                step = streak - entry
+
+                stake = round(
+                    0.1 * (2 ** step),
+                    2
+                )
+
+            tracked_rows.append({
+                "league": league.upper(),
+                "player": player,
+                "rating": hist.iloc[0]["stability"],
+                "current_streak": streak,
+                "entry": entry,
+                "remaining": (
+                    "READY"
+                    if remaining == 0
+                    else remaining
+                ),
+                "stake": stake
+            })
+
+tracked_df = pd.DataFrame(tracked_rows)
+
+if not tracked_df.empty:
+
+    tracked_df["_sort"] = tracked_df["remaining"].apply(
+        lambda x: 0 if x == "READY" else int(x)
+    )
+
+    tracked_df = tracked_df.sort_values(
+        "_sort"
+    ).drop(
+        columns="_sort"
+    )
+
 html = f"""
 <html>
 
@@ -137,6 +236,16 @@ table td:last-child {{
 </head>
 
 <body>
+
+<h1>🎯 Tracked Players</h1>
+
+{
+    tracked_df.to_html(index=False)
+    if not tracked_df.empty
+    else "<p>No tracked players found.</p>"
+}
+
+<hr>
 
 <h1>GT League</h1>
 
