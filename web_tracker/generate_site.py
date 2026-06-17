@@ -75,6 +75,9 @@ ead = pd.read_csv(
     BASE / "eadriatic" / "output" / "player_risk_analysis.csv"
 )
 
+opportunities = pd.read_csv(
+    BASE / "opportunity_input.csv"
+)
 
 # =========================
 # RANKING DIARIO GT
@@ -106,6 +109,8 @@ tracked_file = BASE / "tracked_players.txt"
 
 tracked_rows = []
 
+tracked_players_set = set()
+
 if tracked_file.exists():
 
     with open(tracked_file, encoding="utf-8") as f:
@@ -121,6 +126,13 @@ if tracked_file.exists():
 
             league = league.strip().lower()
             player = player.strip()
+            
+            tracked_players_set.add(
+                (
+                    league.upper(),
+                    player.lower()
+                )
+            )
 
             if league == "gt":
 
@@ -183,6 +195,43 @@ if tracked_file.exists():
                 "stake": stake
             })
 
+opportunities["player_lower"] = (
+    opportunities["player"]
+    .str.strip()
+    .str.lower()
+)
+
+opportunities = opportunities[
+    opportunities.apply(
+        lambda r: (
+            r["league"],
+            r["player_lower"]
+        ) in tracked_players_set,
+        axis=1
+    )
+]
+
+opportunities = opportunities.drop(
+    columns=["player_lower"]
+)
+
+priority = {
+    "BET": 0,
+    "WATCH": 1,
+    "SKIP": 2
+}
+
+opportunities["_sort"] = (
+    opportunities["recommendation"]
+    .map(priority)
+)
+
+opportunities = opportunities.sort_values(
+    ["_sort", "prob_next_8", "samples"],
+    ascending=[True, False, False]
+).drop(columns="_sort")
+
+
 tracked_df = pd.DataFrame(tracked_rows)
 
 if not tracked_df.empty:
@@ -236,6 +285,25 @@ table td:last-child {{
 </head>
 
 <body>
+
+<h1>🎯 Betting Opportunities</h1>
+
+{
+    opportunities[
+        [
+            "league",
+            "player",
+            "draw_pct",
+            "current_streak_real",
+            "avg_streak",
+            "samples",
+            "prob_next_8",
+            "recommendation"
+        ]
+    ].to_html(index=False)
+}
+
+<hr>
 
 <h1>🎯 Tracked Players</h1>
 
