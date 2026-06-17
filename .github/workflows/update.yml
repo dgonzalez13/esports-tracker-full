@@ -39,6 +39,9 @@ jobs:
       - name: Analyze Eadriatic
         run: python analyze_eadriatic.py
 
+      - name: Generate Opportunities
+        run: python build_opportunity_input.py
+
       - name: Generate Site
         run: python web_tracker/generate_site.py
 
