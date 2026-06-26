@@ -1,6 +1,7 @@
 from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import json
 import sys
 import re
@@ -1040,9 +1041,9 @@ def json_ready_league(result):
 def write_json(result, all_results):
     payload = {
         "schema_version": 2,
-        "generated_at": datetime.now().isoformat(
-            timespec="seconds"
-        ),
+        "generated_at": datetime.now(
+            ZoneInfo("Europe/Madrid")
+        ).strftime("%d/%m/%Y %H:%M:%S %Z"),
         "league": result["league"],
         "files_count": result["files_count"],
         "data_from": result["data_from"],
