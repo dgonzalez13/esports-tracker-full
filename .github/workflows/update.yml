@@ -32,15 +32,12 @@ jobs:
 
       - name: Run Eadriatic
         run: python eadriatic_leagues.py
+        
+      - name: Group Analysis GT
+        run: python group_analysis.py GT
 
-      - name: Analyze GT
-        run: python analyze_gt.py
-
-      - name: Analyze Eadriatic
-        run: python analyze_eadriatic.py
-
-      - name: Generate Opportunities
-        run: python build_opportunity_input.py
+      - name: Group Analysis Eadriatic
+        run: python group_analysis.py EADRIATIC        
 
       - name: Generate Site
         run: python web_tracker/generate_site.py
