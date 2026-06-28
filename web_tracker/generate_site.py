@@ -7,17 +7,16 @@ from pathlib import Path
 BASE = Path(__file__).resolve().parent.parent
 DOCS_DIR = BASE / "docs"
 GROUP_ANALYSIS_FILE = BASE / "group_analysis.json"
+TRACKED_PLAYERS_FILE = BASE / "tracked_players.txt" 
 
 LEAGUES = {
     "GT": {
         "title": "GT League",
         "data_dir": BASE / "gt" / "data",
-        "risk_file": BASE / "gt" / "output" / "player_risk_analysis.csv",
     },
     "EADRIATIC": {
         "title": "Eadriatic League",
         "data_dir": BASE / "eadriatic" / "data",
-        "risk_file": BASE / "eadriatic" / "output" / "player_risk_analysis.csv",
     },
 }
 
@@ -27,6 +26,22 @@ def load_group_analysis():
         return json.load(f)
 
 
+def load_tracked_players():
+    tracked = set()
+
+    with open(TRACKED_PLAYERS_FILE, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+
+            if not line:
+                continue
+
+            _, player = line.split("|", 1)
+            tracked.add(player.lower())
+
+    return tracked
+    
+    
 def latest_stats_file(folder):
     files = list(folder.glob("*player_stats.txt"))
 
@@ -74,29 +89,40 @@ def load_daily_stats(txt_file):
     return sorted(rows, key=lambda row: row["played"], reverse=True)
 
 
-def load_risk_lookup(csv_file):
-    if not csv_file.exists():
-        return {}
+def calculate_streaks(seq):
+    if not seq:
+        return 0, 0
 
-    with open(csv_file, "r", encoding="utf-8", newline="") as f:
-        return {
-            row["player"].strip().lower(): row
-            for row in csv.DictReader(f)
-        }
+    # Racha sin ganar
+    stk_win = 0
+    for c in reversed(seq):
+        if c == "V":
+            break
+        stk_win += 1
 
+    # Racha sin perder
+    stk_lose = 0
+    for c in reversed(seq):
+        if c == "D":
+            break
+        stk_lose += 1
 
+    return stk_win, stk_lose
+    
+    
 def load_current_streaks():
     streaks = {}
+    tracked_players = load_tracked_players()
 
     for league, config in LEAGUES.items():
         stats_file = latest_stats_file(config["data_dir"])
         stats = load_daily_stats(stats_file)
-        risk_lookup = load_risk_lookup(config["risk_file"])
 
         rows = []
 
         for row in stats:
-            risk = risk_lookup.get(row["player"].lower(), {})
+        
+            stk_win, stk_lose = calculate_streaks(row["seq"])
 
             rows.append({
                 "player": row["player"],
@@ -104,11 +130,20 @@ def load_current_streaks():
                 "D": row["D"],
                 "L": row["L"],
                 "played": row["played"],
-                "stk": row["stk"],
+                "stk_win": stk_win,
+                "stk_lose": stk_lose,
                 "seq": row["seq"],
-                "stability": risk.get("stability", ""),
-                "recommended_entry": risk.get("recommended_entry", ""),
-                "danger_days_pct": risk.get("danger_days_pct", ""),
+                "tracked": row["player"].lower() in tracked_players,
+                "balance":
+                    "🟢"
+                    if row["player"].lower() in tracked_players
+                    and row["W"] >= row["D"] + row["L"]
+                    else
+                    "🔴"
+                    if row["player"].lower() in tracked_players
+                    and row["L"] >= row["W"] + row["D"]
+                    else
+                    "",
             })
 
         streaks[league] = {
@@ -576,21 +611,56 @@ def render_current_streaks(current_streaks):
 
 
 def render_streak_panel(league, payload):
-    rows = [
-        [
-            row["player"],
-            row["W"],
-            row["D"],
-            row["L"],
-            row["played"],
-            row["stk"],
-            row["stability"],
-            row["recommended_entry"],
-            fmt_pct(row["danger_days_pct"]) if row["danger_days_pct"] != "" else "",
-            row["seq"],
-        ]
-        for row in payload["rows"]
-    ]
+    rows = payload["rows"]
+
+    def render_streak_table(rows):
+
+        html = []
+
+        html.append('<div class="table-wrap"><table>')
+
+        html.append("""
+        <thead>
+        <tr>
+            <th>PLAYER</th>
+            <th></th>
+            <th>W</th>
+            <th>D</th>
+            <th>L</th>
+            <th>PLAYED</th>
+            <th>STK WIN</th>
+            <th>STK LOSE</th>
+            <th>SEQ</th>
+        </tr>
+        </thead>
+        <tbody>
+        """)
+
+        for row in rows:
+
+            style = (
+                ' style="background:#e8f7ee;font-weight:bold;"'
+                if row["tracked"]
+                else ""
+            )
+
+            html.append(f"<tr{style}>")
+
+            html.append(f"<td>{text(row['player'])}</td>")
+            html.append(f"<td>{row['balance']}</td>")
+            html.append(f'<td class="num">{row["W"]}</td>')
+            html.append(f'<td class="num">{row["D"]}</td>')
+            html.append(f'<td class="num">{row["L"]}</td>')
+            html.append(f'<td class="num">{row["played"]}</td>')
+            html.append(f'<td class="num">{row["stk_win"]}</td>')
+            html.append(f'<td class="num">{row["stk_lose"]}</td>')
+            html.append(f'<td class="seq">{row["seq"]}</td>')
+
+            html.append("</tr>")
+
+        html.append("</tbody></table></div>")
+
+        return "".join(html)
 
     return (
         '<article class="streak-panel">'
@@ -598,23 +668,7 @@ def render_streak_panel(league, payload):
         f'<h3>{text(payload["title"])}</h3>'
         f'{metadata_badge("Source", payload["source"])}'
         "</div>"
-        + render_table(
-            [
-                "Player",
-                "W",
-                "D",
-                "L",
-                "Played",
-                "Stk",
-                "Stability",
-                "Entry",
-                "Danger",
-                "Seq",
-            ],
-            rows,
-            numeric_columns={1, 2, 3, 4, 5, 7, 8},
-            seq_columns={9},
-        )
+        + render_streak_table(rows)
         + "</article>"
     )
 
