@@ -37,7 +37,12 @@ def load_tracked_players():
                 continue
 
             _, player = line.split("|", 1)
-            tracked.add(player.lower())
+            league, player = line.split("|", 1)
+
+            tracked.add((
+                league.strip().upper(),
+                player.strip().lower()
+            ))
 
     return tracked
     
@@ -133,14 +138,14 @@ def load_current_streaks():
                 "stk_win": stk_win,
                 "stk_lose": stk_lose,
                 "seq": row["seq"],
-                "tracked": row["player"].lower() in tracked_players,
+                "tracked": (league, row["player"].lower()) in tracked_players,
                 "balance":
                     "🟢"
-                    if row["player"].lower() in tracked_players
+                    if (league, row["player"].lower()) in tracked_players
                     and row["W"] >= row["D"] + row["L"]
                     else
                     "🔴"
-                    if row["player"].lower() in tracked_players
+                    if (league, row["player"].lower()) in tracked_players
                     and row["L"] >= row["W"] + row["D"]
                     else
                     "",
