@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "29/06/2026 06:10:47 CEST",
+  "generated_at": "29/06/2026 06:11:56 CEST",
   "league": "EADRIATIC",
   "files_count": 45,
   "data_from": "20260516",
@@ -63,11 +63,11 @@
         "Gael",
         "Eric"
       ],
-      "target_repr": "{'Matrix', 'Gael', 'Eric', 'Maverick', 'Odin'}",
+      "target_repr": "{'Matrix', 'Odin', 'Maverick', 'Eric', 'Gael'}",
       "h2h_keys": [
-        "Gael",
-        "Eric",
         "Odin",
+        "Eric",
+        "Gael",
         "Matrix",
         "Maverick"
       ],
@@ -183,12 +183,7 @@
           "rivals": 4
         },
         {
-          "player": "Gael",
-          "wins": 0,
-          "rivals": 4
-        },
-        {
-          "player": "Eric",
+          "player": "Odin",
           "wins": 2,
           "rivals": 4
         },
@@ -198,22 +193,27 @@
           "rivals": 4
         },
         {
-          "player": "Odin",
+          "player": "Eric",
           "wins": 2,
+          "rivals": 4
+        },
+        {
+          "player": "Gael",
+          "wins": 0,
           "rivals": 4
         }
       ],
       "h2h_ranking": [
         {
-          "player": "Eric",
-          "score": 49.096385542168676,
-          "matches": 332,
-          "weighted_score": 16300.0
-        },
-        {
           "player": "Odin",
           "score": 45.27777777777778,
           "matches": 360,
+          "weighted_score": 16300.0
+        },
+        {
+          "player": "Eric",
+          "score": 49.096385542168676,
+          "matches": 332,
           "weighted_score": 16300.0
         },
         {
@@ -732,7 +732,7 @@
         "Splinter",
         "Kaizen"
       ],
-      "target_repr": "{'Dexter', 'Iron', 'Kaizen', 'Splinter', 'William'}",
+      "target_repr": "{'Dexter', 'William', 'Iron', 'Kaizen', 'Splinter'}",
       "h2h_keys": [
         "Iron",
         "Splinter",
@@ -852,6 +852,11 @@
           "rivals": 4
         },
         {
+          "player": "William",
+          "wins": 1,
+          "rivals": 4
+        },
+        {
           "player": "Iron",
           "wins": 1,
           "rivals": 4
@@ -864,11 +869,6 @@
         {
           "player": "Splinter",
           "wins": 0,
-          "rivals": 4
-        },
-        {
-          "player": "William",
-          "wins": 1,
           "rivals": 4
         }
       ],
@@ -1501,10 +1501,10 @@
             "Kratos",
             "Lucas"
           ],
-          "target_repr": "{'Jack', 'Kratos', 'Furious', 'Lucas', 'Ultrex'}",
+          "target_repr": "{'Lucas', 'Jack', 'Furious', 'Ultrex', 'Kratos'}",
           "h2h_keys": [
-            "Furious",
             "Lucas",
+            "Furious",
             "Jack",
             "Ultrex",
             "Kratos"
@@ -1604,7 +1604,7 @@
             {
               "position": 2,
               "player": "Furious",
-              "score": -38.78841776974205
+              "score": -38.78841776974204
             },
             {
               "position": 3,
@@ -1614,7 +1614,7 @@
             {
               "position": 4,
               "player": "Lucas",
-              "score": -67.27125735850288
+              "score": -67.2712573585029
             },
             {
               "position": 5,
@@ -1624,13 +1624,13 @@
           ],
           "dominance": [
             {
-              "player": "Jack",
+              "player": "Lucas",
               "wins": 0,
               "rivals": 4
             },
             {
-              "player": "Kratos",
-              "wins": 2,
+              "player": "Jack",
+              "wins": 0,
               "rivals": 4
             },
             {
@@ -1639,13 +1639,13 @@
               "rivals": 4
             },
             {
-              "player": "Lucas",
+              "player": "Ultrex",
               "wins": 0,
               "rivals": 4
             },
             {
-              "player": "Ultrex",
-              "wins": 0,
+              "player": "Kratos",
+              "wins": 2,
               "rivals": 4
             }
           ],
@@ -2169,117 +2169,363 @@
           ]
         },
         {
-          "group_id": "titan-snail---",
-          "label": "Titan / Snail /  /  / ",
+          "group_id": "titan-snail-hulk-eminem-shaolin",
+          "label": "Titan / Snail / Hulk / Eminem / Shaolin",
           "target": [
             "Titan",
             "Snail",
-            "",
-            "",
-            ""
+            "Hulk",
+            "Eminem",
+            "Shaolin"
           ],
-          "target_repr": "{'Snail', 'Titan', ''}",
+          "target_repr": "{'Titan', 'Snail', 'Eminem', 'Hulk', 'Shaolin'}",
           "h2h_keys": [
-            "Snail",
-            "Titan"
+            "Titan",
+            "Shaolin",
+            "Eminem",
+            "Hulk",
+            "Snail"
           ],
           "coincidencias_5": 0,
-          "coincidencias_4": 0,
+          "coincidencias_4": 4,
           "totals_5": [],
-          "totals_4": [],
+          "totals_4": [
+            {
+              "player": "Eminem",
+              "W": 17,
+              "D": 11,
+              "L": 8,
+              "win_pct": 47.22222222222222,
+              "loss_pct": 22.22222222222222
+            },
+            {
+              "player": "Hulk",
+              "W": 37,
+              "D": 13,
+              "L": 22,
+              "win_pct": 51.388888888888886,
+              "loss_pct": 30.555555555555557
+            },
+            {
+              "player": "Shaolin",
+              "W": 16,
+              "D": 15,
+              "L": 41,
+              "win_pct": 22.22222222222222,
+              "loss_pct": 56.94444444444444
+            },
+            {
+              "player": "Snail",
+              "W": 15,
+              "D": 4,
+              "L": 17,
+              "win_pct": 41.66666666666667,
+              "loss_pct": 47.22222222222222
+            },
+            {
+              "player": "Titan",
+              "W": 27,
+              "D": 21,
+              "L": 24,
+              "win_pct": 37.5,
+              "loss_pct": 33.33333333333333
+            }
+          ],
           "power_ranking": [
             {
               "position": 1,
-              "player": "",
-              "score": 0
+              "player": "Hulk",
+              "score": 10.648260382172616
             },
             {
               "position": 2,
-              "player": "Titan",
-              "score": -3.125
+              "player": "Eminem",
+              "score": -13.70976356644352
             },
             {
               "position": 3,
               "player": "Snail",
-              "score": -12.5
+              "score": -19.10377358490566
+            },
+            {
+              "position": 4,
+              "player": "Titan",
+              "score": -52.32179366521711
+            },
+            {
+              "position": 5,
+              "player": "Shaolin",
+              "score": -76.93867769209524
             }
           ],
           "dominance": [
             {
-              "player": "Snail",
-              "wins": 0,
-              "rivals": 1
-            },
-            {
               "player": "Titan",
               "wins": 0,
-              "rivals": 1
+              "rivals": 4
             },
             {
-              "player": "",
+              "player": "Snail",
               "wins": 0,
-              "rivals": 0
+              "rivals": 3
+            },
+            {
+              "player": "Eminem",
+              "wins": 1,
+              "rivals": 3
+            },
+            {
+              "player": "Hulk",
+              "wins": 2,
+              "rivals": 4
+            },
+            {
+              "player": "Shaolin",
+              "wins": 0,
+              "rivals": 4
             }
           ],
           "h2h_ranking": [
             {
+              "player": "Hulk",
+              "score": 51.832460732984295,
+              "matches": 382,
+              "weighted_score": 19800.0
+            },
+            {
               "player": "Titan",
-              "score": 46.875,
-              "matches": 32,
-              "weighted_score": 1500.0
+              "score": 36.49425287356322,
+              "matches": 348,
+              "weighted_score": 12700.0
+            },
+            {
+              "player": "Eminem",
+              "score": 41.28787878787879,
+              "matches": 264,
+              "weighted_score": 10900.0
+            },
+            {
+              "player": "Shaolin",
+              "score": 32.71604938271605,
+              "matches": 324,
+              "weighted_score": 10600.0
             },
             {
               "player": "Snail",
-              "score": 37.5,
-              "matches": 32,
-              "weighted_score": 1200.0
-            },
-            {
-              "player": "",
-              "score": 0,
-              "matches": 0,
-              "weighted_score": 0
+              "score": 44.21052631578947,
+              "matches": 190,
+              "weighted_score": 8400.0
             }
           ],
           "betting": {
             "back": {
-              "player": "Titan",
-              "score": 46.875,
-              "matches": 32,
-              "weighted_score": 1500.0,
+              "player": "Hulk",
+              "score": 51.832460732984295,
+              "matches": 382,
+              "weighted_score": 19800.0,
               "best_matchups": [
                 {
+                  "rival": "Shaolin",
+                  "win_pct": 60.416666666666664,
+                  "matches": 96
+                },
+                {
+                  "rival": "Titan",
+                  "win_pct": 56.451612903225815,
+                  "matches": 62
+                },
+                {
                   "rival": "Snail",
-                  "win_pct": 46.875,
-                  "matches": 32
+                  "win_pct": 47.16981132075472,
+                  "matches": 106
                 }
               ],
               "best_matchup_details": [
                 {
-                  "rival": "Snail",
-                  "W": 15,
-                  "D": 5,
-                  "L": 12,
-                  "matches": 32,
-                  "win_pct": 46.875,
+                  "rival": "Shaolin",
+                  "W": 58,
+                  "D": 15,
+                  "L": 23,
+                  "matches": 96,
+                  "win_pct": 60.416666666666664,
                   "draw_pct": 15.625,
-                  "loss_pct": 37.5
+                  "loss_pct": 23.958333333333336
+                },
+                {
+                  "rival": "Titan",
+                  "W": 35,
+                  "D": 12,
+                  "L": 15,
+                  "matches": 62,
+                  "win_pct": 56.451612903225815,
+                  "draw_pct": 19.35483870967742,
+                  "loss_pct": 24.193548387096776
+                },
+                {
+                  "rival": "Snail",
+                  "W": 50,
+                  "D": 10,
+                  "L": 46,
+                  "matches": 106,
+                  "win_pct": 47.16981132075472,
+                  "draw_pct": 9.433962264150944,
+                  "loss_pct": 43.39622641509434
                 }
               ]
             },
             "lay": {
-              "player": "",
-              "score": 0,
-              "matches": 0,
-              "weighted_score": 0,
-              "worst_matchups": [],
-              "worst_matchup_details": []
+              "player": "Shaolin",
+              "score": 32.71604938271605,
+              "matches": 324,
+              "weighted_score": 10600.0,
+              "worst_matchups": [
+                {
+                  "rival": "Hulk",
+                  "win_pct": 23.958333333333336,
+                  "matches": 96
+                },
+                {
+                  "rival": "Snail",
+                  "win_pct": 28.846153846153843,
+                  "matches": 52
+                },
+                {
+                  "rival": "Eminem",
+                  "win_pct": 29.411764705882355,
+                  "matches": 34
+                }
+              ],
+              "worst_matchup_details": [
+                {
+                  "rival": "Hulk",
+                  "W": 23,
+                  "D": 15,
+                  "L": 58,
+                  "matches": 96,
+                  "win_pct": 23.958333333333336,
+                  "draw_pct": 15.625,
+                  "loss_pct": 60.416666666666664
+                },
+                {
+                  "rival": "Snail",
+                  "W": 15,
+                  "D": 11,
+                  "L": 26,
+                  "matches": 52,
+                  "win_pct": 28.846153846153843,
+                  "draw_pct": 21.153846153846153,
+                  "loss_pct": 50.0
+                },
+                {
+                  "rival": "Eminem",
+                  "W": 10,
+                  "D": 4,
+                  "L": 20,
+                  "matches": 34,
+                  "win_pct": 29.411764705882355,
+                  "draw_pct": 11.76470588235294,
+                  "loss_pct": 58.82352941176471
+                }
+              ]
             }
           },
           "head_to_head": [
             {
+              "player": "Eminem",
+              "rivals": [
+                {
+                  "rival": "Hulk",
+                  "win_pct": 37.28813559322034,
+                  "loss_pct": 46.61016949152542,
+                  "matches": 118
+                },
+                {
+                  "rival": "Shaolin",
+                  "win_pct": 58.82352941176471,
+                  "loss_pct": 29.411764705882355,
+                  "matches": 34
+                },
+                {
+                  "rival": "Titan",
+                  "win_pct": 40.17857142857143,
+                  "loss_pct": 39.285714285714285,
+                  "matches": 112
+                }
+              ]
+            },
+            {
+              "player": "Hulk",
+              "rivals": [
+                {
+                  "rival": "Eminem",
+                  "win_pct": 46.61016949152542,
+                  "loss_pct": 37.28813559322034,
+                  "matches": 118
+                },
+                {
+                  "rival": "Shaolin",
+                  "win_pct": 60.416666666666664,
+                  "loss_pct": 23.958333333333336,
+                  "matches": 96
+                },
+                {
+                  "rival": "Snail",
+                  "win_pct": 47.16981132075472,
+                  "loss_pct": 43.39622641509434,
+                  "matches": 106
+                },
+                {
+                  "rival": "Titan",
+                  "win_pct": 56.451612903225815,
+                  "loss_pct": 24.193548387096776,
+                  "matches": 62
+                }
+              ]
+            },
+            {
+              "player": "Shaolin",
+              "rivals": [
+                {
+                  "rival": "Eminem",
+                  "win_pct": 29.411764705882355,
+                  "loss_pct": 58.82352941176471,
+                  "matches": 34
+                },
+                {
+                  "rival": "Hulk",
+                  "win_pct": 23.958333333333336,
+                  "loss_pct": 60.416666666666664,
+                  "matches": 96
+                },
+                {
+                  "rival": "Snail",
+                  "win_pct": 28.846153846153843,
+                  "loss_pct": 50.0,
+                  "matches": 52
+                },
+                {
+                  "rival": "Titan",
+                  "win_pct": 40.845070422535215,
+                  "loss_pct": 37.32394366197183,
+                  "matches": 142
+                }
+              ]
+            },
+            {
               "player": "Snail",
               "rivals": [
+                {
+                  "rival": "Hulk",
+                  "win_pct": 43.39622641509434,
+                  "loss_pct": 47.16981132075472,
+                  "matches": 106
+                },
+                {
+                  "rival": "Shaolin",
+                  "win_pct": 50.0,
+                  "loss_pct": 28.846153846153843,
+                  "matches": 52
+                },
                 {
                   "rival": "Titan",
                   "win_pct": 37.5,
@@ -2292,6 +2538,24 @@
               "player": "Titan",
               "rivals": [
                 {
+                  "rival": "Eminem",
+                  "win_pct": 39.285714285714285,
+                  "loss_pct": 40.17857142857143,
+                  "matches": 112
+                },
+                {
+                  "rival": "Hulk",
+                  "win_pct": 24.193548387096776,
+                  "loss_pct": 56.451612903225815,
+                  "matches": 62
+                },
+                {
+                  "rival": "Shaolin",
+                  "win_pct": 37.32394366197183,
+                  "loss_pct": 40.845070422535215,
+                  "matches": 142
+                },
+                {
                   "rival": "Snail",
                   "win_pct": 46.875,
                   "loss_pct": 37.5,
@@ -2302,8 +2566,153 @@
           ],
           "h2h_matrix": [
             {
+              "player": "Eminem",
+              "rivals": [
+                {
+                  "rival": "Hulk",
+                  "W": 44,
+                  "D": 19,
+                  "L": 55,
+                  "matches": 118,
+                  "win_pct": 37.28813559322034,
+                  "draw_pct": 16.101694915254235,
+                  "loss_pct": 46.61016949152542
+                },
+                {
+                  "rival": "Shaolin",
+                  "W": 20,
+                  "D": 4,
+                  "L": 10,
+                  "matches": 34,
+                  "win_pct": 58.82352941176471,
+                  "draw_pct": 11.76470588235294,
+                  "loss_pct": 29.411764705882355
+                },
+                {
+                  "rival": "Titan",
+                  "W": 45,
+                  "D": 23,
+                  "L": 44,
+                  "matches": 112,
+                  "win_pct": 40.17857142857143,
+                  "draw_pct": 20.535714285714285,
+                  "loss_pct": 39.285714285714285
+                }
+              ]
+            },
+            {
+              "player": "Hulk",
+              "rivals": [
+                {
+                  "rival": "Eminem",
+                  "W": 55,
+                  "D": 19,
+                  "L": 44,
+                  "matches": 118,
+                  "win_pct": 46.61016949152542,
+                  "draw_pct": 16.101694915254235,
+                  "loss_pct": 37.28813559322034
+                },
+                {
+                  "rival": "Shaolin",
+                  "W": 58,
+                  "D": 15,
+                  "L": 23,
+                  "matches": 96,
+                  "win_pct": 60.416666666666664,
+                  "draw_pct": 15.625,
+                  "loss_pct": 23.958333333333336
+                },
+                {
+                  "rival": "Snail",
+                  "W": 50,
+                  "D": 10,
+                  "L": 46,
+                  "matches": 106,
+                  "win_pct": 47.16981132075472,
+                  "draw_pct": 9.433962264150944,
+                  "loss_pct": 43.39622641509434
+                },
+                {
+                  "rival": "Titan",
+                  "W": 35,
+                  "D": 12,
+                  "L": 15,
+                  "matches": 62,
+                  "win_pct": 56.451612903225815,
+                  "draw_pct": 19.35483870967742,
+                  "loss_pct": 24.193548387096776
+                }
+              ]
+            },
+            {
+              "player": "Shaolin",
+              "rivals": [
+                {
+                  "rival": "Eminem",
+                  "W": 10,
+                  "D": 4,
+                  "L": 20,
+                  "matches": 34,
+                  "win_pct": 29.411764705882355,
+                  "draw_pct": 11.76470588235294,
+                  "loss_pct": 58.82352941176471
+                },
+                {
+                  "rival": "Hulk",
+                  "W": 23,
+                  "D": 15,
+                  "L": 58,
+                  "matches": 96,
+                  "win_pct": 23.958333333333336,
+                  "draw_pct": 15.625,
+                  "loss_pct": 60.416666666666664
+                },
+                {
+                  "rival": "Snail",
+                  "W": 15,
+                  "D": 11,
+                  "L": 26,
+                  "matches": 52,
+                  "win_pct": 28.846153846153843,
+                  "draw_pct": 21.153846153846153,
+                  "loss_pct": 50.0
+                },
+                {
+                  "rival": "Titan",
+                  "W": 58,
+                  "D": 31,
+                  "L": 53,
+                  "matches": 142,
+                  "win_pct": 40.845070422535215,
+                  "draw_pct": 21.830985915492956,
+                  "loss_pct": 37.32394366197183
+                }
+              ]
+            },
+            {
               "player": "Snail",
               "rivals": [
+                {
+                  "rival": "Hulk",
+                  "W": 46,
+                  "D": 10,
+                  "L": 50,
+                  "matches": 106,
+                  "win_pct": 43.39622641509434,
+                  "draw_pct": 9.433962264150944,
+                  "loss_pct": 47.16981132075472
+                },
+                {
+                  "rival": "Shaolin",
+                  "W": 26,
+                  "D": 11,
+                  "L": 15,
+                  "matches": 52,
+                  "win_pct": 50.0,
+                  "draw_pct": 21.153846153846153,
+                  "loss_pct": 28.846153846153843
+                },
                 {
                   "rival": "Titan",
                   "W": 12,
@@ -2319,6 +2728,36 @@
             {
               "player": "Titan",
               "rivals": [
+                {
+                  "rival": "Eminem",
+                  "W": 44,
+                  "D": 23,
+                  "L": 45,
+                  "matches": 112,
+                  "win_pct": 39.285714285714285,
+                  "draw_pct": 20.535714285714285,
+                  "loss_pct": 40.17857142857143
+                },
+                {
+                  "rival": "Hulk",
+                  "W": 15,
+                  "D": 12,
+                  "L": 35,
+                  "matches": 62,
+                  "win_pct": 24.193548387096776,
+                  "draw_pct": 19.35483870967742,
+                  "loss_pct": 56.451612903225815
+                },
+                {
+                  "rival": "Shaolin",
+                  "W": 53,
+                  "D": 31,
+                  "L": 58,
+                  "matches": 142,
+                  "win_pct": 37.32394366197183,
+                  "draw_pct": 21.830985915492956,
+                  "loss_pct": 40.845070422535215
+                },
                 {
                   "rival": "Snail",
                   "W": 15,
@@ -2398,11 +2837,11 @@
             "Gael",
             "Eric"
           ],
-          "target_repr": "{'Matrix', 'Gael', 'Eric', 'Maverick', 'Odin'}",
+          "target_repr": "{'Matrix', 'Odin', 'Maverick', 'Eric', 'Gael'}",
           "h2h_keys": [
-            "Gael",
-            "Eric",
             "Odin",
+            "Eric",
+            "Gael",
             "Matrix",
             "Maverick"
           ],
@@ -2518,12 +2957,7 @@
               "rivals": 4
             },
             {
-              "player": "Gael",
-              "wins": 0,
-              "rivals": 4
-            },
-            {
-              "player": "Eric",
+              "player": "Odin",
               "wins": 2,
               "rivals": 4
             },
@@ -2533,22 +2967,27 @@
               "rivals": 4
             },
             {
-              "player": "Odin",
+              "player": "Eric",
               "wins": 2,
+              "rivals": 4
+            },
+            {
+              "player": "Gael",
+              "wins": 0,
               "rivals": 4
             }
           ],
           "h2h_ranking": [
             {
-              "player": "Eric",
-              "score": 49.096385542168676,
-              "matches": 332,
-              "weighted_score": 16300.0
-            },
-            {
               "player": "Odin",
               "score": 45.27777777777778,
               "matches": 360,
+              "weighted_score": 16300.0
+            },
+            {
+              "player": "Eric",
+              "score": 49.096385542168676,
+              "matches": 332,
               "weighted_score": 16300.0
             },
             {
@@ -3067,7 +3506,7 @@
             "Splinter",
             "Kaizen"
           ],
-          "target_repr": "{'Dexter', 'Iron', 'Kaizen', 'Splinter', 'William'}",
+          "target_repr": "{'Dexter', 'William', 'Iron', 'Kaizen', 'Splinter'}",
           "h2h_keys": [
             "Iron",
             "Splinter",
@@ -3187,6 +3626,11 @@
               "rivals": 4
             },
             {
+              "player": "William",
+              "wins": 1,
+              "rivals": 4
+            },
+            {
               "player": "Iron",
               "wins": 1,
               "rivals": 4
@@ -3199,11 +3643,6 @@
             {
               "player": "Splinter",
               "wins": 0,
-              "rivals": 4
-            },
-            {
-              "player": "William",
-              "wins": 1,
               "rivals": 4
             }
           ],
