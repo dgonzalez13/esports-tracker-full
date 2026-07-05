@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "05/07/2026 23:45:10 CEST",
+  "generated_at": "06/07/2026 00:44:28 CEST",
   "league": "EADRIATIC",
   "files_count": 51,
   "data_from": "20260516",
@@ -69,7 +69,7 @@
         "Kristof",
         "Iron"
       ],
-      "target_repr": "{'Bruno', 'Conde', 'Kristof', 'Felix', 'Iron'}",
+      "target_repr": "{'Felix', 'Kristof', 'Iron', 'Conde', 'Bruno'}",
       "h2h_keys": [
         "Kristof",
         "Iron",
@@ -136,7 +136,7 @@
         {
           "position": 3,
           "player": "Felix",
-          "score": -56.379310344827594
+          "score": -56.37931034482759
         },
         {
           "position": 4,
@@ -151,13 +151,8 @@
       ],
       "dominance": [
         {
-          "player": "Bruno",
-          "wins": 3,
-          "rivals": 4
-        },
-        {
-          "player": "Conde",
-          "wins": 3,
+          "player": "Felix",
+          "wins": 1,
           "rivals": 4
         },
         {
@@ -166,13 +161,18 @@
           "rivals": 4
         },
         {
-          "player": "Felix",
-          "wins": 1,
+          "player": "Iron",
+          "wins": 0,
           "rivals": 4
         },
         {
-          "player": "Iron",
-          "wins": 0,
+          "player": "Conde",
+          "wins": 3,
+          "rivals": 4
+        },
+        {
+          "player": "Bruno",
+          "wins": 3,
           "rivals": 4
         }
       ],
@@ -216,9 +216,9 @@
           "weighted_score": 1899.9999999999998,
           "best_matchups": [
             {
-              "rival": "Conde",
+              "rival": "Felix",
               "win_pct": 66.66666666666666,
-              "matches": 12
+              "matches": 6
             },
             {
               "rival": "Kristof",
@@ -226,38 +226,38 @@
               "matches": 6
             },
             {
-              "rival": "Felix",
+              "rival": "Conde",
               "win_pct": 66.66666666666666,
-              "matches": 6
+              "matches": 12
             }
           ],
           "best_matchup_details": [
+            {
+              "rival": "Felix",
+              "W": 4,
+              "D": 1,
+              "L": 1,
+              "matches": 6,
+              "win_pct": 66.66666666666666,
+              "draw_pct": 16.666666666666664,
+              "loss_pct": 16.666666666666664
+            },
+            {
+              "rival": "Kristof",
+              "W": 4,
+              "D": 1,
+              "L": 1,
+              "matches": 6,
+              "win_pct": 66.66666666666666,
+              "draw_pct": 16.666666666666664,
+              "loss_pct": 16.666666666666664
+            },
             {
               "rival": "Conde",
               "W": 8,
               "D": 2,
               "L": 2,
               "matches": 12,
-              "win_pct": 66.66666666666666,
-              "draw_pct": 16.666666666666664,
-              "loss_pct": 16.666666666666664
-            },
-            {
-              "rival": "Kristof",
-              "W": 4,
-              "D": 1,
-              "L": 1,
-              "matches": 6,
-              "win_pct": 66.66666666666666,
-              "draw_pct": 16.666666666666664,
-              "loss_pct": 16.666666666666664
-            },
-            {
-              "rival": "Felix",
-              "W": 4,
-              "D": 1,
-              "L": 1,
-              "matches": 6,
               "win_pct": 66.66666666666666,
               "draw_pct": 16.666666666666664,
               "loss_pct": 16.666666666666664
@@ -271,14 +271,14 @@
           "weighted_score": 3400.0000000000005,
           "worst_matchups": [
             {
-              "rival": "Bruno",
-              "win_pct": 16.666666666666664,
-              "matches": 6
-            },
-            {
               "rival": "Conde",
               "win_pct": 16.666666666666664,
               "matches": 18
+            },
+            {
+              "rival": "Bruno",
+              "win_pct": 16.666666666666664,
+              "matches": 6
             },
             {
               "rival": "Felix",
@@ -288,16 +288,6 @@
           ],
           "worst_matchup_details": [
             {
-              "rival": "Bruno",
-              "W": 1,
-              "D": 2,
-              "L": 3,
-              "matches": 6,
-              "win_pct": 16.666666666666664,
-              "draw_pct": 33.33333333333333,
-              "loss_pct": 50.0
-            },
-            {
               "rival": "Conde",
               "W": 3,
               "D": 3,
@@ -306,6 +296,16 @@
               "win_pct": 16.666666666666664,
               "draw_pct": 16.666666666666664,
               "loss_pct": 66.66666666666666
+            },
+            {
+              "rival": "Bruno",
+              "W": 1,
+              "D": 2,
+              "L": 3,
+              "matches": 6,
+              "win_pct": 16.666666666666664,
+              "draw_pct": 33.33333333333333,
+              "loss_pct": 50.0
             },
             {
               "rival": "Felix",
@@ -870,10 +870,10 @@
             "Professor",
             "Razvan"
           ],
-          "target_repr": "{'Sensei', 'Rossi', 'Razvan', 'Delpiero', 'Professor'}",
+          "target_repr": "{'Rossi', 'Razvan', 'Sensei', 'Delpiero', 'Professor'}",
           "h2h_keys": [
-            "Sensei",
             "Razvan",
+            "Sensei",
             "Delpiero",
             "Professor",
             "Rossi"
@@ -993,11 +993,6 @@
           ],
           "dominance": [
             {
-              "player": "Sensei",
-              "wins": 1,
-              "rivals": 4
-            },
-            {
               "player": "Rossi",
               "wins": 1,
               "rivals": 4
@@ -1005,6 +1000,11 @@
             {
               "player": "Razvan",
               "wins": 0,
+              "rivals": 4
+            },
+            {
+              "player": "Sensei",
+              "wins": 1,
               "rivals": 4
             },
             {
@@ -1547,12 +1547,12 @@
             "Sarafi",
             "Walnut"
           ],
-          "target_repr": "{'Sarafi', 'Scorpion', 'Cyclop', 'Hawk', 'Walnut'}",
+          "target_repr": "{'Walnut', 'Cyclop', 'Scorpion', 'Sarafi', 'Hawk'}",
           "h2h_keys": [
             "Cyclop",
             "Hawk",
-            "Sarafi",
             "Walnut",
+            "Sarafi",
             "Scorpion"
           ],
           "coincidencias_5": 3,
@@ -1662,7 +1662,12 @@
           ],
           "dominance": [
             {
-              "player": "Sarafi",
+              "player": "Walnut",
+              "wins": 1,
+              "rivals": 4
+            },
+            {
+              "player": "Cyclop",
               "wins": 0,
               "rivals": 4
             },
@@ -1672,18 +1677,13 @@
               "rivals": 4
             },
             {
-              "player": "Cyclop",
+              "player": "Sarafi",
               "wins": 0,
               "rivals": 4
             },
             {
               "player": "Hawk",
               "wins": 0,
-              "rivals": 4
-            },
-            {
-              "player": "Walnut",
-              "wins": 1,
               "rivals": 4
             }
           ],
@@ -2277,7 +2277,7 @@
             "Kristof",
             "Iron"
           ],
-          "target_repr": "{'Bruno', 'Conde', 'Kristof', 'Felix', 'Iron'}",
+          "target_repr": "{'Felix', 'Kristof', 'Iron', 'Conde', 'Bruno'}",
           "h2h_keys": [
             "Kristof",
             "Iron",
@@ -2344,7 +2344,7 @@
             {
               "position": 3,
               "player": "Felix",
-              "score": -56.379310344827594
+              "score": -56.37931034482759
             },
             {
               "position": 4,
@@ -2359,13 +2359,8 @@
           ],
           "dominance": [
             {
-              "player": "Bruno",
-              "wins": 3,
-              "rivals": 4
-            },
-            {
-              "player": "Conde",
-              "wins": 3,
+              "player": "Felix",
+              "wins": 1,
               "rivals": 4
             },
             {
@@ -2374,13 +2369,18 @@
               "rivals": 4
             },
             {
-              "player": "Felix",
-              "wins": 1,
+              "player": "Iron",
+              "wins": 0,
               "rivals": 4
             },
             {
-              "player": "Iron",
-              "wins": 0,
+              "player": "Conde",
+              "wins": 3,
+              "rivals": 4
+            },
+            {
+              "player": "Bruno",
+              "wins": 3,
               "rivals": 4
             }
           ],
@@ -2424,9 +2424,9 @@
               "weighted_score": 1899.9999999999998,
               "best_matchups": [
                 {
-                  "rival": "Conde",
+                  "rival": "Felix",
                   "win_pct": 66.66666666666666,
-                  "matches": 12
+                  "matches": 6
                 },
                 {
                   "rival": "Kristof",
@@ -2434,38 +2434,38 @@
                   "matches": 6
                 },
                 {
-                  "rival": "Felix",
+                  "rival": "Conde",
                   "win_pct": 66.66666666666666,
-                  "matches": 6
+                  "matches": 12
                 }
               ],
               "best_matchup_details": [
+                {
+                  "rival": "Felix",
+                  "W": 4,
+                  "D": 1,
+                  "L": 1,
+                  "matches": 6,
+                  "win_pct": 66.66666666666666,
+                  "draw_pct": 16.666666666666664,
+                  "loss_pct": 16.666666666666664
+                },
+                {
+                  "rival": "Kristof",
+                  "W": 4,
+                  "D": 1,
+                  "L": 1,
+                  "matches": 6,
+                  "win_pct": 66.66666666666666,
+                  "draw_pct": 16.666666666666664,
+                  "loss_pct": 16.666666666666664
+                },
                 {
                   "rival": "Conde",
                   "W": 8,
                   "D": 2,
                   "L": 2,
                   "matches": 12,
-                  "win_pct": 66.66666666666666,
-                  "draw_pct": 16.666666666666664,
-                  "loss_pct": 16.666666666666664
-                },
-                {
-                  "rival": "Kristof",
-                  "W": 4,
-                  "D": 1,
-                  "L": 1,
-                  "matches": 6,
-                  "win_pct": 66.66666666666666,
-                  "draw_pct": 16.666666666666664,
-                  "loss_pct": 16.666666666666664
-                },
-                {
-                  "rival": "Felix",
-                  "W": 4,
-                  "D": 1,
-                  "L": 1,
-                  "matches": 6,
                   "win_pct": 66.66666666666666,
                   "draw_pct": 16.666666666666664,
                   "loss_pct": 16.666666666666664
@@ -2479,14 +2479,14 @@
               "weighted_score": 3400.0000000000005,
               "worst_matchups": [
                 {
-                  "rival": "Bruno",
-                  "win_pct": 16.666666666666664,
-                  "matches": 6
-                },
-                {
                   "rival": "Conde",
                   "win_pct": 16.666666666666664,
                   "matches": 18
+                },
+                {
+                  "rival": "Bruno",
+                  "win_pct": 16.666666666666664,
+                  "matches": 6
                 },
                 {
                   "rival": "Felix",
@@ -2496,16 +2496,6 @@
               ],
               "worst_matchup_details": [
                 {
-                  "rival": "Bruno",
-                  "W": 1,
-                  "D": 2,
-                  "L": 3,
-                  "matches": 6,
-                  "win_pct": 16.666666666666664,
-                  "draw_pct": 33.33333333333333,
-                  "loss_pct": 50.0
-                },
-                {
                   "rival": "Conde",
                   "W": 3,
                   "D": 3,
@@ -2514,6 +2504,16 @@
                   "win_pct": 16.666666666666664,
                   "draw_pct": 16.666666666666664,
                   "loss_pct": 66.66666666666666
+                },
+                {
+                  "rival": "Bruno",
+                  "W": 1,
+                  "D": 2,
+                  "L": 3,
+                  "matches": 6,
+                  "win_pct": 16.666666666666664,
+                  "draw_pct": 33.33333333333333,
+                  "loss_pct": 50.0
                 },
                 {
                   "rival": "Felix",
