@@ -1,4 +1,3 @@
-import csv
 import json
 from html import escape
 from pathlib import Path
@@ -7,7 +6,7 @@ from pathlib import Path
 BASE = Path(__file__).resolve().parent.parent
 DOCS_DIR = BASE / "docs"
 GROUP_ANALYSIS_FILE = BASE / "group_analysis.json"
-TRACKED_PLAYERS_FILE = BASE / "tracked_players.txt" 
+TRACKED_PLAYERS_FILE = BASE / "tracked_players.txt"
 
 LEAGUES = {
     "GT": {
@@ -36,7 +35,6 @@ def load_tracked_players():
             if not line:
                 continue
 
-            _, player = line.split("|", 1)
             league, player = line.split("|", 1)
 
             tracked.add((
@@ -557,6 +555,51 @@ th {
     overflow: hidden;
 }
 
+.alert-panel {
+    margin-bottom: 18px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    padding: 16px;
+    overflow: hidden;
+}
+
+.low-sample-row {
+    background: var(--warn-soft);
+}
+
+.signal-badge,
+.confidence-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.signal-strong {
+    background: var(--good-soft);
+    color: var(--good);
+}
+
+.signal-watch {
+    background: var(--warn-soft);
+    color: var(--warn);
+}
+
+.confidence-high {
+    background: var(--good-soft);
+    color: var(--good);
+}
+
+.confidence-low {
+    background: var(--warn-soft);
+    color: var(--warn);
+}
+
 details {
     margin-top: 12px;
 }
@@ -607,7 +650,7 @@ def render_current_streaks(current_streaks):
         '<div class="section-head">'
         "<div>"
         "<h2>Current Streaks</h2>"
-        '<p class="section-subtitle">Latest daily player files, enriched with risk CSV display fields.</p>'
+        '<p class="section-subtitle">Latest daily player files, with tracked player highlights and current win/loss streaks.</p>'
         "</div>"
         "</div>"
         f'<div class="streak-grid">{"".join(panels)}</div>'
@@ -715,10 +758,104 @@ def render_league_groups(league, payload):
         f'{metadata_badge("To", payload.get("data_to", "-"))}'
         "</div>"
         "</div>"
-        f'<div class="cards-grid">{"".join(cards)}</div>'
+        + render_h2h_alerts(payload.get("h2h_alerts", []))
+        + f'<div class="cards-grid">{"".join(cards)}</div>'
         "</div>"
     )
 
+
+
+def render_h2h_alerts(alerts):
+    if not alerts:
+        return ""
+
+    html = []
+
+    html.append('<div class="alert-panel">')
+    html.append("<h3>H2H Betting Alerts</h3>")
+    html.append(
+        '<p class="section-subtitle">'
+        "Matchups above the configured H2H threshold. "
+        "Rows with low sample size are highlighted."
+        "</p>"
+    )
+
+    html.append('<div class="table-wrap"><table>')
+    html.append(
+        "<thead><tr>"
+        "<th>Group</th>"
+        "<th>Player</th>"
+        "<th>Rival</th>"
+        "<th>W</th>"
+        "<th>D</th>"
+        "<th>L</th>"
+        "<th>Matches</th>"
+        "<th>Win%</th>"
+        "<th>Signal</th>"
+        "<th>Confidence</th>"
+        "</tr></thead><tbody>"
+    )
+
+    for alert in alerts:
+        confidence = alert.get("confidence", "")
+        signal = alert.get("signal", "")
+        is_low_sample = alert.get("low_sample", confidence == "LOW SAMPLE")
+
+        row_class = ' class="low-sample-row"' if is_low_sample else ""
+
+        signal_class = (
+            "signal-strong"
+            if signal == "STRONG"
+            else "signal-watch"
+        )
+
+        confidence_class = (
+            "confidence-low"
+            if is_low_sample
+            else "confidence-high"
+        )
+
+        signal_label = (
+            "🟢 STRONG"
+            if signal == "STRONG"
+            else "🟡 WATCH"
+        )
+
+        confidence_label = (
+            "⚠️ LOW SAMPLE"
+            if is_low_sample
+            else "✅ HIGH"
+        )
+
+        html.append(f"<tr{row_class}>")
+        html.append(f"<td>{text(alert.get('group', ''))}</td>")
+        html.append(f"<td>{text(alert.get('player', ''))}</td>")
+        html.append(f"<td>{text(alert.get('rival', ''))}</td>")
+        html.append(f'<td class="num">{text(alert.get("W", ""))}</td>')
+        html.append(f'<td class="num">{text(alert.get("D", ""))}</td>')
+        html.append(f'<td class="num">{text(alert.get("L", ""))}</td>')
+        html.append(f'<td class="num">{text(alert.get("matches", ""))}</td>')
+        html.append(f'<td class="num">{text(fmt_pct(alert.get("win_pct")))}</td>')
+        html.append(
+            '<td>'
+            f'<span class="signal-badge {signal_class}">'
+            f"{text(signal_label)}"
+            "</span>"
+            "</td>"
+        )
+        html.append(
+            '<td>'
+            f'<span class="confidence-badge {confidence_class}">'
+            f"{text(confidence_label)}"
+            "</span>"
+            "</td>"
+        )
+        html.append("</tr>")
+
+    html.append("</tbody></table></div>")
+    html.append("</div>")
+
+    return "".join(html)
 
 def render_group_card(league, league_payload, group):
     return (

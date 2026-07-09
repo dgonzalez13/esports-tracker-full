@@ -9,6 +9,8 @@ import re
 
 BASE = Path(__file__).resolve().parent
 JSON_OUTPUT = BASE / "group_analysis.json"
+H2H_ALERT_THRESHOLD = 48
+MIN_H2H_ALERT_MATCHES = 20
 
 
 def empty_record():
@@ -551,6 +553,62 @@ def calculate_h2h_matrix(target, h2h):
     return rows
 
 
+def calculate_h2h_alerts(result):
+    alerts = []
+
+    for group in result["groups"]:
+
+        for player_block in group["h2h_matrix"]:
+
+            player = player_block["player"]
+
+            for rival in player_block["rivals"]:
+
+                if rival["win_pct"] < H2H_ALERT_THRESHOLD:
+                    continue
+
+                confidence = (
+                    "HIGH"
+                    if rival["matches"] >= MIN_H2H_ALERT_MATCHES
+                    else "LOW SAMPLE"
+                )
+
+                signal = (
+                    "STRONG"
+                    if rival["win_pct"] >= 50
+                    else "WATCH"
+                )
+
+                alerts.append({
+                    "group_id": group["group_id"],
+                    "group": group["label"],
+                    "player": player,
+                    "rival": rival["rival"],
+                    "W": rival["W"],
+                    "D": rival["D"],
+                    "L": rival["L"],
+                    "matches": rival["matches"],
+                    "win_pct": rival["win_pct"],
+                    "draw_pct": rival["draw_pct"],
+                    "loss_pct": rival["loss_pct"],
+                    "signal": signal,
+                    "confidence": confidence,
+                    "low_sample": rival["matches"] < MIN_H2H_ALERT_MATCHES
+                })
+
+    alerts.sort(
+        key=lambda row: (
+            row["confidence"] != "HIGH",
+            -row["win_pct"],
+            -row["matches"],
+            row["player"],
+            row["rival"]
+        )
+    )
+
+    return alerts
+
+
 def calculate_head_to_head(target, h2h):
     player_rows = []
 
@@ -1031,6 +1089,9 @@ def json_ready_league(result):
         "data_from": result["data_from"],
         "data_to": result["data_to"],
         "files": result["files"],
+        "h2h_alert_threshold": H2H_ALERT_THRESHOLD,
+        "min_h2h_alert_matches": MIN_H2H_ALERT_MATCHES,
+        "h2h_alerts": calculate_h2h_alerts(result),
         "groups": [
             json_ready_group(group)
             for group in result["groups"]
@@ -1049,6 +1110,9 @@ def write_json(result, all_results):
         "data_from": result["data_from"],
         "data_to": result["data_to"],
         "files": result["files"],
+        "h2h_alert_threshold": H2H_ALERT_THRESHOLD,
+        "min_h2h_alert_matches": MIN_H2H_ALERT_MATCHES,
+        "h2h_alerts": calculate_h2h_alerts(result),
         "groups": [
             json_ready_group(group)
             for group in result["groups"]
