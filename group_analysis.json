@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "11/07/2026 23:35:57 CEST",
+  "generated_at": "12/07/2026 00:29:42 CEST",
   "league": "EADRIATIC",
   "files_count": 57,
   "data_from": "20260516",
@@ -223,10 +223,10 @@
         "Conde",
         "Juan"
       ],
-      "target_repr": "{'Odin', 'Dominic', 'Conde', 'Juan', 'MisterX'}",
+      "target_repr": "{'Conde', 'Juan', 'MisterX', 'Odin', 'Dominic'}",
       "h2h_keys": [
-        "Odin",
         "Conde",
+        "Odin",
         "MisterX",
         "Juan",
         "Dominic"
@@ -305,16 +305,6 @@
       ],
       "dominance": [
         {
-          "player": "Odin",
-          "wins": 4,
-          "rivals": 4
-        },
-        {
-          "player": "Dominic",
-          "wins": 1,
-          "rivals": 4
-        },
-        {
           "player": "Conde",
           "wins": 3,
           "rivals": 4
@@ -327,6 +317,16 @@
         {
           "player": "MisterX",
           "wins": 0,
+          "rivals": 4
+        },
+        {
+          "player": "Odin",
+          "wins": 4,
+          "rivals": 4
+        },
+        {
+          "player": "Dominic",
+          "wins": 1,
           "rivals": 4
         }
       ],
@@ -344,15 +344,15 @@
           "weighted_score": 3600.0
         },
         {
-          "player": "Dominic",
-          "score": 31.428571428571427,
-          "matches": 70,
-          "weighted_score": 2200.0
-        },
-        {
           "player": "MisterX",
           "score": 24.444444444444443,
           "matches": 90,
+          "weighted_score": 2200.0
+        },
+        {
+          "player": "Dominic",
+          "score": 31.428571428571427,
+          "matches": 70,
           "weighted_score": 2200.0
         },
         {
@@ -425,32 +425,22 @@
           "weighted_score": 400.0,
           "worst_matchups": [
             {
-              "rival": "Odin",
-              "win_pct": 0.0,
-              "matches": 6
-            },
-            {
               "rival": "Conde",
               "win_pct": 0.0,
               "matches": 12
             },
             {
-              "rival": "Dominic",
+              "rival": "Odin",
+              "win_pct": 0.0,
+              "matches": 6
+            },
+            {
+              "rival": "MisterX",
               "win_pct": 33.33333333333333,
               "matches": 6
             }
           ],
           "worst_matchup_details": [
-            {
-              "rival": "Odin",
-              "W": 0,
-              "D": 1,
-              "L": 5,
-              "matches": 6,
-              "win_pct": 0.0,
-              "draw_pct": 16.666666666666664,
-              "loss_pct": 83.33333333333334
-            },
             {
               "rival": "Conde",
               "W": 0,
@@ -462,14 +452,24 @@
               "loss_pct": 83.33333333333334
             },
             {
-              "rival": "Dominic",
+              "rival": "Odin",
+              "W": 0,
+              "D": 1,
+              "L": 5,
+              "matches": 6,
+              "win_pct": 0.0,
+              "draw_pct": 16.666666666666664,
+              "loss_pct": 83.33333333333334
+            },
+            {
+              "rival": "MisterX",
               "W": 2,
-              "D": 0,
-              "L": 4,
+              "D": 1,
+              "L": 3,
               "matches": 6,
               "win_pct": 33.33333333333333,
-              "draw_pct": 0.0,
-              "loss_pct": 66.66666666666666
+              "draw_pct": 16.666666666666664,
+              "loss_pct": 50.0
             }
           ]
         }
@@ -1226,13 +1226,13 @@
             "Eros",
             "Banega"
           ],
-          "target_repr": "{'Banega', 'Goat', 'Eros', 'Crysis', 'Fox'}",
+          "target_repr": "{'Banega', 'Crysis', 'Fox', 'Goat', 'Eros'}",
           "h2h_keys": [
             "Banega",
-            "Eros",
             "Crysis",
-            "Goat",
-            "Fox"
+            "Eros",
+            "Fox",
+            "Goat"
           ],
           "coincidencias_5": 7,
           "coincidencias_4": 11,
@@ -1354,16 +1354,6 @@
               "rivals": 4
             },
             {
-              "player": "Goat",
-              "wins": 0,
-              "rivals": 4
-            },
-            {
-              "player": "Eros",
-              "wins": 3,
-              "rivals": 4
-            },
-            {
               "player": "Crysis",
               "wins": 0,
               "rivals": 4
@@ -1371,6 +1361,16 @@
             {
               "player": "Fox",
               "wins": 0,
+              "rivals": 4
+            },
+            {
+              "player": "Goat",
+              "wins": 0,
+              "rivals": 4
+            },
+            {
+              "player": "Eros",
+              "wins": 3,
               "rivals": 4
             }
           ],
@@ -1903,7 +1903,7 @@
             "Snake",
             "Voodoo"
           ],
-          "target_repr": "{'Penn', 'Lawyer', 'Voodoo', 'Tiago', 'Snake'}",
+          "target_repr": "{'Penn', 'Lawyer', 'Snake', 'Voodoo', 'Tiago'}",
           "h2h_keys": [
             "Lawyer",
             "Voodoo",
@@ -2008,7 +2008,7 @@
             {
               "position": 4,
               "player": "Penn",
-              "score": -81.88760843965176
+              "score": -81.88760843965177
             },
             {
               "position": 5,
@@ -2028,6 +2028,11 @@
               "rivals": 4
             },
             {
+              "player": "Snake",
+              "wins": 2,
+              "rivals": 4
+            },
+            {
               "player": "Voodoo",
               "wins": 2,
               "rivals": 4
@@ -2035,11 +2040,6 @@
             {
               "player": "Tiago",
               "wins": 0,
-              "rivals": 4
-            },
-            {
-              "player": "Snake",
-              "wins": 2,
               "rivals": 4
             }
           ],
@@ -2787,10 +2787,10 @@
             "Conde",
             "Juan"
           ],
-          "target_repr": "{'Odin', 'Dominic', 'Conde', 'Juan', 'MisterX'}",
+          "target_repr": "{'Conde', 'Juan', 'MisterX', 'Odin', 'Dominic'}",
           "h2h_keys": [
-            "Odin",
             "Conde",
+            "Odin",
             "MisterX",
             "Juan",
             "Dominic"
@@ -2869,16 +2869,6 @@
           ],
           "dominance": [
             {
-              "player": "Odin",
-              "wins": 4,
-              "rivals": 4
-            },
-            {
-              "player": "Dominic",
-              "wins": 1,
-              "rivals": 4
-            },
-            {
               "player": "Conde",
               "wins": 3,
               "rivals": 4
@@ -2891,6 +2881,16 @@
             {
               "player": "MisterX",
               "wins": 0,
+              "rivals": 4
+            },
+            {
+              "player": "Odin",
+              "wins": 4,
+              "rivals": 4
+            },
+            {
+              "player": "Dominic",
+              "wins": 1,
               "rivals": 4
             }
           ],
@@ -2908,15 +2908,15 @@
               "weighted_score": 3600.0
             },
             {
-              "player": "Dominic",
-              "score": 31.428571428571427,
-              "matches": 70,
-              "weighted_score": 2200.0
-            },
-            {
               "player": "MisterX",
               "score": 24.444444444444443,
               "matches": 90,
+              "weighted_score": 2200.0
+            },
+            {
+              "player": "Dominic",
+              "score": 31.428571428571427,
+              "matches": 70,
               "weighted_score": 2200.0
             },
             {
@@ -2989,32 +2989,22 @@
               "weighted_score": 400.0,
               "worst_matchups": [
                 {
-                  "rival": "Odin",
-                  "win_pct": 0.0,
-                  "matches": 6
-                },
-                {
                   "rival": "Conde",
                   "win_pct": 0.0,
                   "matches": 12
                 },
                 {
-                  "rival": "Dominic",
+                  "rival": "Odin",
+                  "win_pct": 0.0,
+                  "matches": 6
+                },
+                {
+                  "rival": "MisterX",
                   "win_pct": 33.33333333333333,
                   "matches": 6
                 }
               ],
               "worst_matchup_details": [
-                {
-                  "rival": "Odin",
-                  "W": 0,
-                  "D": 1,
-                  "L": 5,
-                  "matches": 6,
-                  "win_pct": 0.0,
-                  "draw_pct": 16.666666666666664,
-                  "loss_pct": 83.33333333333334
-                },
                 {
                   "rival": "Conde",
                   "W": 0,
@@ -3026,14 +3016,24 @@
                   "loss_pct": 83.33333333333334
                 },
                 {
-                  "rival": "Dominic",
+                  "rival": "Odin",
+                  "W": 0,
+                  "D": 1,
+                  "L": 5,
+                  "matches": 6,
+                  "win_pct": 0.0,
+                  "draw_pct": 16.666666666666664,
+                  "loss_pct": 83.33333333333334
+                },
+                {
+                  "rival": "MisterX",
                   "W": 2,
-                  "D": 0,
-                  "L": 4,
+                  "D": 1,
+                  "L": 3,
                   "matches": 6,
                   "win_pct": 33.33333333333333,
-                  "draw_pct": 0.0,
-                  "loss_pct": 66.66666666666666
+                  "draw_pct": 16.666666666666664,
+                  "loss_pct": 50.0
                 }
               ]
             }
