@@ -14,7 +14,7 @@ MIN_H2H_ALERT_MATCHES = 20
 
 
 def empty_record():
-    return {"W": 0, "D": 0, "L": 0}
+    return {"W": 0, "D": 0, "L": 0, "seq": []}
 
 
 def nested_h2h():
@@ -98,7 +98,8 @@ def parse_vs_rivals(file_path):
                 continue
 
             m = re.match(
-                r"^(.*?):\s+(\d+)\s+\(([\d\.]+)%/([\d\.]+)%/([\d\.]+)%\)",
+                r"^(.*?):\s+(\d+)\s+\(([\d\.]+)%/([\d\.]+)%/([\d\.]+)%\)"
+                r"(?:\s+\[([VED]*)\])?$",
                 line
             )
 
@@ -116,11 +117,13 @@ def parse_vs_rivals(file_path):
             wins = round(matches * w_pct / 100)
             draws = round(matches * d_pct / 100)
             losses = matches - wins - draws
+            sequence = m.group(6) or ""
 
             players[current_player][rival] = {
                 "W": wins,
                 "D": draws,
-                "L": losses
+                "L": losses,
+                "seq": list(sequence)
             }
 
     return players
@@ -249,6 +252,9 @@ def add_record(target, source):
     target["D"] += source["D"]
     target["L"] += source["L"]
 
+    if source.get("seq"):
+        target["seq"].extend(source["seq"])
+
 
 def totals_rows(totals):
     rows = []
@@ -298,12 +304,38 @@ def pct(value, total):
     return value / total * 100
 
 
+def consecutive_wins(sequence):
+    streak = 0
+
+    for result in reversed(sequence):
+        if result != "V":
+            break
+
+        streak += 1
+
+    return streak
+
+
+def consecutive_without_loss(sequence):
+    streak = 0
+
+    for result in reversed(sequence):
+        if result == "D":
+            break
+
+        streak += 1
+
+    return streak
+
+
 def matchup_record(rival, stats):
     total = (
         stats["W"]
         + stats["D"]
         + stats["L"]
     )
+
+    sequence = "".join(stats.get("seq", []))
 
     return {
         "rival": rival,
@@ -313,7 +345,12 @@ def matchup_record(rival, stats):
         "matches": total,
         "win_pct": pct(stats["W"], total),
         "draw_pct": pct(stats["D"], total),
-        "loss_pct": pct(stats["L"], total)
+        "loss_pct": pct(stats["L"], total),
+        "seq": sequence,
+        "last5": sequence[-5:],
+        "last10": sequence[-10:],
+        "stk_win": consecutive_wins(sequence),
+        "stk_lose": consecutive_without_loss(sequence)
     }
 
 
@@ -591,6 +628,11 @@ def calculate_h2h_alerts(result):
                     "win_pct": rival["win_pct"],
                     "draw_pct": rival["draw_pct"],
                     "loss_pct": rival["loss_pct"],
+                    "seq": rival.get("seq", ""),
+                    "last5": rival.get("last5", ""),
+                    "last10": rival.get("last10", ""),
+                    "stk_win": rival.get("stk_win", 0),
+                    "stk_lose": rival.get("stk_lose", 0),
                     "signal": signal,
                     "confidence": confidence,
                     "low_sample": rival["matches"] < MIN_H2H_ALERT_MATCHES

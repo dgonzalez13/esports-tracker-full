@@ -164,10 +164,11 @@ def process(matches):
             # vs rivales
             for player, rival, res in [(p1, p2, res1), (p2, p1, res2)]:
                 if rival not in stats[player]["vs"]:
-                    stats[player]["vs"][rival] = {"W": 0, "D": 0, "L": 0}
+                    stats[player]["vs"][rival] = {"W": 0, "D": 0, "L": 0, "seq": []}
 
                 key = "W" if res == "V" else "D" if res == "E" else "L"
                 stats[player]["vs"][rival][key] += 1
+                stats[player]["vs"][rival]["seq"].append(res)
 
         except:
             continue
@@ -205,7 +206,9 @@ def build_df(stats):
             d = round(r["D"] / total * 100, 1)
             l = round(r["L"] / total * 100, 1)
 
-            lines.append(f"{rival}: {total} ({w}%/{d}%/{l}%)")
+            h2h_seq = "".join(r["seq"])
+
+            lines.append(f"{rival}: {total} ({w}%/{d}%/{l}%) [{h2h_seq}]")
 
         vs_text[p] = "\n".join(lines)
 

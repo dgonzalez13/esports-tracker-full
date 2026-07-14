@@ -812,6 +812,9 @@ def render_h2h_alerts(league, alerts, status_lookup):
         "<th>L</th>"
         "<th>Matches</th>"
         "<th>Win%</th>"
+        "<th>Last 10</th>"
+        "<th>STK WIN</th>"
+        "<th>STK LOSE</th>"
         "<th>Signal</th>"
         "<th>Confidence</th>"
         "</tr></thead><tbody>"
@@ -857,6 +860,12 @@ def render_h2h_alerts(league, alerts, status_lookup):
         html.append(f'<td class="num">{text(alert.get("L", ""))}</td>')
         html.append(f'<td class="num">{text(alert.get("matches", ""))}</td>')
         html.append(f'<td class="num">{text(fmt_pct(alert.get("win_pct")))}</td>')
+
+        last10 = " ".join(alert.get("last10", ""))
+        html.append(f'<td class="seq">{text(last10)}</td>')
+        html.append(f'<td class="num">{text(alert.get("stk_win", 0))}</td>')
+        html.append(f'<td class="num">{text(alert.get("stk_lose", 0))}</td>')
+
         html.append(
             '<td>'
             f'<span class="signal-badge {signal_class}">'
