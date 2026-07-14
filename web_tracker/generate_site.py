@@ -213,7 +213,7 @@ def render_page(data, current_streaks):
 </header>
 <main>
     {render_current_streaks(current_streaks)}
-    {render_group_dashboard(data)}
+    {render_group_dashboard(data, current_streaks)}
 </main>
 </body>
 </html>
@@ -721,12 +721,23 @@ def render_streak_panel(league, payload):
     )
 
 
-def render_group_dashboard(data):
+def build_current_status_lookup(current_streaks):
+    lookup = {}
+
+    for league, payload in current_streaks.items():
+        for row in payload.get("rows", []):
+            lookup[(league, row["player"].strip().lower())] = row.get("balance", "")
+
+    return lookup
+
+
+def render_group_dashboard(data, current_streaks):
     leagues = data.get("leagues", {})
+    status_lookup = build_current_status_lookup(current_streaks)
     sections = []
 
     for league, payload in leagues.items():
-        sections.append(render_league_groups(league, payload))
+        sections.append(render_league_groups(league, payload, status_lookup))
 
     return (
         '<section class="dashboard-section">'
@@ -742,7 +753,7 @@ def render_group_dashboard(data):
     )
 
 
-def render_league_groups(league, payload):
+def render_league_groups(league, payload, status_lookup):
     cards = [
         render_group_card(league, payload, group)
         for group in payload.get("groups", [])
@@ -758,14 +769,24 @@ def render_league_groups(league, payload):
         f'{metadata_badge("To", payload.get("data_to", "-"))}'
         "</div>"
         "</div>"
-        + render_h2h_alerts(payload.get("h2h_alerts", []))
+        + render_h2h_alerts(league, payload.get("h2h_alerts", []), status_lookup)
         + f'<div class="cards-grid">{"".join(cards)}</div>'
         "</div>"
     )
 
 
 
-def render_h2h_alerts(alerts):
+def player_with_status(league, player, status_lookup):
+    player_name = str(player or "")
+    status = status_lookup.get((league, player_name.strip().lower()), "")
+
+    if status:
+        return f"{status} {player_name}"
+
+    return player_name
+
+
+def render_h2h_alerts(league, alerts, status_lookup):
     if not alerts:
         return ""
 
@@ -829,8 +850,8 @@ def render_h2h_alerts(alerts):
 
         html.append(f"<tr{row_class}>")
         html.append(f"<td>{text(alert.get('group', ''))}</td>")
-        html.append(f"<td>{text(alert.get('player', ''))}</td>")
-        html.append(f"<td>{text(alert.get('rival', ''))}</td>")
+        html.append(f"<td>{text(player_with_status(league, alert.get('player', ''), status_lookup))}</td>")
+        html.append(f"<td>{text(player_with_status(league, alert.get('rival', ''), status_lookup))}</td>")
         html.append(f'<td class="num">{text(alert.get("W", ""))}</td>')
         html.append(f'<td class="num">{text(alert.get("D", ""))}</td>')
         html.append(f'<td class="num">{text(alert.get("L", ""))}</td>')
