@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "19/07/2026 03:08:06 CEST",
+  "generated_at": "19/07/2026 06:39:55 CEST",
   "league": "EADRIATIC",
   "files_count": 65,
   "data_from": "20260516",
@@ -192,7 +192,7 @@
         "Samuel",
         "Felix"
       ],
-      "target_repr": "{'Samuel', 'VanGogh', 'Felix', 'Dominic', 'Juan'}",
+      "target_repr": "{'Samuel', 'Juan', 'VanGogh', 'Felix', 'Dominic'}",
       "h2h_keys": [
         "Samuel",
         "Juan",
@@ -238,6 +238,11 @@
           "rivals": 2
         },
         {
+          "player": "Juan",
+          "wins": 0,
+          "rivals": 3
+        },
+        {
           "player": "VanGogh",
           "wins": 0,
           "rivals": 4
@@ -250,11 +255,6 @@
         {
           "player": "Dominic",
           "wins": 2,
-          "rivals": 3
-        },
-        {
-          "player": "Juan",
-          "wins": 0,
           "rivals": 3
         }
       ],
@@ -1079,7 +1079,7 @@
             "Lucas",
             "Vendetta"
           ],
-          "target_repr": "{'Kratos', 'Ultrex', 'Baba', 'Lucas', 'Vendetta'}",
+          "target_repr": "{'Baba', 'Kratos', 'Ultrex', 'Vendetta', 'Lucas'}",
           "h2h_keys": [
             "Baba",
             "Vendetta",
@@ -1202,6 +1202,11 @@
           ],
           "dominance": [
             {
+              "player": "Baba",
+              "wins": 1,
+              "rivals": 4
+            },
+            {
               "player": "Kratos",
               "wins": 2,
               "rivals": 4
@@ -1212,18 +1217,13 @@
               "rivals": 4
             },
             {
-              "player": "Baba",
-              "wins": 1,
+              "player": "Vendetta",
+              "wins": 0,
               "rivals": 4
             },
             {
               "player": "Lucas",
               "wins": 1,
-              "rivals": 4
-            },
-            {
-              "player": "Vendetta",
-              "wins": 0,
               "rivals": 4
             }
           ],
@@ -1886,13 +1886,13 @@
             "Carlos",
             "Shaolin"
           ],
-          "target_repr": "{'Carlos', 'Jetli', 'Jose', 'Shaolin', 'Titan'}",
+          "target_repr": "{'Shaolin', 'Jose', 'Titan', 'Jetli', 'Carlos'}",
           "h2h_keys": [
-            "Carlos",
-            "Jetli",
-            "Jose",
             "Shaolin",
-            "Titan"
+            "Jose",
+            "Titan",
+            "Jetli",
+            "Carlos"
           ],
           "coincidencias_5": 2,
           "coincidencias_4": 20,
@@ -2004,17 +2004,12 @@
             {
               "position": 5,
               "player": "Shaolin",
-              "score": -60.85217793125569
+              "score": -60.852177931255696
             }
           ],
           "dominance": [
             {
-              "player": "Carlos",
-              "wins": 0,
-              "rivals": 4
-            },
-            {
-              "player": "Jetli",
+              "player": "Shaolin",
               "wins": 0,
               "rivals": 4
             },
@@ -2024,12 +2019,17 @@
               "rivals": 4
             },
             {
-              "player": "Shaolin",
+              "player": "Titan",
               "wins": 0,
               "rivals": 4
             },
             {
-              "player": "Titan",
+              "player": "Jetli",
+              "wins": 0,
+              "rivals": 4
+            },
+            {
+              "player": "Carlos",
               "wins": 0,
               "rivals": 4
             }
@@ -2074,14 +2074,14 @@
               "weighted_score": 19500.0,
               "best_matchups": [
                 {
-                  "rival": "Jetli",
-                  "win_pct": 42.857142857142854,
-                  "matches": 133
-                },
-                {
                   "rival": "Titan",
                   "win_pct": 42.857142857142854,
                   "matches": 98
+                },
+                {
+                  "rival": "Jetli",
+                  "win_pct": 42.857142857142854,
+                  "matches": 133
                 },
                 {
                   "rival": "Shaolin",
@@ -2090,21 +2090,6 @@
                 }
               ],
               "best_matchup_details": [
-                {
-                  "rival": "Jetli",
-                  "W": 57,
-                  "D": 26,
-                  "L": 50,
-                  "matches": 133,
-                  "win_pct": 42.857142857142854,
-                  "draw_pct": 19.548872180451127,
-                  "loss_pct": 37.59398496240601,
-                  "seq": "DDDVVDVDEVDDVVEDVVDVDDVVD",
-                  "last5": "DDVVD",
-                  "last10": "DVVDVDDVVD",
-                  "stk_win": 0,
-                  "stk_lose": 0
-                },
                 {
                   "rival": "Titan",
                   "W": 42,
@@ -2119,6 +2104,21 @@
                   "last10": "VDDVVVDVDE",
                   "stk_win": 0,
                   "stk_lose": 1
+                },
+                {
+                  "rival": "Jetli",
+                  "W": 57,
+                  "D": 26,
+                  "L": 50,
+                  "matches": 133,
+                  "win_pct": 42.857142857142854,
+                  "draw_pct": 19.548872180451127,
+                  "loss_pct": 37.59398496240601,
+                  "seq": "DDDVVDVDEVDDVVEDVVDVDDVVD",
+                  "last5": "DDVVD",
+                  "last10": "DVVDVDDVVD",
+                  "stk_win": 0,
+                  "stk_lose": 0
                 },
                 {
                   "rival": "Shaolin",
@@ -2877,7 +2877,7 @@
             "Samuel",
             "Felix"
           ],
-          "target_repr": "{'Samuel', 'VanGogh', 'Felix', 'Dominic', 'Juan'}",
+          "target_repr": "{'Samuel', 'Juan', 'VanGogh', 'Felix', 'Dominic'}",
           "h2h_keys": [
             "Samuel",
             "Juan",
@@ -2923,6 +2923,11 @@
               "rivals": 2
             },
             {
+              "player": "Juan",
+              "wins": 0,
+              "rivals": 3
+            },
+            {
               "player": "VanGogh",
               "wins": 0,
               "rivals": 4
@@ -2935,11 +2940,6 @@
             {
               "player": "Dominic",
               "wins": 2,
-              "rivals": 3
-            },
-            {
-              "player": "Juan",
-              "wins": 0,
               "rivals": 3
             }
           ],
