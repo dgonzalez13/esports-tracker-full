@@ -5,12 +5,24 @@ from zoneinfo import ZoneInfo
 import os
 import sys
 from pathlib import Path
+import re
+
+from match_history import (
+    SCHEMA_VERSION,
+    clean_name,
+    name_key,
+    perspective_id,
+    result_pair,
+    update_history,
+    validate_perspective_pair,
+)
 
 BASE = Path(__file__).resolve().parent
 
 BASE_URL = "https://api.gtleagues.com/api/fixtures"
 
 OUTPUT_DIR = BASE / "gt" / "data"
+MATCH_HISTORY_FILE = OUTPUT_DIR / "match_history.jsonl"
 
 HEADERS = {
     "accept": "application/json",
@@ -65,6 +77,102 @@ def get_day_range(date):
 
 def format_date(dt):
     return dt.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
+
+def parse_gt_timestamp(value):
+    """Parse API kickoff, inferring Madrid only when the API omits an offset."""
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("GT kickoff is missing")
+    raw = value.strip()
+    normalized = raw[:-1] + "+00:00" if raw.endswith("Z") else raw
+    parsed = datetime.fromisoformat(normalized)
+    inferred = parsed.tzinfo is None or parsed.utcoffset() is None
+    if inferred:
+        # The existing scraper defines API day boundaries in Europe/Madrid.
+        parsed = parsed.replace(tzinfo=ZoneInfo("Europe/Madrid"))
+        timezone_name = "Europe/Madrid"
+    elif raw.endswith("Z"):
+        timezone_name = "UTC"
+    else:
+        offset = parsed.strftime("%z")
+        timezone_name = f"UTC{offset[:3]}:{offset[3:]}"
+
+    precision = "second" if re.search(r"[T ]\d{2}:\d{2}:\d{2}", raw) else "minute"
+    timestamp = parsed.isoformat(timespec="seconds" if precision == "second" else "minutes")
+    timestamp_utc = parsed.astimezone(ZoneInfo("UTC")).isoformat(
+        timespec="seconds" if precision == "second" else "minutes"
+    ).replace("+00:00", "Z")
+    return timestamp, timestamp_utc, precision, timezone_name, inferred
+
+
+def build_history_records(matches, source_file):
+    records = []
+    seen_ids = set()
+
+    for match in matches:
+        try:
+            native_value = match["id"]
+            if native_value is None:
+                continue
+            native_id = str(native_value).strip()
+            home = next(p for p in match["participants"] if p.get("side") == "home")
+            away = next(p for p in match["participants"] if p.get("side") == "away")
+            home_player = clean_name(home["participant"]["player"]["nickname"])
+            away_player = clean_name(away["participant"]["player"]["nickname"])
+            home_score = match["result"]["stats"]["home_score"]
+            away_score = match["result"]["stats"]["away_score"]
+            if isinstance(home_score, bool) or isinstance(away_score, bool):
+                continue
+            home_score = int(home_score)
+            away_score = int(away_score)
+            if home_score < 0 or away_score < 0 or not native_id:
+                continue
+            timestamp, timestamp_utc, precision, timezone_name, inferred = parse_gt_timestamp(
+                match["kickoff"]
+            )
+        except (KeyError, TypeError, ValueError, StopIteration):
+            continue
+
+        match_id = f"gt:{native_id}"
+        if match_id in seen_ids:
+            continue
+        seen_ids.add(match_id)
+        home_result, away_result = result_pair(home_score, away_score)
+        common = {
+            "schema_version": SCHEMA_VERSION,
+            "league": "GT",
+            "match_id": match_id,
+            "native_match_id": native_id,
+            "timestamp": timestamp,
+            "timestamp_utc": timestamp_utc,
+            "timestamp_precision": precision,
+            "timezone": timezone_name,
+            "timezone_inferred": inferred,
+            "home_score": home_score,
+            "away_score": away_score,
+            "source_type": "gt_api",
+            "source_file": source_file,
+            "data_quality": "inferred" if inferred else "complete",
+        }
+        pair = []
+        for player, rival, home_away, result in (
+            (home_player, away_player, "home", home_result),
+            (away_player, home_player, "away", away_result),
+        ):
+            pair.append({
+                **common,
+                "perspective_id": perspective_id(match_id, player),
+                "player": player,
+                "player_key": name_key(player),
+                "rival": rival,
+                "rival_key": name_key(rival),
+                "result": result,
+                "home_away": home_away,
+            })
+        validate_perspective_pair(pair)
+        records.extend(pair)
+
+    return records
 
 
 # -------------------------
@@ -262,6 +370,13 @@ def process_date(date, show_results=False):
     matches = fetch_day(date)
 
     print(f"Partidos encontrados: {len(matches)}")
+
+    history_records = build_history_records(
+        matches,
+        source_file=f"gt_api:{date.strftime('%Y-%m-%d')}",
+    )
+    update_history(MATCH_HISTORY_FILE, history_records)
+    print(f"Perspectivas guardadas en historial: {len(history_records)}")
 
     stats = process(matches)
 
