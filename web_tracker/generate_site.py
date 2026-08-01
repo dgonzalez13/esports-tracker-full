@@ -14,7 +14,7 @@ from coincident_matches import (
     build_selected_player_refs,
     calculate_all_coincident_pairs,
 )
-from current_streaks_v2 import calculate_current_streaks_v2
+from current_streaks_v2 import load_current_streaks_v2
 from history_query import load_all_history
 from match_history import name_key
 from selected_players import load_tracked_players, tracked_player_keys
@@ -1310,9 +1310,7 @@ def main():
     selected_players = build_selected_player_refs(tracked_players)
     records = load_all_history()
     coincident_pairs = calculate_all_coincident_pairs(records, selected_players)
-    current_streaks_v2 = calculate_current_streaks_v2(
-        records, tracked_players, reference_time=datetime.now(timezone.utc)
-    )
+    current_streaks_v2 = load_current_streaks_v2(TRACKED_PLAYERS_FILE)
     html = render_page(
         group_analysis, current_streaks, coincident_pairs, current_streaks_v2
     )
