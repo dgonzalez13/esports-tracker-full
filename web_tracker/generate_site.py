@@ -804,26 +804,22 @@ def render_h2h_alerts(league, alerts, status_lookup):
     html.append('<div class="table-wrap"><table>')
     html.append(
         "<thead><tr>"
-        "<th>Group</th>"
-        "<th>Player</th>"
-        "<th>Rival</th>"
-        "<th>W</th>"
-        "<th>D</th>"
-        "<th>L</th>"
-        "<th>Matches</th>"
-        "<th>Win%</th>"
-        "<th>Last 10</th>"
-        "<th>STK WIN</th>"
-        "<th>STK LOSE</th>"
-        "<th>Signal</th>"
-        "<th>Confidence</th>"
+        "<th>Player</th><th>Rival</th>"
+        "<th>W</th><th>D</th><th>L</th><th>Matches</th>"
+        "<th>Win %</th><th>Last 20</th><th>Win % L20</th>"
+        "<th>Trend</th><th>Signal</th><th>Sample</th>"
         "</tr></thead><tbody>"
     )
 
     for alert in alerts:
         confidence = alert.get("confidence", "")
         signal = alert.get("signal", "")
-        is_low_sample = alert.get("low_sample", confidence == "LOW SAMPLE")
+        recent_status = alert.get("recent_sample_status")
+        is_low_sample = (
+            recent_status == "LOW_SAMPLE"
+            if recent_status is not None
+            else alert.get("low_sample", confidence == "LOW SAMPLE")
+        )
 
         row_class = ' class="low-sample-row"' if is_low_sample else ""
 
@@ -833,26 +829,33 @@ def render_h2h_alerts(league, alerts, status_lookup):
             else "signal-watch"
         )
 
-        confidence_class = (
-            "confidence-low"
-            if is_low_sample
-            else "confidence-high"
-        )
-
         signal_label = (
             "🟢 STRONG"
             if signal == "STRONG"
             else "🟡 WATCH"
         )
 
-        confidence_label = (
-            "⚠️ LOW SAMPLE"
-            if is_low_sample
-            else "✅ HIGH"
+        recent_available = alert.get("recent_available", 0)
+        recent_window = alert.get("recent_window", 20)
+        has_recent = bool(recent_available)
+        recent_sequence = alert.get("recent_sequence", "") if has_recent else "—"
+        recent_pct = fmt_pct(alert.get("recent_win_pct")) if has_recent else "—"
+        trend = alert.get("recent_trend") if has_recent else None
+        delta = alert.get("recent_win_pct_delta", 0.0)
+        trend_symbols = {"UP": "↑", "STABLE": "→", "DOWN": "↓"}
+        trend_label = (
+            f"{trend_symbols[trend]} {float(delta):+.2f}"
+            if trend in trend_symbols
+            else "—"
         )
+        if not has_recent:
+            sample_label = "—"
+        elif alert.get("recent_window_complete", recent_available >= recent_window):
+            sample_label = f"{recent_available}/{recent_window}"
+        else:
+            sample_label = f"{recent_available}/{recent_window} · LOW"
 
         html.append(f"<tr{row_class}>")
-        html.append(f"<td>{text(alert.get('group', ''))}</td>")
         html.append(f"<td>{text(player_with_status(league, alert.get('player', ''), status_lookup))}</td>")
         html.append(f"<td>{text(player_with_status(league, alert.get('rival', ''), status_lookup))}</td>")
         html.append(f'<td class="num">{text(alert.get("W", ""))}</td>')
@@ -861,10 +864,9 @@ def render_h2h_alerts(league, alerts, status_lookup):
         html.append(f'<td class="num">{text(alert.get("matches", ""))}</td>')
         html.append(f'<td class="num">{text(fmt_pct(alert.get("win_pct")))}</td>')
 
-        last10 = " ".join(alert.get("last10", ""))
-        html.append(f'<td class="seq">{text(last10)}</td>')
-        html.append(f'<td class="num">{text(alert.get("stk_win", 0))}</td>')
-        html.append(f'<td class="num">{text(alert.get("stk_lose", 0))}</td>')
+        html.append(f'<td class="seq">{text(recent_sequence)}</td>')
+        html.append(f'<td class="num">{text(recent_pct)}</td>')
+        html.append(f'<td>{text(trend_label)}</td>')
 
         html.append(
             '<td>'
@@ -875,8 +877,8 @@ def render_h2h_alerts(league, alerts, status_lookup):
         )
         html.append(
             '<td>'
-            f'<span class="confidence-badge {confidence_class}">'
-            f"{text(confidence_label)}"
+            '<span class="confidence-badge">'
+            f"{text(sample_label)}"
             "</span>"
             "</td>"
         )

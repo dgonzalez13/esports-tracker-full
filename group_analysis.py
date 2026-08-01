@@ -6,11 +6,16 @@ import json
 import sys
 import re
 
+from h2h_analysis import calculate_recent_h2h
+from history_query import load_all_history
+
 
 BASE = Path(__file__).resolve().parent
 JSON_OUTPUT = BASE / "group_analysis.json"
 H2H_ALERT_THRESHOLD = 48
 MIN_H2H_ALERT_MATCHES = 20
+H2H_RECENT_WINDOW = 20
+H2H_TREND_THRESHOLD = 5.0
 
 
 def empty_record():
@@ -590,7 +595,25 @@ def calculate_h2h_matrix(target, h2h):
     return rows
 
 
-def calculate_h2h_alerts(result):
+def _recent_trend(delta, available):
+    if available == 0:
+        return None
+    if delta >= H2H_TREND_THRESHOLD:
+        return "UP"
+    if delta <= -H2H_TREND_THRESHOLD:
+        return "DOWN"
+    return "STABLE"
+
+
+def _recent_sample_status(available):
+    if available == 0:
+        return "EMPTY"
+    if available < H2H_RECENT_WINDOW:
+        return "LOW_SAMPLE"
+    return "COMPLETE"
+
+
+def calculate_h2h_alerts(result, recent_records=()):
     alerts = []
 
     for group in result["groups"]:
@@ -616,6 +639,20 @@ def calculate_h2h_alerts(result):
                     else "WATCH"
                 )
 
+                recent = calculate_recent_h2h(
+                    recent_records,
+                    player=player,
+                    rival=rival["rival"],
+                    window=H2H_RECENT_WINDOW,
+                    league=result["league"],
+                )
+                recent_available = recent["available"]
+                recent_delta = (
+                    round(recent["win_pct"] - rival["win_pct"], 2)
+                    if recent_available
+                    else 0.0
+                )
+
                 alerts.append({
                     "group_id": group["group_id"],
                     "group": group["label"],
@@ -635,7 +672,20 @@ def calculate_h2h_alerts(result):
                     "stk_lose": rival.get("stk_lose", 0),
                     "signal": signal,
                     "confidence": confidence,
-                    "low_sample": rival["matches"] < MIN_H2H_ALERT_MATCHES
+                    "low_sample": rival["matches"] < MIN_H2H_ALERT_MATCHES,
+                    "recent_window": H2H_RECENT_WINDOW,
+                    "recent_available": recent_available,
+                    "recent_sequence": recent["sequence"],
+                    "recent_wins": recent["wins"],
+                    "recent_draws": recent["draws"],
+                    "recent_losses": recent["losses"],
+                    "recent_win_pct": recent["win_pct"],
+                    "recent_draw_pct": recent["draw_pct"],
+                    "recent_loss_pct": recent["loss_pct"],
+                    "recent_win_pct_delta": recent_delta,
+                    "recent_trend": _recent_trend(recent_delta, recent_available),
+                    "recent_sample_status": _recent_sample_status(recent_available),
+                    "recent_window_complete": recent_available >= H2H_RECENT_WINDOW,
                 })
 
     alerts.sort(
@@ -1124,7 +1174,7 @@ def json_ready_group(group):
     }
 
 
-def json_ready_league(result):
+def json_ready_league(result, recent_records=()):
     return {
         "league": result["league"],
         "files_count": result["files_count"],
@@ -1133,7 +1183,7 @@ def json_ready_league(result):
         "files": result["files"],
         "h2h_alert_threshold": H2H_ALERT_THRESHOLD,
         "min_h2h_alert_matches": MIN_H2H_ALERT_MATCHES,
-        "h2h_alerts": calculate_h2h_alerts(result),
+        "h2h_alerts": calculate_h2h_alerts(result, recent_records),
         "groups": [
             json_ready_group(group)
             for group in result["groups"]
@@ -1141,7 +1191,7 @@ def json_ready_league(result):
     }
 
 
-def write_json(result, all_results):
+def write_json(result, all_results, recent_records=()):
     payload = {
         "schema_version": 2,
         "generated_at": datetime.now(
@@ -1154,13 +1204,13 @@ def write_json(result, all_results):
         "files": result["files"],
         "h2h_alert_threshold": H2H_ALERT_THRESHOLD,
         "min_h2h_alert_matches": MIN_H2H_ALERT_MATCHES,
-        "h2h_alerts": calculate_h2h_alerts(result),
+        "h2h_alerts": calculate_h2h_alerts(result, recent_records),
         "groups": [
             json_ready_group(group)
             for group in result["groups"]
         ],
         "leagues": {
-            league: json_ready_league(league_result)
+            league: json_ready_league(league_result, recent_records)
             for league, league_result in all_results.items()
         }
     }
@@ -1180,6 +1230,7 @@ def write_json(result, all_results):
 
 def main():
     groups = load_groups()
+    recent_records = load_all_history()
 
     if len(sys.argv) < 2:
         print("Uso: python group_analysis.py [GT|EADRIATIC]")
@@ -1199,7 +1250,7 @@ def main():
 
     result = all_results[selected_leagues[0]]
 
-    write_json(result, all_results)
+    write_json(result, all_results, recent_records)
 
     for item in selected_leagues:
         render_result(all_results[item])
