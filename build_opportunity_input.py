@@ -3,6 +3,9 @@ from collections import defaultdict
 import pandas as pd
 import sys
 
+from match_history import name_key
+from selected_players import load_tracked_players, tracked_player_keys
+
 BASE = Path(__file__).resolve().parent
 
 TRACKED_ONLY = True
@@ -14,31 +17,8 @@ if len(sys.argv) > 1 and sys.argv[1].lower() == "all":
 # TRACKED PLAYERS
 # --------------------------------------------------
 
-tracked_players = set()
-
 tracked_file = BASE / "tracked_players.txt"
-
-if tracked_file.exists():
-
-    with open(tracked_file, "r", encoding="utf-8") as f:
-
-        for line in f:
-
-            line = line.strip()
-
-            if not line:
-                continue
-
-            if "|" in line:
-
-                league, player = line.split("|", 1)
-
-                tracked_players.add(
-                    (
-                        league.strip().upper(),
-                        player.strip().lower()
-                    )
-                )
+tracked_players = tracked_player_keys(load_tracked_players(tracked_file))
 
 
 # --------------------------------------------------
@@ -261,7 +241,7 @@ for league, seqs in player_sequences.items():
             and tracked_players
             and (
                 league.upper(),
-                player.lower()
+                name_key(player)
             ) not in tracked_players
         ):
             continue

@@ -8,6 +8,7 @@ import re
 
 from h2h_analysis import calculate_recent_h2h
 from history_query import load_all_history
+from selected_players import load_tracked_players
 
 
 BASE = Path(__file__).resolve().parent
@@ -35,30 +36,18 @@ def load_groups():
 
     current = []
 
-    with open(
-        BASE / "tracked_players.txt",
-        "r",
-        encoding="utf-8"
-    ) as f:
+    for tracked_player in load_tracked_players(BASE / "tracked_players.txt"):
 
-        for line in f:
+        league = tracked_player["league"]
+        current.append(tracked_player["player"])
 
-            line = line.strip()
+        if len(current) == 5:
 
-            if not line:
-                continue
+            groups[league].append(
+                current.copy()
+            )
 
-            league, player = line.split("|")
-
-            current.append(player)
-
-            if len(current) == 5:
-
-                groups[league].append(
-                    current.copy()
-                )
-
-                current = []
+            current = []
 
     return groups
 
