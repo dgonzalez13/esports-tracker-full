@@ -1,7 +1,7 @@
 import json
 from html import escape
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 import sys
 from zoneinfo import ZoneInfo
 
@@ -14,6 +14,7 @@ from coincident_matches import (
     build_selected_player_refs,
     calculate_all_coincident_pairs,
 )
+from current_streaks_v2 import calculate_current_streaks_v2
 from history_query import load_all_history
 from match_history import name_key
 from selected_players import load_tracked_players, tracked_player_keys
@@ -188,7 +189,7 @@ def metric(label, value, hint=None):
     )
 
 
-def render_page(data, current_streaks, coincident_pairs=None):
+def render_page(data, current_streaks, coincident_pairs=None, current_streaks_v2=None):
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -210,6 +211,7 @@ def render_page(data, current_streaks, coincident_pairs=None):
 </header>
 <main>
     {render_current_streaks(current_streaks)}
+    {render_current_streaks_v2(current_streaks_v2 or {})}
     {render_coincident_matches(coincident_pairs or [])}
     {render_group_dashboard(data, current_streaks)}
 </main>
@@ -647,12 +649,71 @@ def render_current_streaks(current_streaks):
         '<section class="dashboard-section">'
         '<div class="section-head">'
         "<div>"
-        "<h2>Current Streaks</h2>"
+        "<h2>Current Streaks — Legacy</h2>"
         '<p class="section-subtitle">Latest daily player files, with tracked player highlights and current win/loss streaks.</p>'
         "</div>"
         "</div>"
         f'<div class="streak-grid">{"".join(panels)}</div>'
         "</section>"
+    )
+
+
+def _session_local(value):
+    try:
+        parsed = datetime.fromisoformat(str(value))
+    except (TypeError, ValueError):
+        return "—"
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(ZoneInfo("Europe/Madrid")).strftime("%d/%m %H:%M")
+
+
+def render_session_streak_panel(league, rows):
+    table_rows = []
+    for row in rows:
+        status = "ACTIVE" if row.get("active") else "INACTIVE"
+        if row.get("balance"):
+            status += f' · {row["balance"]}'
+        streak = (
+            f'{row.get("current_streak_result")} × {row.get("current_streak")}'
+            if row.get("current_streak_result") and row.get("current_streak")
+            else "—"
+        )
+        table_rows.append([
+            row.get("player", ""), status,
+            _session_local(row.get("start_local")), _session_local(row.get("end_local")),
+            f'{row.get("duration_minutes", 0)} min', row.get("wins", 0),
+            row.get("draws", 0), row.get("losses", 0), row.get("played", 0),
+            row.get("last_10", ""), streak,
+        ])
+    body = render_table(
+        ["PLAYER", "STATUS", "START", "END", "DURATION", "W", "D", "L",
+         "PLAYED", "LAST 10", "STREAK"],
+        table_rows, numeric_columns={4, 5, 6, 7, 8}, seq_columns={9},
+    )
+    return (
+        '<article class="streak-panel"><div class="league-head">'
+        f'<h3>{text(LEAGUES.get(league, {}).get("title", league))}</h3>'
+        f'{metadata_badge("Visible sessions", len(rows))}</div>{body}</article>'
+    )
+
+
+def render_current_streaks_v2(payload):
+    leagues = payload.get("leagues", {})
+    panels = [
+        render_session_streak_panel(league, leagues.get(league, []))
+        for league in ("GT", "EADRIATIC")
+    ]
+    return (
+        '<section class="dashboard-section">'
+        '<div class="section-head"><div><h2>Current Streaks V2 — Sessions</h2>'
+        '<p class="section-subtitle">Latest normalized session for each tracked player.</p>'
+        '</div><div class="badge-row">'
+        f'{metadata_badge("Session gap", f"{payload.get("session_gap_minutes", 90)} min")}'
+        f'{metadata_badge("Active window", f"{payload.get("active_window_minutes", 180)} min")}'
+        f'{metadata_badge("Source", "match_history.jsonl")}'
+        '</div></div><div class="streak-grid">'
+        f'{"".join(panels)}</div></section>'
     )
 
 
@@ -1249,7 +1310,12 @@ def main():
     selected_players = build_selected_player_refs(tracked_players)
     records = load_all_history()
     coincident_pairs = calculate_all_coincident_pairs(records, selected_players)
-    html = render_page(group_analysis, current_streaks, coincident_pairs)
+    current_streaks_v2 = calculate_current_streaks_v2(
+        records, tracked_players, reference_time=datetime.now(timezone.utc)
+    )
+    html = render_page(
+        group_analysis, current_streaks, coincident_pairs, current_streaks_v2
+    )
 
     write_html(html)
 
