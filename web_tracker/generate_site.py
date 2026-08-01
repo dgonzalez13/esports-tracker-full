@@ -1,9 +1,24 @@
 import json
 from html import escape
 from pathlib import Path
+from datetime import datetime
+import sys
+from zoneinfo import ZoneInfo
 
 
 BASE = Path(__file__).resolve().parent.parent
+if str(BASE) not in sys.path:
+    sys.path.insert(0, str(BASE))
+
+from coincident_matches import (
+    build_selected_player_refs,
+    calculate_all_coincident_pairs,
+)
+from history_query import load_all_history
+from match_history import name_key
+from selected_players import load_tracked_players, tracked_player_keys
+
+
 DOCS_DIR = BASE / "docs"
 GROUP_ANALYSIS_FILE = BASE / "group_analysis.json"
 TRACKED_PLAYERS_FILE = BASE / "tracked_players.txt"
@@ -25,26 +40,6 @@ def load_group_analysis():
         return json.load(f)
 
 
-def load_tracked_players():
-    tracked = set()
-
-    with open(TRACKED_PLAYERS_FILE, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-
-            if not line:
-                continue
-
-            league, player = line.split("|", 1)
-
-            tracked.add((
-                league.strip().upper(),
-                player.strip().lower()
-            ))
-
-    return tracked
-    
-    
 def latest_stats_file(folder):
     files = list(folder.glob("*player_stats.txt"))
 
@@ -113,9 +108,11 @@ def calculate_streaks(seq):
     return stk_win, stk_lose
     
     
-def load_current_streaks():
+def load_current_streaks(tracked_players=None):
     streaks = {}
-    tracked_players = load_tracked_players()
+    if tracked_players is None:
+        tracked_players = load_tracked_players(TRACKED_PLAYERS_FILE)
+    tracked_keys = tracked_player_keys(tracked_players)
 
     for league, config in LEAGUES.items():
         stats_file = latest_stats_file(config["data_dir"])
@@ -136,14 +133,14 @@ def load_current_streaks():
                 "stk_win": stk_win,
                 "stk_lose": stk_lose,
                 "seq": row["seq"],
-                "tracked": (league, row["player"].lower()) in tracked_players,
+                "tracked": (league, name_key(row["player"])) in tracked_keys,
                 "balance":
                     "🟢"
-                    if (league, row["player"].lower()) in tracked_players
+                    if (league, name_key(row["player"])) in tracked_keys
                     and row["W"] >= row["D"] + row["L"]
                     else
                     "🔴"
-                    if (league, row["player"].lower()) in tracked_players
+                    if (league, name_key(row["player"])) in tracked_keys
                     and row["L"] >= row["W"] + row["D"]
                     else
                     "",
@@ -191,7 +188,7 @@ def metric(label, value, hint=None):
     )
 
 
-def render_page(data, current_streaks):
+def render_page(data, current_streaks, coincident_pairs=None):
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -213,6 +210,7 @@ def render_page(data, current_streaks):
 </header>
 <main>
     {render_current_streaks(current_streaks)}
+    {render_coincident_matches(coincident_pairs or [])}
     {render_group_dashboard(data, current_streaks)}
 </main>
 </body>
@@ -655,6 +653,62 @@ def render_current_streaks(current_streaks):
         "</div>"
         f'<div class="streak-grid">{"".join(panels)}</div>'
         "</section>"
+    )
+
+
+def _madrid_time(value):
+    try:
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return "—"
+    return parsed.astimezone(ZoneInfo("Europe/Madrid")).strftime("%d/%m/%Y %H:%M")
+
+
+def render_coincident_pair(pair):
+    matches = sorted(pair.get("matches", []), key=lambda row: row.get("pair_order", 0))
+    title = (
+        f'{pair.get("player_a_league", "")} · {pair.get("player_a", "")} ↔ '
+        f'{pair.get("player_b_league", "")} · {pair.get("player_b", "")}'
+    )
+    maximum = pair.get("max_gap_minutes", 30)
+    if not matches:
+        body = f'<p class="section-subtitle">No coincident matches within {text(maximum)} minutes.</p>'
+    else:
+        rows = [[
+            row.get("pair_order", ""),
+            row.get("player_a", ""), _madrid_time(row.get("player_a_timestamp")),
+            row.get("player_a_result", ""), row.get("player_a_rival", ""),
+            row.get("player_b", ""), _madrid_time(row.get("player_b_timestamp")),
+            row.get("player_b_result", ""), row.get("player_b_rival", ""),
+            f'{row.get("gap_minutes", 0)} min',
+        ] for row in matches]
+        body = render_table(
+            ["#", "Player A", "Time A", "Result A", "Opponent A",
+             "Player B", "Time B", "Result B", "Opponent B", "Gap"],
+            rows, numeric_columns={0, 9},
+        )
+    return (
+        '<article class="streak-panel">'
+        '<div class="league-head">'
+        f'<h3>{text(title)}</h3><div class="badge-row">'
+        f'{metadata_badge("Maximum gap", f"{maximum} min")}'
+        f'{metadata_badge("Matches", len(matches))}</div></div>'
+        f'{body}</article>'
+    )
+
+
+def render_coincident_matches(pairs):
+    content = (
+        ''.join(render_coincident_pair(pair) for pair in pairs)
+        if pairs
+        else '<p class="section-subtitle">No selected player combinations.</p>'
+    )
+    return (
+        '<section class="dashboard-section">'
+        '<div class="section-head"><div><h2>Coincident Matches</h2>'
+        '<p class="section-subtitle">Chronological matches within the configured gap.</p>'
+        '</div></div><div class="streak-grid">'
+        f'{content}</div></section>'
     )
 
 
@@ -1190,8 +1244,12 @@ def write_html(html):
 
 def main():
     group_analysis = load_group_analysis()
-    current_streaks = load_current_streaks()
-    html = render_page(group_analysis, current_streaks)
+    tracked_players = load_tracked_players(TRACKED_PLAYERS_FILE)
+    current_streaks = load_current_streaks(tracked_players)
+    selected_players = build_selected_player_refs(tracked_players)
+    records = load_all_history()
+    coincident_pairs = calculate_all_coincident_pairs(records, selected_players)
+    html = render_page(group_analysis, current_streaks, coincident_pairs)
 
     write_html(html)
 
