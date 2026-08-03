@@ -4,7 +4,10 @@ on:
   workflow_dispatch:
 
   schedule:
-    - cron: '7,22,37,52 * * * *'
+    - cron: '45 23 * * *'
+      timezone: 'Europe/Madrid'
+    - cron: '58 23 * * *'
+      timezone: 'Europe/Madrid'
 
 jobs:
   update:
