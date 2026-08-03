@@ -10,6 +10,7 @@ def session(**overrides):
         "player": "Lucas", "league": "GT", "start_local": "2026-08-01T22:00:00+02:00",
         "end_local": "2026-08-02T01:55:00+02:00", "duration_minutes": 235,
         "wins": 3, "draws": 1, "losses": 2, "played": 6, "last_10": "VEDVVD",
+        "win_pct": 50.0, "loss_pct": 33.33,
         "current_streak_result": "D", "current_streak": 1, "active": True,
         "balance": "🟢", "tracked": True,
     }
@@ -19,7 +20,7 @@ def session(**overrides):
 
 def payload(rows=None):
     return {
-        "session_gap_minutes": 90, "active_window_minutes": 180,
+        "operational_window_hours": 8,
         "leagues": {"GT": rows if rows is not None else [session()], "EADRIATIC": []},
     }
 
@@ -34,47 +35,43 @@ class CurrentStreaksV2RenderingTests(unittest.TestCase):
 
     def test_v2_title_audit_badges_columns_and_no_legacy_streaks(self):
         html = render_current_streaks_v2(payload())
-        self.assertIn("Current Streaks V2 — Sessions", html)
-        self.assertIn("Session gap: 90 min", html)
-        self.assertIn("Active window: 180 min", html)
+        self.assertIn("Current Streaks V2 — Last 8 Hours", html)
+        self.assertIn("Window: 8 hours", html)
         self.assertIn("Source: match_history.jsonl", html)
-        for header in ("PLAYER", "STATUS", "START", "END", "DURATION", "W", "D", "L", "PLAYED", "LAST 10", "STREAK"):
+        for header in ("PLAYER", "W", "D", "L", "PLAYED", "LAST 10", "STREAK"):
             self.assertIn(f"<th>{header}</th>", html)
         self.assertNotIn("STK WIN", html)
         self.assertNotIn("STK LOSE", html)
 
     def test_midnight_duration_last10_streak_active_and_balance(self):
         html = render_current_streaks_v2(payload())
-        self.assertIn("01/08 22:00", html)
-        self.assertIn("02/08 01:55", html)
-        self.assertIn("235 min", html)
         self.assertIn("VEDVVD", html)
         self.assertIn("D × 1", html)
-        self.assertIn("ACTIVE · 🟢", html)
+        self.assertIn("🟢 Lucas", html)
 
     def test_inactive_red_escaped_name_and_no_star(self):
         html = render_current_streaks_v2(payload([session(player="<Lucas>", active=False, balance="🔴")]))
-        self.assertIn("INACTIVE · 🔴", html)
+        self.assertIn("🔴 &lt;Lucas&gt;", html)
         self.assertIn("&lt;Lucas&gt;", html)
         self.assertNotIn("<Lucas>", html)
         self.assertNotIn("*", html)
 
     def test_empty_payload_is_safe(self):
         html = render_current_streaks_v2({})
-        self.assertIn("Current Streaks V2 — Sessions", html)
-        self.assertEqual(html.count("Visible sessions: 0"), 2)
+        self.assertIn("Current Streaks V2 — Last 8 Hours", html)
+        self.assertEqual(html.count("Visible players: 0"), 2)
 
     def test_page_order_and_legacy_signature_compatibility(self):
         html = render_page({}, {}, [], payload())
         positions = [
             html.index("Current Streaks — Legacy"),
-            html.index("Current Streaks V2 — Sessions"),
+            html.index("Current Streaks V2 — Last 8 Hours"),
             html.index("Coincident Matches"),
             html.index("<h2>Group Analysis</h2>"),
         ]
         self.assertEqual(positions, sorted(positions))
         legacy_call = render_page({}, {})
-        self.assertIn("Current Streaks V2 — Sessions", legacy_call)
+        self.assertIn("Current Streaks V2 — Last 8 Hours", legacy_call)
         self.assertIn("Coincident Matches", legacy_call)
 
 

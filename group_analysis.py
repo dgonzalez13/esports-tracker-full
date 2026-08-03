@@ -35,20 +35,31 @@ def load_groups():
     }
 
     current = []
+    current_league = None
 
     for tracked_player in load_tracked_players(BASE / "tracked_players.txt"):
 
         league = tracked_player["league"]
-        current.append(tracked_player["player"])
+        # A league change starts a separate positional block.
+        if current and league != current_league:
+            real_players = [player for player in current if player]
+            if real_players:
+                groups[current_league].append(real_players)
+            current = []
+        current_league = league
+        current.append("" if tracked_player.get("empty_slot") else tracked_player["player"])
 
         if len(current) == 5:
-
-            groups[league].append(
-                current.copy()
-            )
+            real_players = [player for player in current if player]
+            if real_players:
+                groups[league].append(real_players)
 
             current = []
 
+    if current:
+        real_players = [player for player in current if player]
+        if real_players:
+            groups[current_league].append(real_players)
     return groups
 
 
@@ -740,6 +751,7 @@ def calculate_head_to_head(target, h2h):
 
 def analyze_group(target_list, files):
     target = set(target_list)
+    target_size = len(target)
 
     totals_5 = defaultdict(empty_record)
     totals_4 = defaultdict(empty_record)
@@ -776,7 +788,7 @@ def analyze_group(target_list, files):
 
             overlap = target & group
 
-            if len(overlap) == 5:
+            if target_size and len(overlap) == target_size:
 
                 count_5 += 1
 
@@ -797,7 +809,7 @@ def analyze_group(target_list, files):
                             players[player][rival]
                         )
 
-            elif len(overlap) >= 4:
+            elif target_size > 1 and len(overlap) >= target_size - 1:
 
                 count_4 += 1
 
@@ -846,6 +858,9 @@ def analyze_group(target_list, files):
         "h2h_keys": h2h_keys,
         "count_5": count_5,
         "count_4": count_4,
+        "target_size": target_size,
+        "exact_target_matches": count_5,
+        "near_target_matches": count_4,
         "totals_5": totals_rows(totals_5),
         "totals_4": totals_rows(totals_4),
         "power_ranking": power_ranking,
@@ -1079,6 +1094,9 @@ def json_ready_group(group):
         "h2h_keys": group["h2h_keys"],
         "coincidencias_5": group["count_5"],
         "coincidencias_4": group["count_4"],
+        "target_size": group["target_size"],
+        "exact_target_matches": group["exact_target_matches"],
+        "near_target_matches": group["near_target_matches"],
         "totals_5": group["totals_5"],
         "totals_4": group["totals_4"],
         "power_ranking": [

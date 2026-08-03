@@ -9,6 +9,7 @@ from typing import Any, Iterable, TypedDict
 
 from history_query import EADRIATIC_HISTORY_PATH, GT_HISTORY_PATH, load_all_history
 from selected_players import TrackedPlayer, load_tracked_players
+from current_streaks_v2 import DEFAULT_OPERATIONAL_WINDOW_HOURS, calculate_operational_snapshot
 
 
 DEFAULT_MAX_COINCIDENT_GAP_MINUTES = 30
@@ -18,6 +19,16 @@ class SelectedPlayerRef(TypedDict):
     league: str
     player: str
     player_key: str
+
+
+class AutomaticPlayerRef(SelectedPlayerRef, total=False):
+    indicator: str
+    wins: int
+    draws: int
+    losses: int
+    played: int
+    win_pct: float
+    loss_pct: float
 
 
 class CoincidentMatch(TypedDict):
@@ -35,6 +46,7 @@ class CoincidentMatch(TypedDict):
     player_b_rival: str
     gap_minutes: int
     pair_order: int
+    confirmation: str | None
 
 
 class CoincidentPairAnalysis(TypedDict):
@@ -42,13 +54,16 @@ class CoincidentPairAnalysis(TypedDict):
     player_a: str
     player_b_league: str
     player_b: str
+    player_a_indicator: str
+    player_b_indicator: str
     max_gap_minutes: int
+    operational_window_hours: int
     matches: list[CoincidentMatch]
 
 
 __all__ = [
     "DEFAULT_MAX_COINCIDENT_GAP_MINUTES", "SelectedPlayerRef", "CoincidentMatch",
-    "CoincidentPairAnalysis", "build_selected_player_refs", "generate_selected_pairs",
+    "CoincidentPairAnalysis", "build_selected_player_refs", "build_automatic_player_refs", "generate_selected_pairs",
     "player_match_history", "match_coincident_pair", "calculate_all_coincident_pairs",
     "load_all_coincident_pairs",
 ]
@@ -72,7 +87,23 @@ def build_selected_player_refs(tracked_players: Iterable[TrackedPlayer]) -> list
             continue
         ref: SelectedPlayerRef = {
             "league": league.strip().upper(), "player": player.strip(), "player_key": player_key,
+            "indicator": "NONE", "wins": 0, "draws": 0, "losses": 0,
+            "played": 0, "win_pct": 0.0, "loss_pct": 0.0,
         }
+        found.setdefault(_ref_key(ref), ref)
+    return sorted((dict(row) for row in found.values()), key=_ref_sort)
+
+
+def build_automatic_player_refs(snapshot) -> list[SelectedPlayerRef]:
+    """Select eligible players from the shared operational snapshot."""
+    found = {}
+    for row in snapshot:
+        if row.get("played", 0) < 5 or row.get("indicator") not in {"GREEN", "RED"}:
+            continue
+        ref = {key: row[key] for key in (
+            "league", "player", "player_key", "indicator", "wins", "draws",
+            "losses", "played", "win_pct", "loss_pct",
+        )}
         found.setdefault(_ref_key(ref), ref)
     return sorted((dict(row) for row in found.values()), key=_ref_sort)
 
@@ -158,6 +189,17 @@ def _match_histories(player_a, history_a, player_b, history_b, max_gap_minutes):
     paired.sort(key=lambda item: (item[0], _event_sort(item[1]), _event_sort(item[2])))
     rows: list[CoincidentMatch] = []
     for order, (_, a, b, gap) in enumerate(paired, 1):
+        indicator_a, indicator_b = player_a.get("indicator", "NONE"), player_b.get("indicator", "NONE")
+        confirms_a = (indicator_a == "GREEN" and a["result"] == "V") or (indicator_a == "RED" and a["result"] == "D")
+        confirms_b = (indicator_b == "GREEN" and b["result"] == "V") or (indicator_b == "RED" and b["result"] == "D")
+        confirmation = None
+        if confirms_a and confirms_b:
+            if indicator_a == indicator_b == "GREEN":
+                confirmation = "BOTH_GREEN"
+            elif indicator_a == indicator_b == "RED":
+                confirmation = "BOTH_RED"
+            elif {indicator_a, indicator_b} == {"GREEN", "RED"}:
+                confirmation = "MIXED"
         rows.append({
             "player_a_league": player_a["league"], "player_a": player_a["player"],
             "player_a_match_id": str(a.get("match_id", "")), "player_a_timestamp": _utc_z(a),
@@ -165,12 +207,15 @@ def _match_histories(player_a, history_a, player_b, history_b, max_gap_minutes):
             "player_b_league": player_b["league"], "player_b": player_b["player"],
             "player_b_match_id": str(b.get("match_id", "")), "player_b_timestamp": _utc_z(b),
             "player_b_result": b["result"], "player_b_rival": str(b.get("rival", "")),
-            "gap_minutes": gap, "pair_order": order,
+            "gap_minutes": gap, "pair_order": order, "confirmation": confirmation,
         })
     return {
         "player_a_league": player_a["league"], "player_a": player_a["player"],
         "player_b_league": player_b["league"], "player_b": player_b["player"],
-        "max_gap_minutes": max_gap_minutes, "matches": rows,
+        "player_a_indicator": player_a.get("indicator", "NONE"),
+        "player_b_indicator": player_b.get("indicator", "NONE"),
+        "max_gap_minutes": max_gap_minutes, "operational_window_hours": DEFAULT_OPERATIONAL_WINDOW_HOURS,
+        "matches": rows,
     }
 
 
@@ -181,10 +226,19 @@ def match_coincident_pair(player_a, matches_a, player_b, matches_b, *, max_gap_m
     return _match_histories(player_a, history_a, player_b, history_b, max_gap_minutes)
 
 
-def calculate_all_coincident_pairs(records, selected_players, *, max_gap_minutes=DEFAULT_MAX_COINCIDENT_GAP_MINUTES):
+def calculate_all_coincident_pairs(records, selected_players=None, *, max_gap_minutes=DEFAULT_MAX_COINCIDENT_GAP_MINUTES, snapshot=None, reference_time=None, window_hours=DEFAULT_OPERATIONAL_WINDOW_HOURS):
     max_gap_minutes = _validate_gap(max_gap_minutes)
-    pairs = generate_selected_pairs(selected_players)
     materialized = list(records)
+    if snapshot is not None:
+        selected_players = build_automatic_player_refs(snapshot)
+    selected_players = selected_players or []
+    pairs = generate_selected_pairs(selected_players)
+    if reference_time is not None:
+        reference = reference_time if reference_time.tzinfo else reference_time.replace(tzinfo=timezone.utc)
+        reference = reference.astimezone(timezone.utc)
+        from datetime import timedelta
+        lower = reference - timedelta(hours=window_hours)
+        materialized = [row for row in materialized if _timestamp(row) is not None and lower <= _timestamp(row) <= reference]
     histories = {}
     for player in {(_ref_key(p)): p for pair in pairs for p in pair}.values():
         histories[_ref_key(player)] = player_match_history(materialized, player)
@@ -196,6 +250,7 @@ def calculate_all_coincident_pairs(records, selected_players, *, max_gap_minutes
 
 def load_all_coincident_pairs(tracked_players_path: str | Path, gt_path=GT_HISTORY_PATH, eadriatic_path=EADRIATIC_HISTORY_PATH, *, max_gap_minutes=DEFAULT_MAX_COINCIDENT_GAP_MINUTES):
     tracked = load_tracked_players(tracked_players_path)
-    selected = build_selected_player_refs(tracked)
     records = load_all_history(gt_path, eadriatic_path)
-    return calculate_all_coincident_pairs(records, selected, max_gap_minutes=max_gap_minutes)
+    reference = datetime.now(timezone.utc)
+    snapshot = calculate_operational_snapshot(records, tracked, reference_time=reference)
+    return calculate_all_coincident_pairs(records, snapshot=snapshot, reference_time=reference, max_gap_minutes=max_gap_minutes)

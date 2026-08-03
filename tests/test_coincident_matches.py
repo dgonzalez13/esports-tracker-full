@@ -26,9 +26,16 @@ class ModelsSelectionAndHistoryTests(unittest.TestCase):
     def test_models_have_exact_shapes(self):
         self.assertEqual(cm.SelectedPlayerRef.__required_keys__, frozenset({"league", "player", "player_key"}))
         self.assertEqual(cm.CoincidentPairAnalysis.__required_keys__, frozenset({
-            "player_a_league", "player_a", "player_b_league", "player_b", "max_gap_minutes", "matches",
+            "player_a_league", "player_a", "player_b_league", "player_b",
+            "player_a_indicator", "player_b_indicator", "max_gap_minutes",
+            "operational_window_hours", "matches",
         }))
-        self.assertEqual(len(cm.CoincidentMatch.__required_keys__), 14)
+        self.assertEqual(cm.CoincidentMatch.__required_keys__, frozenset({
+            "player_a_league", "player_a", "player_a_match_id", "player_a_timestamp",
+            "player_a_result", "player_a_rival", "player_b_league", "player_b",
+            "player_b_match_id", "player_b_timestamp", "player_b_result",
+            "player_b_rival", "gap_minutes", "pair_order", "confirmation",
+        }))
 
     def test_build_refs_and_all_three_combinations(self):
         tracked = [
@@ -120,7 +127,7 @@ class MatchingTests(unittest.TestCase):
         tracked = root / f"{uuid.uuid4().hex}.txt"
         try:
             tracked.write_text("GT|A*\nGT|B*\n", encoding="utf-8")
-            self.assertEqual(len(cm.load_all_coincident_pairs(tracked, root / "a", root / "b")), 1)
+            self.assertEqual(len(cm.load_all_coincident_pairs(tracked, root / "a", root / "b")), 0)
         finally:
             if tracked.exists():
                 tracked.unlink()

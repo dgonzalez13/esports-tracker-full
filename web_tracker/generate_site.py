@@ -11,10 +11,12 @@ if str(BASE) not in sys.path:
     sys.path.insert(0, str(BASE))
 
 from coincident_matches import (
-    build_selected_player_refs,
     calculate_all_coincident_pairs,
 )
-from current_streaks_v2 import load_current_streaks_v2
+from current_streaks_v2 import (
+    DEFAULT_OPERATIONAL_WINDOW_HOURS, build_current_streaks_v2_payload,
+    calculate_operational_snapshot,
+)
 from history_query import load_all_history
 from match_history import name_key
 from selected_players import load_tracked_players, tracked_player_keys
@@ -632,6 +634,9 @@ summary {
         flex-direction: column;
     }
 }
+.coincident-both-green { background: #dcfce7; }
+.coincident-both-red { background: #fee2e2; }
+.coincident-mixed-confirmed { background: #fef3c7; }
 </style>"""
 
 
@@ -671,30 +676,26 @@ def _session_local(value):
 def render_session_streak_panel(league, rows):
     table_rows = []
     for row in rows:
-        status = "ACTIVE" if row.get("active") else "INACTIVE"
-        if row.get("balance"):
-            status += f' · {row["balance"]}'
+        player = f'{row.get("balance", "")} {row.get("player", "")}'.strip()
         streak = (
             f'{row.get("current_streak_result")} × {row.get("current_streak")}'
             if row.get("current_streak_result") and row.get("current_streak")
             else "—"
         )
         table_rows.append([
-            row.get("player", ""), status,
-            _session_local(row.get("start_local")), _session_local(row.get("end_local")),
-            f'{row.get("duration_minutes", 0)} min', row.get("wins", 0),
-            row.get("draws", 0), row.get("losses", 0), row.get("played", 0),
+            player, f'{row.get("wins", 0)} ({row.get("win_pct", 0):.2f}%)',
+            row.get("draws", 0), f'{row.get("losses", 0)} ({row.get("loss_pct", 0):.2f}%)',
+            row.get("played", 0),
             row.get("last_10", ""), streak,
         ])
     body = render_table(
-        ["PLAYER", "STATUS", "START", "END", "DURATION", "W", "D", "L",
-         "PLAYED", "LAST 10", "STREAK"],
-        table_rows, numeric_columns={4, 5, 6, 7, 8}, seq_columns={9},
+        ["PLAYER", "W", "D", "L", "PLAYED", "LAST 10", "STREAK"],
+        table_rows, numeric_columns={1, 2, 3, 4}, seq_columns={5},
     )
     return (
         '<article class="streak-panel"><div class="league-head">'
         f'<h3>{text(LEAGUES.get(league, {}).get("title", league))}</h3>'
-        f'{metadata_badge("Visible sessions", len(rows))}</div>{body}</article>'
+        f'{metadata_badge("Visible players", len(rows))}</div>{body}</article>'
     )
 
 
@@ -706,12 +707,13 @@ def render_current_streaks_v2(payload):
     ]
     return (
         '<section class="dashboard-section">'
-        '<div class="section-head"><div><h2>Current Streaks V2 — Sessions</h2>'
-        '<p class="section-subtitle">Latest normalized session for each tracked player.</p>'
+        '<div class="section-head"><div><h2>Current Streaks V2 — Last 8 Hours</h2>'
+        '<p class="section-subtitle">All valid normalized matches in the operational window.</p>'
         '</div><div class="badge-row">'
-        f'{metadata_badge("Session gap", f"{payload.get("session_gap_minutes", 90)} min")}'
-        f'{metadata_badge("Active window", f"{payload.get("active_window_minutes", 180)} min")}'
+        f'{metadata_badge("Window", f"{payload.get("operational_window_hours", 8)} hours")}'
         f'{metadata_badge("Source", "match_history.jsonl")}'
+        f'{metadata_badge("Minimum matches for automatic selection", 5)}'
+        f'{metadata_badge("Indicator threshold", "50%")}'
         '</div></div><div class="streak-grid">'
         f'{"".join(panels)}</div></section>'
     )
@@ -728,8 +730,8 @@ def _madrid_time(value):
 def render_coincident_pair(pair):
     matches = sorted(pair.get("matches", []), key=lambda row: row.get("pair_order", 0))
     title = (
-        f'{pair.get("player_a_league", "")} · {pair.get("player_a", "")} ↔ '
-        f'{pair.get("player_b_league", "")} · {pair.get("player_b", "")}'
+        f'{pair.get("player_a_league", "")} · {pair.get("player_a", "")} [{pair.get("player_a_indicator", "NONE")}] ↔ '
+        f'{pair.get("player_b_league", "")} · {pair.get("player_b", "")} [{pair.get("player_b_indicator", "NONE")}]'
     )
     maximum = pair.get("max_gap_minutes", 30)
     if not matches:
@@ -742,16 +744,22 @@ def render_coincident_pair(pair):
             row.get("player_b", ""), _madrid_time(row.get("player_b_timestamp")),
             row.get("player_b_result", ""), row.get("player_b_rival", ""),
             f'{row.get("gap_minutes", 0)} min',
+            {"BOTH_GREEN": "BOTH GREEN", "BOTH_RED": "BOTH RED", "MIXED": "MIXED"}.get(row.get("confirmation"), "—"),
         ] for row in matches]
+        row_classes = [
+            {"BOTH_GREEN": "coincident-both-green", "BOTH_RED": "coincident-both-red", "MIXED": "coincident-mixed-confirmed"}.get(row.get("confirmation"), "")
+            for row in matches
+        ]
         body = render_table(
             ["#", "Player A", "Time A", "Result A", "Opponent A",
-             "Player B", "Time B", "Result B", "Opponent B", "Gap"],
-            rows, numeric_columns={0, 9},
+             "Player B", "Time B", "Result B", "Opponent B", "Gap", "Confirmation"],
+            rows, numeric_columns={0, 9}, row_classes=row_classes,
         )
     return (
         '<article class="streak-panel">'
         '<div class="league-head">'
         f'<h3>{text(title)}</h3><div class="badge-row">'
+        f'{metadata_badge("Window", f"{pair.get("operational_window_hours", 8)} hours")}'
         f'{metadata_badge("Maximum gap", f"{maximum} min")}'
         f'{metadata_badge("Matches", len(matches))}</div></div>'
         f'{body}</article>'
@@ -762,11 +770,11 @@ def render_coincident_matches(pairs):
     content = (
         ''.join(render_coincident_pair(pair) for pair in pairs)
         if pairs
-        else '<p class="section-subtitle">No selected player combinations.</p>'
+        else '<p class="section-subtitle">No automatic player combinations in the last 8 hours.</p>'
     )
     return (
         '<section class="dashboard-section">'
-        '<div class="section-head"><div><h2>Coincident Matches</h2>'
+        '<div class="section-head"><div><h2>Coincident Matches — Last 8 Hours</h2>'
         '<p class="section-subtitle">Chronological matches within the configured gap.</p>'
         '</div></div><div class="streak-grid">'
         f'{content}</div></section>'
@@ -1262,14 +1270,14 @@ def render_extra_details(group):
     )
 
 
-def render_table(headers, rows, numeric_columns=None, seq_columns=None):
+def render_table(headers, rows, numeric_columns=None, seq_columns=None, row_classes=None):
     numeric_columns = numeric_columns or set()
     seq_columns = seq_columns or set()
 
     header_html = "".join(f"<th>{text(header)}</th>" for header in headers)
     row_html = []
 
-    for row in rows:
+    for row_index, row in enumerate(rows):
         cells = []
 
         for index, value in enumerate(row):
@@ -1284,7 +1292,9 @@ def render_table(headers, rows, numeric_columns=None, seq_columns=None):
             class_attr = f' class="{" ".join(classes)}"' if classes else ""
             cells.append(f"<td{class_attr}>{text(value)}</td>")
 
-        row_html.append(f"<tr>{''.join(cells)}</tr>")
+        row_class = row_classes[row_index] if row_classes and row_index < len(row_classes) else ""
+        class_attr = f' class="{text(row_class)}"' if row_class else ""
+        row_html.append(f"<tr{class_attr}>{''.join(cells)}</tr>")
 
     return (
         '<div class="table-wrap">'
@@ -1307,10 +1317,14 @@ def main():
     group_analysis = load_group_analysis()
     tracked_players = load_tracked_players(TRACKED_PLAYERS_FILE)
     current_streaks = load_current_streaks(tracked_players)
-    selected_players = build_selected_player_refs(tracked_players)
     records = load_all_history()
-    coincident_pairs = calculate_all_coincident_pairs(records, selected_players)
-    current_streaks_v2 = load_current_streaks_v2(TRACKED_PLAYERS_FILE)
+    reference_time = datetime.now(timezone.utc)
+    snapshot = calculate_operational_snapshot(records, tracked_players, reference_time=reference_time)
+    current_streaks_v2 = build_current_streaks_v2_payload(snapshot, reference_time=reference_time)
+    coincident_pairs = calculate_all_coincident_pairs(
+        records, snapshot=snapshot, reference_time=reference_time,
+        window_hours=DEFAULT_OPERATIONAL_WINDOW_HOURS,
+    )
     html = render_page(
         group_analysis, current_streaks, coincident_pairs, current_streaks_v2
     )

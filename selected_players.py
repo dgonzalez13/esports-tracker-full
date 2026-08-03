@@ -16,13 +16,17 @@ class TrackedPlayer(TypedDict):
     selected: bool
 
 
+class TrackedPlayerEntry(TrackedPlayer, total=False):
+    empty_slot: bool
+
+
 __all__ = [
-    "TrackedPlayer", "parse_tracked_player_line", "load_tracked_players",
+    "TrackedPlayer", "TrackedPlayerEntry", "parse_tracked_player_line", "load_tracked_players",
     "tracked_player_keys", "selected_player_keys",
 ]
 
 
-def parse_tracked_player_line(line: str) -> TrackedPlayer | None:
+def parse_tracked_player_line(line: str) -> TrackedPlayerEntry | None:
     if not isinstance(line, str):
         raise ValueError("tracked player line must be a string")
     value = line.strip()
@@ -39,21 +43,23 @@ def parse_tracked_player_line(line: str) -> TrackedPlayer | None:
     if not league:
         raise ValueError("tracked player league must not be empty")
     if not player:
-        raise ValueError("tracked player name must not be empty")
+        return {
+            "league": league, "player": "", "player_key": "",
+            "tracked": False, "selected": False, "empty_slot": True,
+        }
     return {
         "league": league,
         "player": player,
         "player_key": name_key(player),
-        "tracked": True,
-        "selected": selected,
+        "tracked": True, "selected": selected, "empty_slot": False,
     }
 
 
-def load_tracked_players(path: str | Path) -> list[TrackedPlayer]:
+def load_tracked_players(path: str | Path) -> list[TrackedPlayerEntry]:
     source = Path(path)
     if not source.exists():
         return []
-    players: list[TrackedPlayer] = []
+    players: list[TrackedPlayerEntry] = []
     positions: dict[tuple[str, str], int] = {}
     with source.open("r", encoding="utf-8") as handle:
         for line_number, line in enumerate(handle, 1):
@@ -62,6 +68,10 @@ def load_tracked_players(path: str | Path) -> list[TrackedPlayer]:
             except ValueError as exc:
                 raise ValueError(f"invalid tracked player at line {line_number}: {exc}") from exc
             if entry is None:
+                continue
+            # Empty entries are positions, not identities: never deduplicate them.
+            if entry.get("empty_slot"):
+                players.append(entry)
                 continue
             identity = (entry["league"], entry["player_key"])
             if identity in positions:

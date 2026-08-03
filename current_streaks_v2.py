@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable, TypedDict
 from zoneinfo import ZoneInfo
@@ -14,6 +14,7 @@ from selected_players import TrackedPlayer, load_tracked_players
 
 DEFAULT_SESSION_GAP_MINUTES = 90
 DEFAULT_ACTIVE_WINDOW_MINUTES = 180
+DEFAULT_OPERATIONAL_WINDOW_HOURS = 8
 MADRID = ZoneInfo("Europe/Madrid")
 
 
@@ -53,6 +54,8 @@ class CurrentStreaksV2Payload(TypedDict):
 
 __all__ = [
     "DEFAULT_SESSION_GAP_MINUTES", "DEFAULT_ACTIVE_WINDOW_MINUTES",
+    "DEFAULT_OPERATIONAL_WINDOW_HOURS", "calculate_operational_snapshot",
+    "build_current_streaks_v2_payload",
     "PlayerSession", "CurrentStreaksV2Payload", "player_session_history",
     "split_player_sessions", "calculate_player_session",
     "calculate_current_streaks_v2", "load_current_streaks_v2",
@@ -188,11 +191,43 @@ def calculate_current_streaks_v2(
     records, tracked_players, *, reference_time,
     session_gap_minutes=DEFAULT_SESSION_GAP_MINUTES,
     active_window_minutes=DEFAULT_ACTIVE_WINDOW_MINUTES,
+    window_hours=DEFAULT_OPERATIONAL_WINDOW_HOURS,
 ):
     gap = _positive_minutes(session_gap_minutes, "session_gap_minutes")
     active_window = _positive_minutes(active_window_minutes, "active_window_minutes")
     reference = _utc(reference_time)
     materialized = list(records)
+    snapshot = calculate_operational_snapshot(
+        materialized, tracked_players, reference_time=reference,
+        window_hours=window_hours,
+    )
+    payload = build_current_streaks_v2_payload(snapshot, reference_time=reference, window_hours=window_hours)
+    # Deprecated payload keys remain for callers from TASK-007.
+    payload["session_gap_minutes"] = gap
+    payload["active_window_minutes"] = active_window
+    # Preserve useful session numbering without allowing sessions to affect stats.
+    for rows in payload["leagues"].values():
+        for row in rows:
+            history = player_session_history(materialized, row["league"], row["player"])
+            row["session_number"] = len(split_player_sessions(history, session_gap_minutes=gap))
+    return payload
+
+
+def _positive_hours(value: int) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise ValueError("window_hours must be an integer greater than zero")
+    return value
+
+
+def calculate_operational_snapshot(
+    records, tracked_players, *, reference_time,
+    window_hours=DEFAULT_OPERATIONAL_WINDOW_HOURS,
+):
+    """Return immutable per-player statistics for one bounded UTC window."""
+    reference = _utc(reference_time)
+    hours = _positive_hours(window_hours)
+    lower = reference - timedelta(hours=hours)
+    materialized = [dict(row) for row in records if isinstance(row, dict)]
     identities = {}
     for row in tracked_players:
         if not row.get("tracked"):
@@ -201,26 +236,56 @@ def calculate_current_streaks_v2(
         if not all(isinstance(value, str) and value.strip() for value in (league, key, player)):
             continue
         identities.setdefault((league.strip().upper(), key), row)
-    leagues = {"GT": [], "EADRIATIC": []}
+    snapshot = []
     for (league, key), row in identities.items():
-        leagues.setdefault(league, [])
         history = player_session_history(materialized, league, row["player"])
-        sessions = split_player_sessions(history, session_gap_minutes=gap)
-        if not sessions:
+        history = [event for event in history if lower <= _record_time(event) <= reference]
+        if not history:
             continue
-        leagues[league].append(calculate_player_session(
-            sessions[-1], league=league, player=row["player"], player_key=key,
-            session_number=len(sessions), tracked=True, reference_time=reference,
-            active_window_minutes=active_window,
-        ))
+        sequence = "".join(event["result"] for event in history)
+        wins, draws, losses = sequence.count("V"), sequence.count("E"), sequence.count("D")
+        played = len(sequence)
+        streak_result = sequence[-1]
+        streak = 0
+        for result in reversed(sequence):
+            if result != streak_result:
+                break
+            streak += 1
+        indicator = "GREEN" if wins >= draws + losses else (
+            "RED" if losses >= wins + draws else "NONE"
+        )
+        snapshot.append({
+            "league": league, "player": row["player"], "player_key": key,
+            "wins": wins, "draws": draws, "losses": losses, "played": played,
+            "win_pct": round(wins / played * 100, 2),
+            "draw_pct": round(draws / played * 100, 2),
+            "loss_pct": round(losses / played * 100, 2),
+            "sequence": sequence, "last_10": sequence[-10:],
+            "current_streak_result": streak_result, "current_streak": streak,
+            "balance": "🟢" if indicator == "GREEN" else ("🔴" if indicator == "RED" else ""),
+            "indicator": indicator, "tracked": True,
+        })
+    snapshot.sort(key=lambda row: (
+        row["league"], -row["wins"], -row["win_pct"], -row["played"],
+        row["player"].casefold(), row["player_key"],
+    ))
+    return snapshot
+
+
+def build_current_streaks_v2_payload(snapshot, *, reference_time, window_hours=DEFAULT_OPERATIONAL_WINDOW_HOURS):
+    reference = _utc(reference_time)
+    hours = _positive_hours(window_hours)
+    leagues = {"GT": [], "EADRIATIC": []}
+    for source in snapshot:
+        row = dict(source)
+        league = str(row.get("league", "")).upper()
+        if not league:
+            continue
+        leagues.setdefault(league, []).append(row)
     for rows in leagues.values():
-        rows.sort(key=lambda row: (
-            not row["active"], -_record_time({"timestamp_utc": row["end_timestamp"]}).timestamp(),
-            row["player"].casefold(),
-        ))
+        rows.sort(key=lambda row: (-row["wins"], -row["win_pct"], -row["played"], row["player"].casefold()))
     return {
-        "generated_at": _z(reference), "session_gap_minutes": gap,
-        "active_window_minutes": active_window, "leagues": leagues,
+        "generated_at": _z(reference), "operational_window_hours": hours, "leagues": leagues,
     }
 
 
@@ -229,6 +294,7 @@ def load_current_streaks_v2(
     eadriatic_path=EADRIATIC_HISTORY_PATH, *, reference_time=None,
     session_gap_minutes=DEFAULT_SESSION_GAP_MINUTES,
     active_window_minutes=DEFAULT_ACTIVE_WINDOW_MINUTES,
+    window_hours=DEFAULT_OPERATIONAL_WINDOW_HOURS,
 ):
     reference = _utc(reference_time or datetime.now(timezone.utc))
     tracked = load_tracked_players(tracked_players_path)
@@ -237,4 +303,5 @@ def load_current_streaks_v2(
         records, tracked, reference_time=reference,
         session_gap_minutes=session_gap_minutes,
         active_window_minutes=active_window_minutes,
+        window_hours=window_hours,
     )

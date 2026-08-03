@@ -26,9 +26,12 @@ class SelectedPlayersTests(unittest.TestCase):
         self.assertIsNone(parse_tracked_player_line("  \n"))
 
     def test_invalid_lines_raise_clear_errors(self):
-        for value in ("Lucas", "|Lucas", "GT|", "GT| *"):
+        for value in ("Lucas", "|Lucas"):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 parse_tracked_player_line(value)
+        for value in ("GT|", "GT| *"):
+            with self.subTest(value=value):
+                self.assertTrue(parse_tracked_player_line(value)["empty_slot"])
 
     def test_load_deduplicates_promotes_selection_and_preserves_order(self):
         path = Path(__file__).parent / ".tmp" / f"{uuid.uuid4().hex}.txt"
