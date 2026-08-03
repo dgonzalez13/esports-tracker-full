@@ -11,6 +11,7 @@ if str(BASE) not in sys.path:
     sys.path.insert(0, str(BASE))
 
 from coincident_matches import (
+    MAX_AUTOMATIC_CANDIDATES,
     calculate_all_coincident_pairs,
 )
 from current_streaks_v2 import (
@@ -770,6 +771,9 @@ def render_coincident_pair(pair):
 
 
 def render_coincident_matches(pairs):
+    eligible_players = getattr(pairs, "eligible_players", 0)
+    selected_candidates = getattr(pairs, "selected_candidates", 0)
+    candidate_limit = getattr(pairs, "candidate_limit", MAX_AUTOMATIC_CANDIDATES)
     content = (
         ''.join(render_coincident_pair(pair) for pair in pairs)
         if pairs
@@ -779,6 +783,10 @@ def render_coincident_matches(pairs):
         '<section class="dashboard-section">'
         '<div class="section-head"><div><h2>Coincident Matches — Last 8 Hours</h2>'
         '<p class="section-subtitle">Chronological matches within the configured gap.</p>'
+        '</div><div class="badge-row">'
+        f'{metadata_badge("Eligible players", eligible_players)}'
+        f'{metadata_badge("Selected candidates", selected_candidates)}'
+        f'{metadata_badge("Candidate limit", candidate_limit)}'
         '</div></div><div class="streak-grid">'
         f'{content}</div></section>'
     )

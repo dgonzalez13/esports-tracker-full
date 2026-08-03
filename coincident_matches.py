@@ -13,6 +13,17 @@ from current_streaks_v2 import DEFAULT_OPERATIONAL_WINDOW_HOURS, calculate_opera
 
 
 DEFAULT_MAX_COINCIDENT_GAP_MINUTES = 30
+MAX_AUTOMATIC_CANDIDATES = 8
+
+
+class CoincidentPairResults(list):
+    """List-compatible pair collection carrying automatic-selection metadata."""
+
+    def __init__(self, values=(), *, eligible_players=0, selected_candidates=0):
+        super().__init__(values)
+        self.eligible_players = eligible_players
+        self.selected_candidates = selected_candidates
+        self.candidate_limit = MAX_AUTOMATIC_CANDIDATES
 
 
 class SelectedPlayerRef(TypedDict):
@@ -62,7 +73,8 @@ class CoincidentPairAnalysis(TypedDict):
 
 
 __all__ = [
-    "DEFAULT_MAX_COINCIDENT_GAP_MINUTES", "SelectedPlayerRef", "CoincidentMatch",
+    "DEFAULT_MAX_COINCIDENT_GAP_MINUTES", "MAX_AUTOMATIC_CANDIDATES",
+    "CoincidentPairResults", "SelectedPlayerRef", "CoincidentMatch",
     "CoincidentPairAnalysis", "build_selected_player_refs", "build_automatic_player_refs", "generate_selected_pairs",
     "player_match_history", "match_coincident_pair", "calculate_all_coincident_pairs",
     "load_all_coincident_pairs",
@@ -94,8 +106,15 @@ def build_selected_player_refs(tracked_players: Iterable[TrackedPlayer]) -> list
     return sorted((dict(row) for row in found.values()), key=_ref_sort)
 
 
-def build_automatic_player_refs(snapshot) -> list[SelectedPlayerRef]:
-    """Select eligible players from the shared operational snapshot."""
+def _automatic_candidate_sort(row):
+    relevant_pct = row["win_pct"] if row["indicator"] == "GREEN" else row["loss_pct"]
+    return (
+        -(relevant_pct - 50.0), -row["played"], -relevant_pct,
+        row["league"], row["player"].casefold(), row["player_key"],
+    )
+
+
+def _eligible_automatic_player_refs(snapshot) -> list[SelectedPlayerRef]:
     found = {}
     for row in snapshot:
         if row.get("played", 0) < 5 or row.get("indicator") not in {"GREEN", "RED"}:
@@ -105,7 +124,12 @@ def build_automatic_player_refs(snapshot) -> list[SelectedPlayerRef]:
             "losses", "played", "win_pct", "loss_pct",
         )}
         found.setdefault(_ref_key(ref), ref)
-    return sorted((dict(row) for row in found.values()), key=_ref_sort)
+    return sorted((dict(row) for row in found.values()), key=_automatic_candidate_sort)
+
+
+def build_automatic_player_refs(snapshot) -> list[SelectedPlayerRef]:
+    """Return the strongest eligible automatic candidates, capped deterministically."""
+    return _eligible_automatic_player_refs(snapshot)[:MAX_AUTOMATIC_CANDIDATES]
 
 
 def generate_selected_pairs(selected_players: Iterable[SelectedPlayerRef]) -> list[tuple[SelectedPlayerRef, SelectedPlayerRef]]:
@@ -229,9 +253,13 @@ def match_coincident_pair(player_a, matches_a, player_b, matches_b, *, max_gap_m
 def calculate_all_coincident_pairs(records, selected_players=None, *, max_gap_minutes=DEFAULT_MAX_COINCIDENT_GAP_MINUTES, snapshot=None, reference_time=None, window_hours=DEFAULT_OPERATIONAL_WINDOW_HOURS):
     max_gap_minutes = _validate_gap(max_gap_minutes)
     materialized = list(records)
+    eligible_count = 0
     if snapshot is not None:
-        selected_players = build_automatic_player_refs(snapshot)
+        eligible_players = _eligible_automatic_player_refs(snapshot)
+        eligible_count = len(eligible_players)
+        selected_players = eligible_players[:MAX_AUTOMATIC_CANDIDATES]
     selected_players = selected_players or []
+    selected_count = len(selected_players)
     pairs = generate_selected_pairs(selected_players)
     if reference_time is not None:
         reference = reference_time if reference_time.tzinfo else reference_time.replace(tzinfo=timezone.utc)
@@ -242,10 +270,14 @@ def calculate_all_coincident_pairs(records, selected_players=None, *, max_gap_mi
     histories = {}
     for player in {(_ref_key(p)): p for pair in pairs for p in pair}.values():
         histories[_ref_key(player)] = player_match_history(materialized, player)
-    return [
+    analyses = [
         _match_histories(a, histories[_ref_key(a)], b, histories[_ref_key(b)], max_gap_minutes)
         for a, b in pairs
     ]
+    return CoincidentPairResults(
+        analyses, eligible_players=eligible_count,
+        selected_candidates=selected_count,
+    )
 
 
 def load_all_coincident_pairs(tracked_players_path: str | Path, gt_path=GT_HISTORY_PATH, eadriatic_path=EADRIATIC_HISTORY_PATH, *, max_gap_minutes=DEFAULT_MAX_COINCIDENT_GAP_MINUTES):

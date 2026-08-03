@@ -33,7 +33,7 @@ class OperationalSnapshotTests(unittest.TestCase):
         green = next(row for row in snapshot if row["player"] == "Green")
         self.assertEqual((green["played"], green["indicator"]), (6, "GREEN"))
         refs = build_automatic_player_refs(snapshot)
-        self.assertEqual([row["indicator"] for row in refs], ["GREEN", "RED"])
+        self.assertEqual([row["indicator"] for row in refs], ["RED", "GREEN"])
         pairs = calculate_all_coincident_pairs(rows, snapshot=snapshot, reference_time=now)
         self.assertTrue(all(row["confirmation"] in {"MIXED", None} for row in pairs[0]["matches"]))
 
