@@ -14,7 +14,8 @@ def tracked(name, league="GT"):
 
 
 def event(name, result, when, index, league="GT"):
-    return {"league": league, "player": name, "player_key": name_key(name), "result": result,
+    return {"league": league, "player": name, "player_key": name_key(name),
+            "rival": "Opponent", "rival_key": name_key("Opponent"), "result": result,
             "timestamp_utc": when.isoformat().replace("+00:00", "Z"), "match_id": str(index), "perspective_id": str(index)}
 
 

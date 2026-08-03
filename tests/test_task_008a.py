@@ -32,7 +32,7 @@ class Task008AOperationalExclusionTests(unittest.TestCase):
         self.assertEqual(snapshot, [])
         self.assertEqual(build_automatic_player_refs(snapshot), [])
 
-    def test_h2h_excludes_principal_but_keeps_excluded_rival(self):
+    def test_h2h_excludes_principal_and_excluded_rival(self):
         result = {
             "league": "GT",
             "groups": [{"group_id": "g", "label": "Fox / Lucas", "h2h_matrix": [
@@ -42,8 +42,9 @@ class Task008AOperationalExclusionTests(unittest.TestCase):
         }
         alerts = group_analysis.calculate_h2h_alerts(
             result, operational_players={("GT", "fox")},
+            excluded_keys={("GT", "lucas")},
         )
-        self.assertEqual([(row["player"], row["rival"]) for row in alerts], [("Fox", "Lucas")])
+        self.assertEqual(alerts, [])
 
 
 if __name__ == "__main__":

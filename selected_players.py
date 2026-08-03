@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Iterable, TypedDict
+from typing import Any, Iterable, TypedDict
 
 from match_history import name_key
 
@@ -24,7 +24,7 @@ class TrackedPlayerEntry(TrackedPlayer, total=False):
 __all__ = [
     "TrackedPlayer", "TrackedPlayerEntry", "parse_tracked_player_line", "load_tracked_players",
     "tracked_player_keys", "bettable_player_keys", "excluded_player_keys",
-    "selected_player_keys",
+    "selected_player_keys", "is_operational_record",
 ]
 
 
@@ -107,3 +107,24 @@ def excluded_player_keys(players: Iterable[TrackedPlayer]) -> set[tuple[str, str
 
 def selected_player_keys(players: Iterable[TrackedPlayer]) -> set[tuple[str, str]]:
     return {(row["league"], row["player_key"]) for row in players if row.get("selected")}
+
+
+def is_operational_record(
+    record: Any, excluded_keys: set[tuple[str, str]] | None = None,
+) -> bool:
+    """Return whether a normalized perspective is safe for operational use."""
+    if not isinstance(record, dict):
+        return False
+    league = record.get("league")
+    player_key = record.get("player_key")
+    rival_key = record.get("rival_key")
+    if not all(isinstance(value, str) and value.strip() for value in (
+        league, player_key, rival_key,
+    )):
+        return False
+    league = league.strip().upper()
+    excluded = excluded_keys or set()
+    return (
+        (league, player_key) not in excluded
+        and (league, rival_key) not in excluded
+    )

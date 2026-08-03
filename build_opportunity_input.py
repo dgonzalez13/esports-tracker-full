@@ -4,7 +4,11 @@ import pandas as pd
 import sys
 
 from match_history import name_key
-from selected_players import bettable_player_keys, load_tracked_players
+from history_query import load_all_history
+from selected_players import (
+    bettable_player_keys, excluded_player_keys, is_operational_record,
+    load_tracked_players,
+)
 
 BASE = Path(__file__).resolve().parent
 
@@ -18,7 +22,9 @@ if len(sys.argv) > 1 and sys.argv[1].lower() == "all":
 # --------------------------------------------------
 
 tracked_file = BASE / "tracked_players.txt"
-tracked_players = bettable_player_keys(load_tracked_players(tracked_file))
+tracked_entries = load_tracked_players(tracked_file)
+tracked_players = bettable_player_keys(tracked_entries)
+excluded_keys = excluded_player_keys(tracked_entries)
 
 
 # --------------------------------------------------
@@ -84,41 +90,18 @@ def parse_file(file_path):
 # BUILD SEQUENCES
 # --------------------------------------------------
 
-player_sequences = {}
-
-leagues = [
-    (
-        "GT",
-        BASE / "gt" / "data",
-        "*_player_stats.txt"
-    ),
-    (
-        "EADRIATIC",
-        BASE / "eadriatic" / "data",
-        "*_eadriatic_player_stats.txt"
-    )
-]
-
-for league, folder, pattern in leagues:
-
-    if not folder.exists():
+player_sequences = {"GT": defaultdict(str), "EADRIATIC": defaultdict(str)}
+history_records = load_all_history()
+for record in history_records:
+    if not is_operational_record(record, excluded_keys):
         continue
+    if record.get("result") not in {"V", "E", "D"}:
+        continue
+    league = str(record["league"]).strip().upper()
+    player_sequences.setdefault(league, defaultdict(str))[str(record["player"])] += record["result"]
 
-    files = sorted(folder.glob(pattern))
-
-    print(
-        f"{league}: {len(files)} archivos"
-    )
-
-    seqs = defaultdict(str)
-
-    for file in files:
-
-        for row in parse_file(file):
-
-            seqs[row["player"]] += row["seq"]
-
-    player_sequences[league] = seqs
+for league, seqs in player_sequences.items():
+    print(f"{league}: {sum(len(seq) for seq in seqs.values())} perspectivas operativas JSONL")
 
 # --------------------------------------------------
 # HELPERS

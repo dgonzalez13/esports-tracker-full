@@ -20,7 +20,10 @@ from current_streaks_v2 import (
 )
 from history_query import load_all_history
 from match_history import name_key
-from selected_players import bettable_player_keys, excluded_player_keys, load_tracked_players
+from selected_players import (
+    bettable_player_keys, excluded_player_keys, is_operational_record,
+    load_tracked_players,
+)
 
 
 DOCS_DIR = BASE / "docs"
@@ -110,9 +113,35 @@ def calculate_streaks(seq):
         stk_lose += 1
 
     return stk_win, stk_lose
-    
-    
-def load_current_streaks(tracked_players=None):
+
+
+def _daily_local_bounds(stats_file):
+    if stats_file is None:
+        return None
+    try:
+        start = datetime.strptime(stats_file.name[:8], "%Y%m%d").replace(
+            tzinfo=ZoneInfo("Europe/Madrid")
+        )
+    except (ValueError, TypeError):
+        return None
+    from datetime import timedelta
+    return start, start + timedelta(days=1)
+
+
+def _event_local_time(event):
+    raw = event.get("timestamp_utc") or event.get("timestamp")
+    if not isinstance(raw, str) or not raw.strip():
+        return None
+    try:
+        parsed = datetime.fromisoformat(raw.strip().replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(ZoneInfo("Europe/Madrid"))
+
+
+def load_current_streaks(tracked_players=None, records=None):
     streaks = {}
     if tracked_players is None:
         tracked_players = load_tracked_players(TRACKED_PLAYERS_FILE)
@@ -153,9 +182,58 @@ def load_current_streaks(tracked_players=None):
                     "",
             })
 
+        # Rebuild tracked rows only for the local day represented by this TXT.
+        # Without a reliable TXT date, preserve the original daily Legacy rows.
+        bounds = _daily_local_bounds(stats_file)
+        reconstructed = records is not None and bounds is not None
+        if reconstructed:
+            day_start, day_end = bounds
+            operational = {}
+            for event in records:
+                if not is_operational_record(event, excluded_keys):
+                    continue
+                local_time = _event_local_time(event)
+                if local_time is None or not day_start <= local_time < day_end:
+                    continue
+                identity = (str(event["league"]).strip().upper(), event["player_key"])
+                if identity[0] != league or identity not in tracked_keys:
+                    continue
+                if event.get("result") not in {"V", "E", "D"}:
+                    continue
+                operational.setdefault(identity, []).append(event)
+            rows = [row for row in rows if (league, name_key(row["player"])) not in tracked_keys]
+            names = {
+                (row["league"], row["player_key"]): row["player"]
+                for row in tracked_players if row.get("tracked") and row.get("bettable", True)
+            }
+            for identity, events in operational.items():
+                events.sort(key=lambda event: (
+                    str(event.get("timestamp_utc") or event.get("timestamp") or ""),
+                    str(event.get("match_id", "")), str(event.get("perspective_id", "")),
+                ))
+                seq = "".join(event["result"] for event in events)
+                stk_win, stk_lose = calculate_streaks(seq)
+                wins, draws, losses = seq.count("V"), seq.count("E"), seq.count("D")
+                rows.append({
+                    "player": names.get(identity, str(events[-1].get("player", ""))),
+                    "W": wins, "D": draws, "L": losses, "played": len(seq),
+                    "stk_win": stk_win, "stk_lose": stk_lose, "seq": seq,
+                    "tracked": True,
+                    "balance": "🟢" if wins >= draws + losses else (
+                        "🔴" if losses >= wins + draws else ""
+                    ),
+                })
+            rows.sort(key=lambda row: row["played"], reverse=True)
+
         streaks[league] = {
             "title": config["title"],
-            "source": stats_file.name if stats_file else "",
+            "source": "match_history.jsonl (tracked daily) + " + stats_file.name
+            if reconstructed else (stats_file.name if stats_file else ""),
+            "scope_note": (
+                "Tracked rows reconstructed for the TXT day in Europe/Madrid."
+                if reconstructed else
+                "Fallback: daily TXT retained because its date could not be determined."
+            ),
             "rows": rows,
         }
 
@@ -659,7 +737,7 @@ def render_current_streaks(current_streaks):
         '<div class="section-head">'
         "<div>"
         "<h2>Current Streaks — Legacy</h2>"
-        '<p class="section-subtitle">Latest daily player files, with tracked player highlights and current win/loss streaks.</p>'
+        '<p class="section-subtitle">Tracked players use filtered JSONL for the displayed TXT day in Europe/Madrid; untracked rows remain daily TXT totals.</p>'
         "</div>"
         "</div>"
         f'<div class="streak-grid">{"".join(panels)}</div>'
@@ -849,6 +927,7 @@ def render_streak_panel(league, payload):
         '<div class="league-head">'
         f'<h3>{text(payload["title"])}</h3>'
         f'{metadata_badge("Source", payload["source"])}'
+        f'{metadata_badge("Scope", payload.get("scope_note", "daily"))}'
         "</div>"
         + render_streak_table(rows)
         + "</article>"
@@ -1327,14 +1406,19 @@ def write_html(html):
 def main():
     group_analysis = load_group_analysis()
     tracked_players = load_tracked_players(TRACKED_PLAYERS_FILE)
-    current_streaks = load_current_streaks(tracked_players)
     records = load_all_history()
+    excluded_keys = excluded_player_keys(tracked_players)
+    current_streaks = load_current_streaks(tracked_players, records)
     reference_time = datetime.now(timezone.utc)
-    snapshot = calculate_operational_snapshot(records, tracked_players, reference_time=reference_time)
+    snapshot = calculate_operational_snapshot(
+        records, tracked_players, reference_time=reference_time,
+        excluded_keys=excluded_keys,
+    )
     current_streaks_v2 = build_current_streaks_v2_payload(snapshot, reference_time=reference_time)
     coincident_pairs = calculate_all_coincident_pairs(
         records, snapshot=snapshot, reference_time=reference_time,
         window_hours=DEFAULT_OPERATIONAL_WINDOW_HOURS,
+        excluded_keys=excluded_keys,
     )
     html = render_page(
         group_analysis, current_streaks, coincident_pairs, current_streaks_v2

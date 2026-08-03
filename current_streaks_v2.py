@@ -9,7 +9,10 @@ from zoneinfo import ZoneInfo
 
 from history_query import EADRIATIC_HISTORY_PATH, GT_HISTORY_PATH, load_all_history
 from match_history import name_key
-from selected_players import TrackedPlayer, load_tracked_players
+from selected_players import (
+    TrackedPlayer, excluded_player_keys, is_operational_record,
+    load_tracked_players,
+)
 
 
 DEFAULT_SESSION_GAP_MINUTES = 90
@@ -100,7 +103,9 @@ def _z(value: datetime) -> str:
     return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
-def player_session_history(records, league: str, player: str) -> list[dict[str, Any]]:
+def player_session_history(
+    records, league: str, player: str, *, excluded_keys=None,
+) -> list[dict[str, Any]]:
     if not isinstance(league, str) or not league.strip():
         raise ValueError("league must be a non-empty string")
     if not isinstance(player, str) or not player.strip():
@@ -110,6 +115,8 @@ def player_session_history(records, league: str, player: str) -> list[dict[str, 
     rows = []
     for record in records:
         if not isinstance(record, dict):
+            continue
+        if excluded_keys is not None and not is_operational_record(record, excluded_keys):
             continue
         record_league = record.get("league")
         if not isinstance(record_league, str) or record_league.strip().casefold() != league_key:
@@ -191,15 +198,16 @@ def calculate_current_streaks_v2(
     records, tracked_players, *, reference_time,
     session_gap_minutes=DEFAULT_SESSION_GAP_MINUTES,
     active_window_minutes=DEFAULT_ACTIVE_WINDOW_MINUTES,
-    window_hours=DEFAULT_OPERATIONAL_WINDOW_HOURS,
+    window_hours=DEFAULT_OPERATIONAL_WINDOW_HOURS, excluded_keys=None,
 ):
     gap = _positive_minutes(session_gap_minutes, "session_gap_minutes")
     active_window = _positive_minutes(active_window_minutes, "active_window_minutes")
     reference = _utc(reference_time)
     materialized = list(records)
+    excluded = excluded_player_keys(tracked_players) if excluded_keys is None else excluded_keys
     snapshot = calculate_operational_snapshot(
         materialized, tracked_players, reference_time=reference,
-        window_hours=window_hours,
+        window_hours=window_hours, excluded_keys=excluded,
     )
     payload = build_current_streaks_v2_payload(snapshot, reference_time=reference, window_hours=window_hours)
     # Deprecated payload keys remain for callers from TASK-007.
@@ -208,7 +216,9 @@ def calculate_current_streaks_v2(
     # Preserve useful session numbering without allowing sessions to affect stats.
     for rows in payload["leagues"].values():
         for row in rows:
-            history = player_session_history(materialized, row["league"], row["player"])
+            history = player_session_history(
+                materialized, row["league"], row["player"], excluded_keys=excluded,
+            )
             row["session_number"] = len(split_player_sessions(history, session_gap_minutes=gap))
     return payload
 
@@ -221,13 +231,16 @@ def _positive_hours(value: int) -> int:
 
 def calculate_operational_snapshot(
     records, tracked_players, *, reference_time,
-    window_hours=DEFAULT_OPERATIONAL_WINDOW_HOURS,
+    window_hours=DEFAULT_OPERATIONAL_WINDOW_HOURS, excluded_keys=None,
 ):
     """Return immutable per-player statistics for one bounded UTC window."""
     reference = _utc(reference_time)
     hours = _positive_hours(window_hours)
     lower = reference - timedelta(hours=hours)
-    materialized = [dict(row) for row in records if isinstance(row, dict)]
+    excluded = excluded_player_keys(tracked_players) if excluded_keys is None else excluded_keys
+    materialized = [
+        dict(row) for row in records if is_operational_record(row, excluded)
+    ]
     identities = {}
     for row in tracked_players:
         if not row.get("tracked") or not row.get("bettable", True):
@@ -238,7 +251,9 @@ def calculate_operational_snapshot(
         identities.setdefault((league.strip().upper(), key), row)
     snapshot = []
     for (league, key), row in identities.items():
-        history = player_session_history(materialized, league, row["player"])
+        history = player_session_history(
+            materialized, league, row["player"], excluded_keys=excluded,
+        )
         history = [event for event in history if lower <= _record_time(event) <= reference]
         if not history:
             continue

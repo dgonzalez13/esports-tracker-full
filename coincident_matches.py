@@ -8,7 +8,10 @@ from pathlib import Path
 from typing import Any, Iterable, TypedDict
 
 from history_query import EADRIATIC_HISTORY_PATH, GT_HISTORY_PATH, load_all_history
-from selected_players import TrackedPlayer, load_tracked_players
+from selected_players import (
+    TrackedPlayer, excluded_player_keys, is_operational_record,
+    load_tracked_players,
+)
 from current_streaks_v2 import DEFAULT_OPERATIONAL_WINDOW_HOURS, calculate_operational_snapshot
 
 
@@ -160,11 +163,15 @@ def _event_sort(record: dict[str, Any]) -> tuple[datetime, str, str]:
     return _timestamp(record) or datetime.min.replace(tzinfo=timezone.utc), str(record.get("match_id", "")), str(record.get("perspective_id", ""))
 
 
-def player_match_history(records: Iterable[dict[str, Any]], player: SelectedPlayerRef) -> list[dict[str, Any]]:
+def player_match_history(
+    records: Iterable[dict[str, Any]], player: SelectedPlayerRef, *, excluded_keys=None,
+) -> list[dict[str, Any]]:
     league, player_key = _ref_key(player)
     matches = []
     for source in records:
         if not isinstance(source, dict):
+            continue
+        if excluded_keys is not None and not is_operational_record(source, excluded_keys):
             continue
         source_league = source.get("league")
         if not isinstance(source_league, str) or source_league.strip().upper() != league:
@@ -250,9 +257,12 @@ def match_coincident_pair(player_a, matches_a, player_b, matches_b, *, max_gap_m
     return _match_histories(player_a, history_a, player_b, history_b, max_gap_minutes)
 
 
-def calculate_all_coincident_pairs(records, selected_players=None, *, max_gap_minutes=DEFAULT_MAX_COINCIDENT_GAP_MINUTES, snapshot=None, reference_time=None, window_hours=DEFAULT_OPERATIONAL_WINDOW_HOURS):
+def calculate_all_coincident_pairs(records, selected_players=None, *, max_gap_minutes=DEFAULT_MAX_COINCIDENT_GAP_MINUTES, snapshot=None, reference_time=None, window_hours=DEFAULT_OPERATIONAL_WINDOW_HOURS, excluded_keys=None):
     max_gap_minutes = _validate_gap(max_gap_minutes)
-    materialized = list(records)
+    materialized = [
+        row for row in records
+        if excluded_keys is None or is_operational_record(row, excluded_keys)
+    ]
     eligible_count = 0
     if snapshot is not None:
         eligible_players = _eligible_automatic_player_refs(snapshot)
@@ -269,7 +279,9 @@ def calculate_all_coincident_pairs(records, selected_players=None, *, max_gap_mi
         materialized = [row for row in materialized if _timestamp(row) is not None and lower <= _timestamp(row) <= reference]
     histories = {}
     for player in {(_ref_key(p)): p for pair in pairs for p in pair}.values():
-        histories[_ref_key(player)] = player_match_history(materialized, player)
+        histories[_ref_key(player)] = player_match_history(
+            materialized, player, excluded_keys=excluded_keys,
+        )
     analyses = [
         _match_histories(a, histories[_ref_key(a)], b, histories[_ref_key(b)], max_gap_minutes)
         for a, b in pairs
@@ -282,7 +294,13 @@ def calculate_all_coincident_pairs(records, selected_players=None, *, max_gap_mi
 
 def load_all_coincident_pairs(tracked_players_path: str | Path, gt_path=GT_HISTORY_PATH, eadriatic_path=EADRIATIC_HISTORY_PATH, *, max_gap_minutes=DEFAULT_MAX_COINCIDENT_GAP_MINUTES):
     tracked = load_tracked_players(tracked_players_path)
+    excluded = excluded_player_keys(tracked)
     records = load_all_history(gt_path, eadriatic_path)
     reference = datetime.now(timezone.utc)
-    snapshot = calculate_operational_snapshot(records, tracked, reference_time=reference)
-    return calculate_all_coincident_pairs(records, snapshot=snapshot, reference_time=reference, max_gap_minutes=max_gap_minutes)
+    snapshot = calculate_operational_snapshot(
+        records, tracked, reference_time=reference, excluded_keys=excluded,
+    )
+    return calculate_all_coincident_pairs(
+        records, snapshot=snapshot, reference_time=reference,
+        max_gap_minutes=max_gap_minutes, excluded_keys=excluded,
+    )
