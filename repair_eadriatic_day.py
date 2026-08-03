@@ -21,10 +21,17 @@ def parse_target_date(value=None, *, now=None):
     """Resolve YYYYMMDD (canonical) or legacy DDMMYYYY repair dates."""
     if value:
         value = str(value).strip()
-        if len(value) != 8 or not value.isdigit():
-            raise ValueError("repair date must use YYYYMMDD or DDMMYYYY")
-        date_format = "%Y%m%d" if value[:4].isdigit() and 2000 <= int(value[:4]) <= 2999 else "%d%m%Y"
-        return datetime.strptime(value, date_format)
+        if len(value) == 8 and value.isdigit():
+            for date_format in ("%Y%m%d", "%d%m%Y"):
+                try:
+                    parsed = datetime.strptime(value, date_format)
+                except ValueError:
+                    continue
+                if parsed.strftime(date_format) == value:
+                    return parsed
+        raise ValueError(
+            "repair date must use a valid YYYYMMDD or DDMMYYYY date"
+        )
     return (now or datetime.now()) - timedelta(days=1)
 
 

@@ -107,10 +107,23 @@ class RepairHistoryIntegrationTests(unittest.TestCase):
         self.assertEqual(self.history.read_bytes(), before)
 
     def test_date_formats_and_after_midnight_default(self):
-        self.assertEqual(parse_target_date("20260803").strftime("%Y-%m-%d"), "2026-08-03")
-        self.assertEqual(parse_target_date("03082026").strftime("%Y-%m-%d"), "2026-08-03")
+        cases = {
+            "20260729": "2026-07-29",
+            "29072026": "2026-07-29",
+            "20260803": "2026-08-03",
+            "03082026": "2026-08-03",
+        }
+        for value, expected in cases.items():
+            with self.subTest(value=value):
+                self.assertEqual(parse_target_date(value).strftime("%Y-%m-%d"), expected)
         after_midnight = datetime(2026, 8, 4, 0, 5)
         self.assertEqual(parse_target_date(now=after_midnight).strftime("%Y-%m-%d"), "2026-08-03")
+
+    def test_invalid_repair_dates_have_the_exact_error(self):
+        expected = "repair date must use a valid YYYYMMDD or DDMMYYYY date"
+        for value in ("31022026", "notadate", "2026083", "202608030"):
+            with self.subTest(value=value), self.assertRaisesRegex(ValueError, f"^{expected}$"):
+                parse_target_date(value)
 
     def test_other_day_records_are_not_persisted(self):
         summary = self.update(target=datetime(2026, 8, 2))
