@@ -1,27 +1,68 @@
 from playwright.sync_api import sync_playwright
-from datetime import datetime, timedelta
+from datetime import date as date_type, datetime, timedelta
 import sys
 import os
+from zoneinfo import ZoneInfo
 
 from eadriatic_leagues import (
+    MATCH_HISTORY_FILE,
     parse_matches,
+    parse_history_records,
     process,
     build_df
 )
+from match_history import load_records, update_history
 
 
 # -------------------------
 # FECHA OBJETIVO
 # -------------------------
+def parse_target_date(value=None, *, now=None):
+    """Resolve YYYYMMDD (canonical) or legacy DDMMYYYY repair dates."""
+    if value:
+        value = str(value).strip()
+        if len(value) != 8 or not value.isdigit():
+            raise ValueError("repair date must use YYYYMMDD or DDMMYYYY")
+        date_format = "%Y%m%d" if value[:4].isdigit() and 2000 <= int(value[:4]) <= 2999 else "%d%m%Y"
+        return datetime.strptime(value, date_format)
+    return (now or datetime.now()) - timedelta(days=1)
+
+
 def get_target_date():
 
     if len(sys.argv) > 1:
-        return datetime.strptime(
-            sys.argv[1],
-            "%d%m%Y"
-        )
+        return parse_target_date(sys.argv[1])
+    return parse_target_date()
 
-    return datetime.now() - timedelta(days=1)
+
+def update_repaired_history(
+    html, target_date, *, history_path=MATCH_HISTORY_FILE,
+    collected_at=None, source_file=None,
+):
+    """Persist complete repaired perspectives through match_history only."""
+    target = target_date.date() if isinstance(target_date, datetime) else target_date
+    if not isinstance(target, date_type):
+        raise ValueError("target_date must be a date or datetime")
+    collected = collected_at or datetime.now(ZoneInfo("Europe/Madrid")).isoformat(timespec="seconds")
+    source = source_file or f"repair_eadriatic:{target.strftime('%Y%m%d')}"
+    parsed = parse_history_records(html, source_file=source, collected_at=collected)
+    records = [row for row in parsed if str(row.get("timestamp", ""))[:10] == target.isoformat()]
+
+    existing = load_records(history_path)
+    existing_ids = {row["perspective_id"] for row in existing}
+    new_records = [row for row in records if row["perspective_id"] not in existing_ids]
+    if new_records:
+        update_history(history_path, new_records)
+
+    repaired_matches = len(parse_matches(html))
+    normalized_matches = len({row["match_id"] for row in records})
+    return {
+        "txt_matches": repaired_matches,
+        "generated_perspectives": len(records),
+        "added_perspectives": len(new_records),
+        "duplicate_perspectives": len(records) - len(new_records),
+        "omitted_matches": max(0, repaired_matches - normalized_matches),
+    }
 
 
 # -------------------------
@@ -178,6 +219,13 @@ def main():
         vs_text,
         date
     )
+
+    summary = update_repaired_history(html, date)
+    print(f"TXT reparado: {summary['txt_matches']} partidos")
+    print(f"Perspectivas generadas: {summary['generated_perspectives']}")
+    print(f"Perspectivas nuevas añadidas: {summary['added_perspectives']}")
+    print(f"Perspectivas duplicadas: {summary['duplicate_perspectives']}")
+    print(f"Partidos omitidos: {summary['omitted_matches']}")
 
 
 if __name__ == "__main__":

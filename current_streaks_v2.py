@@ -230,7 +230,7 @@ def calculate_operational_snapshot(
     materialized = [dict(row) for row in records if isinstance(row, dict)]
     identities = {}
     for row in tracked_players:
-        if not row.get("tracked"):
+        if not row.get("tracked") or not row.get("bettable", True):
             continue
         league, key, player = row.get("league"), row.get("player_key"), row.get("player")
         if not all(isinstance(value, str) and value.strip() for value in (league, key, player)):

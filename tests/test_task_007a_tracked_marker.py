@@ -35,10 +35,10 @@ class TrackedMarkerConsumerRegressionTests(unittest.TestCase):
         if self.path.exists():
             self.path.unlink()
 
-    def test_canonical_names_and_selection_are_preserved(self):
+    def test_canonical_names_and_operational_exclusion_are_preserved(self):
         lucas, eric = self.players[0], self.players[-1]
-        self.assertEqual((lucas["league"], lucas["player"], lucas["tracked"], lucas["selected"]), ("GT", "Lucas", True, True))
-        self.assertEqual((eric["league"], eric["player"], eric["selected"]), ("EADRIATIC", "Eric", True))
+        self.assertEqual((lucas["league"], lucas["player"], lucas["tracked"], lucas["bettable"]), ("GT", "Lucas", True, False))
+        self.assertEqual((eric["league"], eric["player"], eric["bettable"]), ("EADRIATIC", "Eric", False))
         self.assertFalse(self.players[1]["selected"])
         self.assertTrue(all(not row["player"].endswith("*") for row in self.players))
 
@@ -50,24 +50,24 @@ class TrackedMarkerConsumerRegressionTests(unittest.TestCase):
         self.assertEqual(groups["GT"][0][0], "Lucas")
         self.assertTrue(all(not player.endswith("*") for rows in groups.values() for group in rows for player in group))
 
-    def test_v2_and_coincident_matches_use_clean_selected_identity(self):
+    def test_v2_and_coincident_matches_exclude_unbettable_identity(self):
         records = [perspective(), perspective("Eric", "EADRIATIC")]
         payload = calculate_current_streaks_v2(
             records, self.players,
             reference_time=datetime(2026, 8, 1, 9, tzinfo=timezone.utc),
         )
-        self.assertEqual(payload["leagues"]["GT"][0]["player"], "Lucas")
+        self.assertEqual(payload["leagues"]["GT"], [])
         refs = build_selected_player_refs(self.players)
-        self.assertEqual([row["player"] for row in refs], ["Eric", "Lucas"])
+        self.assertEqual(refs, [])
         pairs = calculate_all_coincident_pairs(records, refs)
-        self.assertEqual((pairs[0]["player_a"], pairs[0]["player_b"]), ("Eric", "Lucas"))
+        self.assertEqual(pairs, [])
 
     def test_legacy_tracking_and_h2h_indicator_use_clean_key(self):
         keys = tracked_player_keys(self.players)
         self.assertIn(("GT", "lucas"), keys)
         streaks = load_current_streaks(self.players)
         lucas_rows = [row for row in streaks["GT"]["rows"] if row["player"] == "Lucas"]
-        self.assertTrue(lucas_rows and lucas_rows[0]["tracked"])
+        self.assertEqual(lucas_rows, [])
         html = render_h2h_alerts(
             "GT", [{"player": "Lucas", "rival": "Fox", "signal": "WATCH"}],
             {("GT", "lucas"): "GREEN"},

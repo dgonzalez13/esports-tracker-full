@@ -4,7 +4,7 @@ import pandas as pd
 import sys
 
 from match_history import name_key
-from selected_players import load_tracked_players, tracked_player_keys
+from selected_players import bettable_player_keys, load_tracked_players
 
 BASE = Path(__file__).resolve().parent
 
@@ -18,7 +18,7 @@ if len(sys.argv) > 1 and sys.argv[1].lower() == "all":
 # --------------------------------------------------
 
 tracked_file = BASE / "tracked_players.txt"
-tracked_players = tracked_player_keys(load_tracked_players(tracked_file))
+tracked_players = bettable_player_keys(load_tracked_players(tracked_file))
 
 
 # --------------------------------------------------

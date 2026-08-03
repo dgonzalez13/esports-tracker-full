@@ -8,7 +8,8 @@ import re
 
 from h2h_analysis import calculate_recent_h2h
 from history_query import load_all_history
-from selected_players import load_tracked_players
+from match_history import name_key
+from selected_players import bettable_player_keys, load_tracked_players
 
 
 BASE = Path(__file__).resolve().parent
@@ -613,7 +614,7 @@ def _recent_sample_status(available):
     return "COMPLETE"
 
 
-def calculate_h2h_alerts(result, recent_records=()):
+def calculate_h2h_alerts(result, recent_records=(), operational_players=None):
     alerts = []
 
     for group in result["groups"]:
@@ -621,6 +622,10 @@ def calculate_h2h_alerts(result, recent_records=()):
         for player_block in group["h2h_matrix"]:
 
             player = player_block["player"]
+            if operational_players is not None and (
+                result["league"], name_key(player)
+            ) not in operational_players:
+                continue
 
             for rival in player_block["rivals"]:
 
@@ -1181,7 +1186,7 @@ def json_ready_group(group):
     }
 
 
-def json_ready_league(result, recent_records=()):
+def json_ready_league(result, recent_records=(), operational_players=None):
     return {
         "league": result["league"],
         "files_count": result["files_count"],
@@ -1190,7 +1195,7 @@ def json_ready_league(result, recent_records=()):
         "files": result["files"],
         "h2h_alert_threshold": H2H_ALERT_THRESHOLD,
         "min_h2h_alert_matches": MIN_H2H_ALERT_MATCHES,
-        "h2h_alerts": calculate_h2h_alerts(result, recent_records),
+        "h2h_alerts": calculate_h2h_alerts(result, recent_records, operational_players),
         "groups": [
             json_ready_group(group)
             for group in result["groups"]
@@ -1198,7 +1203,7 @@ def json_ready_league(result, recent_records=()):
     }
 
 
-def write_json(result, all_results, recent_records=()):
+def write_json(result, all_results, recent_records=(), operational_players=None):
     payload = {
         "schema_version": 2,
         "generated_at": datetime.now(
@@ -1211,13 +1216,13 @@ def write_json(result, all_results, recent_records=()):
         "files": result["files"],
         "h2h_alert_threshold": H2H_ALERT_THRESHOLD,
         "min_h2h_alert_matches": MIN_H2H_ALERT_MATCHES,
-        "h2h_alerts": calculate_h2h_alerts(result, recent_records),
+        "h2h_alerts": calculate_h2h_alerts(result, recent_records, operational_players),
         "groups": [
             json_ready_group(group)
             for group in result["groups"]
         ],
         "leagues": {
-            league: json_ready_league(league_result, recent_records)
+            league: json_ready_league(league_result, recent_records, operational_players)
             for league, league_result in all_results.items()
         }
     }
@@ -1236,7 +1241,9 @@ def write_json(result, all_results, recent_records=()):
 
 
 def main():
+    tracked_players = load_tracked_players(BASE / "tracked_players.txt")
     groups = load_groups()
+    operational_players = bettable_player_keys(tracked_players)
     recent_records = load_all_history()
 
     if len(sys.argv) < 2:
@@ -1257,7 +1264,7 @@ def main():
 
     result = all_results[selected_leagues[0]]
 
-    write_json(result, all_results, recent_records)
+    write_json(result, all_results, recent_records, operational_players)
 
     for item in selected_leagues:
         render_result(all_results[item])

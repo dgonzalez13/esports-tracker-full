@@ -14,6 +14,7 @@ class TrackedPlayer(TypedDict):
     player_key: str
     tracked: bool
     selected: bool
+    bettable: bool
 
 
 class TrackedPlayerEntry(TrackedPlayer, total=False):
@@ -22,7 +23,8 @@ class TrackedPlayerEntry(TrackedPlayer, total=False):
 
 __all__ = [
     "TrackedPlayer", "TrackedPlayerEntry", "parse_tracked_player_line", "load_tracked_players",
-    "tracked_player_keys", "selected_player_keys",
+    "tracked_player_keys", "bettable_player_keys", "excluded_player_keys",
+    "selected_player_keys",
 ]
 
 
@@ -37,21 +39,23 @@ def parse_tracked_player_line(line: str) -> TrackedPlayerEntry | None:
     league, player = value.split("|", 1)
     league = league.strip().upper()
     player = player.strip()
-    selected = player.endswith("*")
-    if selected:
+    excluded = player.endswith("*")
+    if excluded:
         player = player[:-1].strip()
     if not league:
         raise ValueError("tracked player league must not be empty")
     if not player:
         return {
             "league": league, "player": "", "player_key": "",
-            "tracked": False, "selected": False, "empty_slot": True,
+            "tracked": False, "selected": False, "bettable": False,
+            "empty_slot": True,
         }
     return {
         "league": league,
         "player": player,
         "player_key": name_key(player),
-        "tracked": True, "selected": selected, "empty_slot": False,
+        "tracked": True, "selected": False, "bettable": not excluded,
+        "empty_slot": False,
     }
 
 
@@ -76,7 +80,7 @@ def load_tracked_players(path: str | Path) -> list[TrackedPlayerEntry]:
             identity = (entry["league"], entry["player_key"])
             if identity in positions:
                 existing = players[positions[identity]]
-                existing["selected"] = existing["selected"] or entry["selected"]
+                existing["bettable"] = existing["bettable"] and entry["bettable"]
             else:
                 positions[identity] = len(players)
                 players.append(entry)
@@ -85,6 +89,20 @@ def load_tracked_players(path: str | Path) -> list[TrackedPlayerEntry]:
 
 def tracked_player_keys(players: Iterable[TrackedPlayer]) -> set[tuple[str, str]]:
     return {(row["league"], row["player_key"]) for row in players if row.get("tracked")}
+
+
+def bettable_player_keys(players: Iterable[TrackedPlayer]) -> set[tuple[str, str]]:
+    return {
+        (row["league"], row["player_key"])
+        for row in players if row.get("tracked") and row.get("bettable", True)
+    }
+
+
+def excluded_player_keys(players: Iterable[TrackedPlayer]) -> set[tuple[str, str]]:
+    return {
+        (row["league"], row["player_key"])
+        for row in players if row.get("tracked") and not row.get("bettable", True)
+    }
 
 
 def selected_player_keys(players: Iterable[TrackedPlayer]) -> set[tuple[str, str]]:

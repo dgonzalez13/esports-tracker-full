@@ -3,7 +3,7 @@ import unittest
 import uuid
 
 from selected_players import (
-    TrackedPlayer, load_tracked_players, parse_tracked_player_line,
+    TrackedPlayer, bettable_player_keys, load_tracked_players, parse_tracked_player_line,
     selected_player_keys, tracked_player_keys,
 )
 
@@ -11,14 +11,16 @@ from selected_players import (
 class SelectedPlayersTests(unittest.TestCase):
     def test_model_has_exact_keys(self):
         self.assertEqual(TrackedPlayer.__required_keys__, frozenset({
-            "league", "player", "player_key", "tracked", "selected",
+            "league", "player", "player_key", "tracked", "selected", "bettable",
         }))
 
     def test_normal_selected_spaces_unicode_and_league(self):
         normal = parse_tracked_player_line(" gt | Lucas ")
         selected = parse_tracked_player_line(" eadriatic |  João Silva  * ")
         self.assertEqual((normal["league"], normal["player"], normal["selected"]), ("GT", "Lucas", False))
-        self.assertEqual((selected["league"], selected["player"], selected["selected"]), ("EADRIATIC", "João Silva", True))
+        self.assertEqual((selected["league"], selected["player"], selected["selected"]), ("EADRIATIC", "João Silva", False))
+        self.assertFalse(selected["bettable"])
+        self.assertTrue(normal["bettable"])
         self.assertNotIn("*", selected["player"])
         self.assertTrue(normal["tracked"] and selected["tracked"])
 
@@ -40,7 +42,8 @@ class SelectedPlayersTests(unittest.TestCase):
             path.write_text(content, encoding="utf-8")
             rows = load_tracked_players(path)
             self.assertEqual([row["player"] for row in rows], ["Lucas", "Dexter"])
-            self.assertTrue(rows[0]["selected"])
+            self.assertFalse(rows[0]["selected"])
+            self.assertFalse(rows[0]["bettable"])
             self.assertFalse(rows[1]["selected"])
             self.assertEqual(path.read_text(encoding="utf-8"), content)
         finally:
@@ -51,7 +54,8 @@ class SelectedPlayersTests(unittest.TestCase):
         self.assertEqual(load_tracked_players("definitely-missing-tracked.txt"), [])
         rows = [parse_tracked_player_line("GT|Lucas*"), parse_tracked_player_line("GT|Fox")]
         self.assertEqual(tracked_player_keys(rows), {("GT", "lucas"), ("GT", "fox")})
-        self.assertEqual(selected_player_keys(rows), {("GT", "lucas")})
+        self.assertEqual(selected_player_keys(rows), set())
+        self.assertEqual(bettable_player_keys(rows), {("GT", "fox")})
 
 
 if __name__ == "__main__":

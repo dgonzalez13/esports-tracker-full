@@ -19,7 +19,7 @@ from current_streaks_v2 import (
 )
 from history_query import load_all_history
 from match_history import name_key
-from selected_players import load_tracked_players, tracked_player_keys
+from selected_players import bettable_player_keys, excluded_player_keys, load_tracked_players
 
 
 DOCS_DIR = BASE / "docs"
@@ -115,7 +115,8 @@ def load_current_streaks(tracked_players=None):
     streaks = {}
     if tracked_players is None:
         tracked_players = load_tracked_players(TRACKED_PLAYERS_FILE)
-    tracked_keys = tracked_player_keys(tracked_players)
+    tracked_keys = bettable_player_keys(tracked_players)
+    excluded_keys = excluded_player_keys(tracked_players)
 
     for league, config in LEAGUES.items():
         stats_file = latest_stats_file(config["data_dir"])
@@ -124,6 +125,8 @@ def load_current_streaks(tracked_players=None):
         rows = []
 
         for row in stats:
+            if (league, name_key(row["player"])) in excluded_keys:
+                continue
         
             stk_win, stk_lose = calculate_streaks(row["seq"])
 
