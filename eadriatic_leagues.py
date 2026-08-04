@@ -1,7 +1,7 @@
 import os
 import re
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import unicodedata
 from bs4 import BeautifulSoup
@@ -121,12 +121,130 @@ def parse_matches(html):
     return matches
 
 
-def _parse_group_heading(label):
-    match = re.match(r"^(.*?)(\d{2}\.\d{2}\.\d{4})$", label.strip())
+
+def _split_group_heading(label):
+    """Return block label and raw date text, accepting 4- or 3-digit years."""
+    normalized = unicodedata.normalize("NFKC", label).strip()
+    match = re.match(r"^(.*?)(\d{2}\.\d{2}\.\d{3,4})$", normalized)
     if not match:
         return None
-    block_label = match.group(1).strip()
-    match_date = datetime.strptime(match.group(2), "%d.%m.%Y").date()
+    return match.group(1).strip(), match.group(2)
+
+
+def _parse_complete_date(raw_date):
+    if not re.fullmatch(r"\d{2}\.\d{2}\.\d{4}", raw_date or ""):
+        return None
+    try:
+        return datetime.strptime(raw_date, "%d.%m.%Y").date()
+    except ValueError:
+        return None
+
+
+def _round_number(block_label):
+    match = re.search(r"\bR(\d+)\b", block_label or "")
+    return int(match.group(1)) if match else None
+
+
+def _block_metadata(soup):
+    """Collect fixture blocks and safely recover malformed dates/overnight rollovers."""
+    blocks = []
+    current = None
+
+    for element in soup.find_all(["span", "tr"]):
+        classes = element.get("class", [])
+        if element.name == "span" and "fg-heading" in classes:
+            split = _split_group_heading(element.get_text(strip=True))
+            current = {
+                "element_id": id(element),
+                "raw_label": element.get_text(strip=True),
+                "block_label": split[0] if split else None,
+                "raw_date": split[1] if split else None,
+                "match_date": _parse_complete_date(split[1]) if split else None,
+                "times": [],
+            }
+            blocks.append(current)
+            continue
+        if element.name == "span" and "time-heading" in classes and current is not None:
+            value = element.get_text(strip=True)
+            if re.fullmatch(r"\d{2}:\d{2}", value):
+                current["times"].append(datetime.strptime(value, "%H:%M").time())
+
+    # Recover a three-digit year only from adjacent complete dates with the same prefix.
+    for index, block in enumerate(blocks):
+        raw_date = block["raw_date"]
+        if block["match_date"] is not None or not re.fullmatch(r"\d{2}\.\d{2}\.\d{3}", raw_date or ""):
+            continue
+
+        candidates = []
+        for neighbour_index in (index - 1, index + 1):
+            if not 0 <= neighbour_index < len(blocks):
+                continue
+            neighbour_date = blocks[neighbour_index]["match_date"]
+            if neighbour_date is None:
+                continue
+            candidate_text = neighbour_date.strftime("%d.%m.%Y")
+            if candidate_text.startswith(raw_date):
+                candidates.append(neighbour_date)
+
+        unique_candidates = set(candidates)
+        if len(unique_candidates) == 1:
+            block["match_date"] = unique_candidates.pop()
+            print(
+                "WARNING: Recovered truncated EADRIATIC block date: "
+                f"{raw_date} -> {block['match_date'].strftime('%d.%m.%Y')}"
+            )
+
+    # Some LeagueRepublic fixture blocks keep the date on which the round started,
+    # even though their 00:xx/01:xx matches belong to the following calendar day.
+    # Infer this only when consecutive rounds join chronologically within 8 hours.
+    max_gap_seconds = 8 * 60 * 60
+    for index in range(len(blocks) - 2, -1, -1):
+        block = blocks[index]
+        next_block = blocks[index + 1]
+        if (
+            block["match_date"] is None
+            or next_block["match_date"] is None
+            or not block["times"]
+            or not next_block["times"]
+        ):
+            continue
+
+        current_round = _round_number(block["block_label"])
+        next_round = _round_number(next_block["block_label"])
+        if current_round is None or next_round is None or next_round != current_round + 1:
+            continue
+
+        current_first = datetime.combine(block["match_date"], min(block["times"]))
+        next_first = datetime.combine(next_block["match_date"], min(next_block["times"]))
+
+        shifted_first = current_first + timedelta(days=1)
+        shifted_gap = (next_first - shifted_first).total_seconds()
+
+        if (
+            next_block["match_date"] == block["match_date"] + timedelta(days=1)
+            and 0 <= shifted_gap <= max_gap_seconds
+        ):
+            old_date = block["match_date"]
+            block["match_date"] = old_date + timedelta(days=1)
+            print(
+                "WARNING: Recovered EADRIATIC midnight rollover: "
+                f"{block['block_label']} {old_date.isoformat()} -> "
+                f"{block['match_date'].isoformat()}"
+            )
+
+    return blocks
+
+
+def _parse_group_heading(label, resolved_date=None):
+    split = _split_group_heading(label)
+    if not split:
+        return None
+
+    block_label, raw_date = split
+    match_date = resolved_date or _parse_complete_date(raw_date)
+    if match_date is None:
+        return None
+
     detail = re.match(r"^(.*?)\s+R(\d+)\((.*?)\)$", block_label)
     if detail:
         round_name = f"{detail.group(1).strip()} R{detail.group(2)}"
@@ -134,6 +252,7 @@ def _parse_group_heading(label):
     else:
         round_name = block_label
         competition = None
+
     group_part = unicodedata.normalize("NFKC", block_label).casefold()
     group_part = re.sub(r"[^\w]+", "-", group_part, flags=re.UNICODE).strip("-")
     return {
@@ -147,6 +266,11 @@ def _parse_group_heading(label):
 def parse_history_records(html, source_file, collected_at=None):
     """Extract finalized perspectives; EADRIATIC times are inferred as Madrid time."""
     soup = BeautifulSoup(html, "html.parser")
+    block_dates = {
+        block["element_id"]: block["match_date"]
+        for block in _block_metadata(soup)
+    }
+
     records = []
     seen_ids = set()
     current_block = None
@@ -158,7 +282,10 @@ def parse_history_records(html, source_file, collected_at=None):
         classes = element.get("class", [])
         if element.name == "span" and "fg-heading" in classes:
             block_order += 1
-            current_block = _parse_group_heading(element.get_text(strip=True))
+            current_block = _parse_group_heading(
+                element.get_text(strip=True),
+                resolved_date=block_dates.get(id(element)),
+            )
             current_time = None
             row_order = 0
             continue
@@ -172,14 +299,17 @@ def parse_history_records(html, source_file, collected_at=None):
         row_order += 1
         if current_block is None or not re.fullmatch(r"\d{2}:\d{2}", current_time or ""):
             continue
+
         href = element.get("data-match-href", "")
         id_match = re.fullmatch(r"/match/(\d+)\.html", href)
         cols = element.find_all("td")
         if not id_match or len(cols) < 3:
             continue
+
         score_match = re.search(r"(\d+)\s*-\s*(\d+)", cols[1].get_text(" ", strip=True))
         if not score_match:
             continue
+
         try:
             home_player = clean_name(extract_player(cols[0].get_text(strip=True)))
             away_player = clean_name(extract_player(cols[2].get_text(strip=True)))
@@ -191,6 +321,7 @@ def parse_history_records(html, source_file, collected_at=None):
         if match_id in seen_ids:
             continue
         seen_ids.add(match_id)
+
         home_score, away_score = map(int, score_match.groups())
         local_timestamp = datetime.combine(
             current_block["match_date"],
@@ -202,6 +333,7 @@ def parse_history_records(html, source_file, collected_at=None):
             timespec="minutes"
         ).replace("+00:00", "Z")
         home_result, away_result = result_pair(home_score, away_score)
+
         common = {
             "schema_version": SCHEMA_VERSION,
             "league": "EADRIATIC",
@@ -226,6 +358,7 @@ def parse_history_records(html, source_file, collected_at=None):
             common["competition"] = current_block["competition"]
         if collected_at is not None:
             common["collected_at"] = collected_at
+
         pair = []
         for player, rival, home_away, result in (
             (home_player, away_player, "home", home_result),
@@ -241,6 +374,7 @@ def parse_history_records(html, source_file, collected_at=None):
                 "result": result,
                 "home_away": home_away,
             })
+
         validate_perspective_pair(pair)
         records.extend(pair)
 
@@ -420,6 +554,7 @@ def main():
         source_file=Path(backup_file).name,
         collected_at=collected_at.isoformat(timespec="seconds"),
     )
+    
     update_history(MATCH_HISTORY_FILE, history_records)
     print(f"Perspectivas guardadas en historial: {len(history_records)}")
 
