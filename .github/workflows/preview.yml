@@ -1,14 +1,20 @@
-name: Generate Tracker Preview
+name: Generate and Deploy Tracker
 
 on:
   workflow_dispatch:
 
-jobs:
-  generate-preview:
-    runs-on: ubuntu-latest
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
-    permissions:
-      contents: read
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
@@ -37,14 +43,29 @@ jobs:
       - name: Generate Site
         run: python web_tracker/generate_site.py
 
-      - name: Upload preview
-        uses: actions/upload-artifact@v4
+      - name: Verify generated HTML
+        run: |
+          test -f docs/index.html
+          echo "Generated HTML size:"
+          wc -c docs/index.html
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
         with:
-          name: tracker-preview
-          path: |
-            docs/index.html
-            group_analysis.json
-            gt/data/*_player_stats.txt
-            eadriatic/data/*_eadriatic_player_stats.txt
-          if-no-files-found: error
-          retention-days: 3
+          path: docs
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
