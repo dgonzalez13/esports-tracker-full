@@ -22,7 +22,7 @@ from history_query import load_all_history
 from match_history import name_key
 from selected_players import (
     bettable_player_keys, excluded_player_keys, is_operational_record,
-    load_tracked_players,
+    load_coincident_config, load_tracked_players,
 )
 
 
@@ -719,6 +719,7 @@ summary {
 .coincident-both-green { background: #dcfce7; }
 .coincident-both-red { background: #fee2e2; }
 .coincident-mixed-confirmed { background: #fef3c7; }
+.streak-group-shaded { background: #eef4f8; }
 </style>"""
 
 
@@ -768,16 +769,18 @@ def render_session_streak_panel(league, rows):
             player, f'{row.get("wins", 0)} ({row.get("win_pct", 0):.2f}%)',
             row.get("draws", 0), f'{row.get("losses", 0)} ({row.get("loss_pct", 0):.2f}%)',
             row.get("played", 0),
-            row.get("last_10", ""), streak,
+            row.get("last_24", ""), streak,
         ])
     body = render_table(
-        ["PLAYER", "W", "D", "L", "PLAYED", "LAST 10", "STREAK"],
+        ["PLAYER", "W", "D", "L", "PLAYED", "LAST 24", "STREAK"],
         table_rows, numeric_columns={1, 2, 3, 4}, seq_columns={5},
+        row_classes=["streak-group-shaded" if int(row.get("group_index", 0)) % 2 == 0 else "" for row in rows],
     )
     return (
         '<article class="streak-panel"><div class="league-head">'
         f'<h3>{text(LEAGUES.get(league, {}).get("title", league))}</h3>'
-        f'{metadata_badge("Visible players", len(rows))}</div>{body}</article>'
+        f'{metadata_badge("Visible players", len(rows))}</div>{body}'
+        '<p class="section-subtitle">Shading identifies players belonging to the same tracked group.</p></article>'
     )
 
 
@@ -852,6 +855,8 @@ def render_coincident_matches(pairs):
     eligible_players = getattr(pairs, "eligible_players", 0)
     selected_candidates = getattr(pairs, "selected_candidates", 0)
     candidate_limit = getattr(pairs, "candidate_limit", MAX_AUTOMATIC_CANDIDATES)
+    selection_mode = getattr(pairs, "selection_mode", "automatic")
+    excluded_candidates = getattr(pairs, "excluded_candidates", 0)
     content = (
         ''.join(render_coincident_pair(pair) for pair in pairs)
         if pairs
@@ -864,7 +869,9 @@ def render_coincident_matches(pairs):
         '</div><div class="badge-row">'
         f'{metadata_badge("Eligible players", eligible_players)}'
         f'{metadata_badge("Selected candidates", selected_candidates)}'
-        f'{metadata_badge("Candidate limit", candidate_limit)}'
+        f'{metadata_badge("Selection mode", selection_mode)}'
+        f'{metadata_badge("Excluded candidates", excluded_candidates)}'
+        f'{metadata_badge("Candidate limit", candidate_limit if selection_mode == "automatic" else "manual")}'
         '</div></div><div class="streak-grid">'
         f'{content}</div></section>'
     )
@@ -1406,6 +1413,7 @@ def write_html(html):
 def main():
     group_analysis = load_group_analysis()
     tracked_players = load_tracked_players(TRACKED_PLAYERS_FILE)
+    coincident_config = load_coincident_config(TRACKED_PLAYERS_FILE)
     records = load_all_history()
     excluded_keys = excluded_player_keys(tracked_players)
     current_streaks = load_current_streaks(tracked_players, records)
@@ -1418,7 +1426,9 @@ def main():
     coincident_pairs = calculate_all_coincident_pairs(
         records, snapshot=snapshot, reference_time=reference_time,
         window_hours=DEFAULT_OPERATIONAL_WINDOW_HOURS,
-        excluded_keys=excluded_keys,
+        excluded_keys=excluded_keys, tracked_players=tracked_players,
+        manual_selected_keys=coincident_config["selected_keys"],
+        excluded_candidate_keys=coincident_config["excluded_keys"],
     )
     html = render_page(
         group_analysis, current_streaks, coincident_pairs, current_streaks_v2

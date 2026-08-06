@@ -10,7 +10,7 @@ from selected_players import parse_tracked_player_line
 
 
 def tracked(name, league="GT"):
-    return {"league": league, "player": name, "player_key": name_key(name), "tracked": True, "selected": False}
+    return {"league": league, "player": name, "player_key": name_key(name), "tracked": True, "selected": False, "bettable": True, "group_index": 0}
 
 
 def event(name, result, when, index, league="GT"):
@@ -57,6 +57,28 @@ class OperationalSnapshotTests(unittest.TestCase):
         with patch.object(group_analysis, "load_tracked_players", return_value=entries):
             groups = group_analysis.load_groups()
         self.assertEqual(groups["GT"], [])
+
+    def test_last_24_group_index_manual_selection_and_exclusion(self):
+        now = datetime(2026, 8, 3, 12, tzinfo=timezone.utc)
+        players = [tracked("A"), tracked("B"), tracked("C")]
+        players[1]["group_index"] = 1
+        rows = []
+        for index in range(24):
+            rows.append(event("A", "V" if index % 2 == 0 else "D", now - timedelta(minutes=23-index), index))
+        for index in range(30, 36):
+            rows.append(event("B", "V", now - timedelta(minutes=index-30), index))
+        snapshot = calculate_operational_snapshot(rows, players, reference_time=now)
+        a = next(row for row in snapshot if row["player"] == "A")
+        self.assertEqual(len(a["last_24"]), 24)
+        self.assertEqual(a["group_index"], 0)
+        pairs = calculate_all_coincident_pairs(
+            rows, snapshot=snapshot, reference_time=now, tracked_players=players,
+            manual_selected_keys={("GT", "a"), ("GT", "b")},
+            excluded_candidate_keys={("GT", "b")},
+        )
+        self.assertEqual(pairs.selection_mode, "manual")
+        self.assertEqual(pairs.selected_candidates, 1)
+        self.assertEqual(len(pairs), 0)
 
 
 if __name__ == "__main__":

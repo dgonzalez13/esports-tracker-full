@@ -10,7 +10,7 @@ from typing import Any, Iterable, TypedDict
 from history_query import EADRIATIC_HISTORY_PATH, GT_HISTORY_PATH, load_all_history
 from selected_players import (
     TrackedPlayer, excluded_player_keys, is_operational_record,
-    load_tracked_players,
+    load_coincident_config, load_tracked_players,
 )
 from current_streaks_v2 import DEFAULT_OPERATIONAL_WINDOW_HOURS, calculate_operational_snapshot
 
@@ -22,11 +22,13 @@ MAX_AUTOMATIC_CANDIDATES = 8
 class CoincidentPairResults(list):
     """List-compatible pair collection carrying automatic-selection metadata."""
 
-    def __init__(self, values=(), *, eligible_players=0, selected_candidates=0):
+    def __init__(self, values=(), *, eligible_players=0, selected_candidates=0, selection_mode="automatic", excluded_candidates=0):
         super().__init__(values)
         self.eligible_players = eligible_players
         self.selected_candidates = selected_candidates
         self.candidate_limit = MAX_AUTOMATIC_CANDIDATES
+        self.selection_mode = selection_mode
+        self.excluded_candidates = excluded_candidates
 
 
 class SelectedPlayerRef(TypedDict):
@@ -78,7 +80,7 @@ class CoincidentPairAnalysis(TypedDict):
 __all__ = [
     "DEFAULT_MAX_COINCIDENT_GAP_MINUTES", "MAX_AUTOMATIC_CANDIDATES",
     "CoincidentPairResults", "SelectedPlayerRef", "CoincidentMatch",
-    "CoincidentPairAnalysis", "build_selected_player_refs", "build_automatic_player_refs", "generate_selected_pairs",
+    "CoincidentPairAnalysis", "build_selected_player_refs", "build_automatic_player_refs", "build_manual_player_refs", "generate_selected_pairs",
     "player_match_history", "match_coincident_pair", "calculate_all_coincident_pairs",
     "load_all_coincident_pairs",
 ]
@@ -134,6 +136,29 @@ def build_automatic_player_refs(snapshot) -> list[SelectedPlayerRef]:
     """Return the strongest eligible automatic candidates, capped deterministically."""
     return _eligible_automatic_player_refs(snapshot)[:MAX_AUTOMATIC_CANDIDATES]
 
+
+
+def build_manual_player_refs(tracked_players, selected_keys, snapshot=None, excluded_candidate_keys=None):
+    selected = set(selected_keys or set())
+    excluded = set(excluded_candidate_keys or set())
+    snapshot_by_key = {_ref_key(row): row for row in (snapshot or [])}
+    found = {}
+    for row in tracked_players:
+        identity = (str(row.get("league", "")).strip().upper(), str(row.get("player_key", "")))
+        if identity not in selected or identity in excluded:
+            continue
+        if not row.get("tracked") or not row.get("bettable", True):
+            continue
+        source = snapshot_by_key.get(identity, {})
+        ref = {
+            "league": identity[0], "player": row["player"], "player_key": identity[1],
+            "indicator": source.get("indicator", "NONE"),
+            "wins": source.get("wins", 0), "draws": source.get("draws", 0),
+            "losses": source.get("losses", 0), "played": source.get("played", 0),
+            "win_pct": source.get("win_pct", 0.0), "loss_pct": source.get("loss_pct", 0.0),
+        }
+        found.setdefault(identity, ref)
+    return sorted(found.values(), key=_ref_sort)
 
 def generate_selected_pairs(selected_players: Iterable[SelectedPlayerRef]) -> list[tuple[SelectedPlayerRef, SelectedPlayerRef]]:
     unique: dict[tuple[str, str], SelectedPlayerRef] = {}
@@ -257,15 +282,26 @@ def match_coincident_pair(player_a, matches_a, player_b, matches_b, *, max_gap_m
     return _match_histories(player_a, history_a, player_b, history_b, max_gap_minutes)
 
 
-def calculate_all_coincident_pairs(records, selected_players=None, *, max_gap_minutes=DEFAULT_MAX_COINCIDENT_GAP_MINUTES, snapshot=None, reference_time=None, window_hours=DEFAULT_OPERATIONAL_WINDOW_HOURS, excluded_keys=None):
+def calculate_all_coincident_pairs(records, selected_players=None, *, max_gap_minutes=DEFAULT_MAX_COINCIDENT_GAP_MINUTES, snapshot=None, reference_time=None, window_hours=DEFAULT_OPERATIONAL_WINDOW_HOURS, excluded_keys=None, tracked_players=None, manual_selected_keys=None, excluded_candidate_keys=None):
     max_gap_minutes = _validate_gap(max_gap_minutes)
     materialized = [
         row for row in records
         if excluded_keys is None or is_operational_record(row, excluded_keys)
     ]
+    candidate_exclusions = set(excluded_candidate_keys or set())
     eligible_count = 0
-    if snapshot is not None:
-        eligible_players = _eligible_automatic_player_refs(snapshot)
+    selection_mode = "manual" if manual_selected_keys else "automatic"
+    if selection_mode == "manual":
+        selected_players = build_manual_player_refs(
+            tracked_players or [], manual_selected_keys, snapshot=snapshot,
+            excluded_candidate_keys=candidate_exclusions,
+        )
+        eligible_count = len(set(manual_selected_keys))
+    elif snapshot is not None:
+        eligible_players = [
+            row for row in _eligible_automatic_player_refs(snapshot)
+            if _ref_key(row) not in candidate_exclusions
+        ]
         eligible_count = len(eligible_players)
         selected_players = eligible_players[:MAX_AUTOMATIC_CANDIDATES]
     selected_players = selected_players or []
@@ -288,12 +324,14 @@ def calculate_all_coincident_pairs(records, selected_players=None, *, max_gap_mi
     ]
     return CoincidentPairResults(
         analyses, eligible_players=eligible_count,
-        selected_candidates=selected_count,
+        selected_candidates=selected_count, selection_mode=selection_mode,
+        excluded_candidates=len(candidate_exclusions),
     )
 
 
 def load_all_coincident_pairs(tracked_players_path: str | Path, gt_path=GT_HISTORY_PATH, eadriatic_path=EADRIATIC_HISTORY_PATH, *, max_gap_minutes=DEFAULT_MAX_COINCIDENT_GAP_MINUTES):
     tracked = load_tracked_players(tracked_players_path)
+    config = load_coincident_config(tracked_players_path)
     excluded = excluded_player_keys(tracked)
     records = load_all_history(gt_path, eadriatic_path)
     reference = datetime.now(timezone.utc)
@@ -303,4 +341,6 @@ def load_all_coincident_pairs(tracked_players_path: str | Path, gt_path=GT_HISTO
     return calculate_all_coincident_pairs(
         records, snapshot=snapshot, reference_time=reference,
         max_gap_minutes=max_gap_minutes, excluded_keys=excluded,
+        tracked_players=tracked, manual_selected_keys=config["selected_keys"],
+        excluded_candidate_keys=config["excluded_keys"],
     )

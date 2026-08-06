@@ -3,7 +3,7 @@ import unittest
 import uuid
 
 from selected_players import (
-    TrackedPlayer, bettable_player_keys, load_tracked_players, parse_tracked_player_line,
+    TrackedPlayer, bettable_player_keys, load_coincident_config, load_tracked_players, parse_tracked_player_line,
     selected_player_keys, tracked_player_keys,
 )
 
@@ -56,6 +56,36 @@ class SelectedPlayersTests(unittest.TestCase):
         self.assertEqual(tracked_player_keys(rows), {("GT", "lucas"), ("GT", "fox")})
         self.assertEqual(selected_player_keys(rows), set())
         self.assertEqual(bettable_player_keys(rows), {("GT", "fox")})
+
+    def test_coincident_directives_empty_and_populated(self):
+        path = Path(__file__).parent / ".tmp" / f"{uuid.uuid4().hex}.txt"
+        content = (
+            "GT|A\nGT|B\nGT|\nGT|C\nGT|D\n"
+            "@COINCIDENT_SELECT|| EADRIATIC|Eric , GT|Lucas, EADRIATIC|Eric\n"
+            "@COINCIDENT_EXCLUDE||EADRIATIC|Haidan, EADRIATIC|Kai\n"
+        )
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(content, encoding="utf-8")
+            config = load_coincident_config(path)
+            self.assertEqual(config["selected_keys"], {("EADRIATIC", "eric"), ("GT", "lucas")})
+            self.assertEqual(config["excluded_keys"], {("EADRIATIC", "haidan"), ("EADRIATIC", "kai")})
+            rows = load_tracked_players(path)
+            self.assertEqual(len(rows), 5)
+            self.assertEqual({row["group_index"] for row in rows}, {0})
+        finally:
+            if path.exists():
+                path.unlink()
+
+    def test_empty_coincident_directives_do_not_apply(self):
+        path = Path(__file__).parent / ".tmp" / f"{uuid.uuid4().hex}.txt"
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("GT|A\n@COINCIDENT_SELECT||\n@COINCIDENT_EXCLUDE||\n", encoding="utf-8")
+            self.assertEqual(load_coincident_config(path), {"selected_keys": set(), "excluded_keys": set()})
+        finally:
+            if path.exists():
+                path.unlink()
 
 
 if __name__ == "__main__":

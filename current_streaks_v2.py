@@ -40,12 +40,13 @@ class PlayerSession(TypedDict):
     draw_pct: float
     loss_pct: float
     sequence: str
-    last_10: str
+    last_24: str
     current_streak_result: str | None
     current_streak: int
     tracked: bool
     balance: str
     active: bool
+    group_index: int
 
 
 class CurrentStreaksV2Payload(TypedDict):
@@ -188,7 +189,7 @@ def calculate_player_session(
         "win_pct": round(wins / played * 100, 2),
         "draw_pct": round(draws / played * 100, 2),
         "loss_pct": round(losses / played * 100, 2),
-        "sequence": sequence, "last_10": sequence[-10:],
+        "sequence": sequence, "last_24": sequence[-24:],
         "current_streak_result": streak_result, "current_streak": streak,
         "tracked": bool(tracked), "balance": balance, "active": active,
     }
@@ -275,10 +276,10 @@ def calculate_operational_snapshot(
             "win_pct": round(wins / played * 100, 2),
             "draw_pct": round(draws / played * 100, 2),
             "loss_pct": round(losses / played * 100, 2),
-            "sequence": sequence, "last_10": sequence[-10:],
+            "sequence": sequence, "last_24": sequence[-24:],
             "current_streak_result": streak_result, "current_streak": streak,
             "balance": "🟢" if indicator == "GREEN" else ("🔴" if indicator == "RED" else ""),
-            "indicator": indicator, "tracked": True,
+            "indicator": indicator, "tracked": True, "group_index": int(row.get("group_index", 0)),
         })
     snapshot.sort(key=lambda row: (
         row["league"], -row["wins"], -row["win_pct"], -row["played"],
