@@ -1,0 +1,50 @@
+name: Generate Tracker Preview
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate-preview:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run GT
+        run: python gtleagues_api.py
+
+      - name: Run Eadriatic
+        run: python eadriatic_leagues.py
+
+      - name: Group Analysis GT
+        run: python group_analysis.py GT
+
+      - name: Group Analysis Eadriatic
+        run: python group_analysis.py EADRIATIC
+
+      - name: Generate Site
+        run: python web_tracker/generate_site.py
+
+      - name: Upload preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: tracker-preview
+          path: |
+            docs/index.html
+            group_analysis.json
+            gt/data/*_player_stats.txt
+            eadriatic/data/*_eadriatic_player_stats.txt
+          if-no-files-found: error
+          retention-days: 3
