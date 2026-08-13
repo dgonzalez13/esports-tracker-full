@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "analysis_scope": "historical TXT; h2h_alerts are operational JSONL-filtered",
-  "generated_at": "13/08/2026 16:49:09 CEST",
+  "generated_at": "13/08/2026 16:52:17 CEST",
   "league": "EADRIATIC",
   "files_count": 90,
   "data_from": "20260516",
@@ -487,10 +487,10 @@
         "Cleo",
         "Gabriel"
       ],
-      "target_repr": "{'Gabriel', 'Logan', 'Noah', 'Andrew', 'Cleo'}",
+      "target_repr": "{'Andrew', 'Cleo', 'Gabriel', 'Noah', 'Logan'}",
       "h2h_keys": [
-        "Logan",
         "Andrew",
+        "Logan",
         "Cleo",
         "Noah",
         "Gabriel"
@@ -593,12 +593,12 @@
         {
           "position": 2,
           "player": "Noah",
-          "score": -35.99369702462486
+          "score": -35.99369702462485
         },
         {
           "position": 3,
           "player": "Cleo",
-          "score": -41.660609387044325
+          "score": -41.66060938704433
         },
         {
           "position": 4,
@@ -613,13 +613,18 @@
       ],
       "dominance": [
         {
-          "player": "Gabriel",
-          "wins": 4,
+          "player": "Andrew",
+          "wins": 0,
           "rivals": 4
         },
         {
-          "player": "Logan",
+          "player": "Cleo",
           "wins": 0,
+          "rivals": 4
+        },
+        {
+          "player": "Gabriel",
+          "wins": 4,
           "rivals": 4
         },
         {
@@ -628,12 +633,7 @@
           "rivals": 4
         },
         {
-          "player": "Andrew",
-          "wins": 0,
-          "rivals": 4
-        },
-        {
-          "player": "Cleo",
+          "player": "Logan",
           "wins": 0,
           "rivals": 4
         }
@@ -1297,12 +1297,12 @@
         "William",
         "Iron"
       ],
-      "target_repr": "{'Iron', 'Cezar', 'Nathan', 'Haidan', 'William'}",
+      "target_repr": "{'William', 'Haidan', 'Cezar', 'Iron', 'Nathan'}",
       "h2h_keys": [
-        "Nathan",
         "Haidan",
-        "Iron",
+        "Nathan",
         "William",
+        "Iron",
         "Cezar"
       ],
       "coincidencias_5": 1,
@@ -1382,7 +1382,12 @@
       ],
       "dominance": [
         {
-          "player": "Iron",
+          "player": "William",
+          "wins": 0,
+          "rivals": 4
+        },
+        {
+          "player": "Haidan",
           "wins": 0,
           "rivals": 4
         },
@@ -1392,18 +1397,13 @@
           "rivals": 4
         },
         {
+          "player": "Iron",
+          "wins": 0,
+          "rivals": 4
+        },
+        {
           "player": "Nathan",
           "wins": 2,
-          "rivals": 4
-        },
-        {
-          "player": "Haidan",
-          "wins": 0,
-          "rivals": 4
-        },
-        {
-          "player": "William",
-          "wins": 0,
           "rivals": 4
         }
       ],
@@ -2556,7 +2556,7 @@
             "Atlas",
             "Lost"
           ],
-          "target_repr": "{'Atlas', 'Tiago', 'Lost', 'Penn', 'Ali'}",
+          "target_repr": "{'Lost', 'Ali', 'Tiago', 'Atlas', 'Penn'}",
           "h2h_keys": [
             "Tiago",
             "Penn",
@@ -2677,13 +2677,18 @@
             {
               "position": 5,
               "player": "Lost",
-              "score": -112.52921723929754
+              "score": -112.52921723929751
             }
           ],
           "dominance": [
             {
-              "player": "Atlas",
+              "player": "Lost",
               "wins": 0,
+              "rivals": 4
+            },
+            {
+              "player": "Ali",
+              "wins": 3,
               "rivals": 4
             },
             {
@@ -2692,18 +2697,13 @@
               "rivals": 4
             },
             {
-              "player": "Lost",
+              "player": "Atlas",
               "wins": 0,
               "rivals": 4
             },
             {
               "player": "Penn",
               "wins": 1,
-              "rivals": 4
-            },
-            {
-              "player": "Ali",
-              "wins": 3,
               "rivals": 4
             }
           ],
@@ -2747,12 +2747,12 @@
               "weighted_score": 10100.000000000002,
               "best_matchups": [
                 {
-                  "rival": "Atlas",
+                  "rival": "Lost",
                   "win_pct": 80.0,
                   "matches": 45
                 },
                 {
-                  "rival": "Lost",
+                  "rival": "Atlas",
                   "win_pct": 80.0,
                   "matches": 45
                 },
@@ -2763,21 +2763,6 @@
                 }
               ],
               "best_matchup_details": [
-                {
-                  "rival": "Atlas",
-                  "W": 36,
-                  "D": 5,
-                  "L": 4,
-                  "matches": 45,
-                  "win_pct": 80.0,
-                  "draw_pct": 11.11111111111111,
-                  "loss_pct": 8.88888888888889,
-                  "seq": "VDEVVVVVVVVVVVVDEEVVVVDVVVVVVVVVVVDEVVEVVVVVV",
-                  "last5": "VVVVV",
-                  "last10": "EVVEVVVVVV",
-                  "stk_win": 6,
-                  "stk_lose": 10
-                },
                 {
                   "rival": "Lost",
                   "W": 36,
@@ -2792,6 +2777,21 @@
                   "last10": "VVVVVVVVVV",
                   "stk_win": 14,
                   "stk_lose": 28
+                },
+                {
+                  "rival": "Atlas",
+                  "W": 36,
+                  "D": 5,
+                  "L": 4,
+                  "matches": 45,
+                  "win_pct": 80.0,
+                  "draw_pct": 11.11111111111111,
+                  "loss_pct": 8.88888888888889,
+                  "seq": "VDEVVVVVVVVVVVVDEEVVVVDVVVVVVVVVVVDEVVEVVVVVV",
+                  "last5": "VVVVV",
+                  "last10": "EVVEVVVVVV",
+                  "stk_win": 6,
+                  "stk_lose": 10
                 },
                 {
                   "rival": "Penn",
@@ -3366,11 +3366,11 @@
             "Banega",
             "Eros"
           ],
-          "target_repr": "{'Furious', 'Crysis', 'David', 'Banega', 'Eros'}",
+          "target_repr": "{'Furious', 'David', 'Banega', 'Eros', 'Crysis'}",
           "h2h_keys": [
-            "Crysis",
             "Banega",
             "Eros",
+            "Crysis",
             "Furious",
             "David"
           ],
@@ -3497,11 +3497,6 @@
               "rivals": 4
             },
             {
-              "player": "Crysis",
-              "wins": 0,
-              "rivals": 4
-            },
-            {
               "player": "David",
               "wins": 1,
               "rivals": 4
@@ -3514,6 +3509,11 @@
             {
               "player": "Eros",
               "wins": 3,
+              "rivals": 4
+            },
+            {
+              "player": "Crysis",
+              "wins": 0,
               "rivals": 4
             }
           ],
@@ -4655,10 +4655,10 @@
             "Cleo",
             "Gabriel"
           ],
-          "target_repr": "{'Gabriel', 'Logan', 'Noah', 'Andrew', 'Cleo'}",
+          "target_repr": "{'Andrew', 'Cleo', 'Gabriel', 'Noah', 'Logan'}",
           "h2h_keys": [
-            "Logan",
             "Andrew",
+            "Logan",
             "Cleo",
             "Noah",
             "Gabriel"
@@ -4761,12 +4761,12 @@
             {
               "position": 2,
               "player": "Noah",
-              "score": -35.99369702462486
+              "score": -35.99369702462485
             },
             {
               "position": 3,
               "player": "Cleo",
-              "score": -41.660609387044325
+              "score": -41.66060938704433
             },
             {
               "position": 4,
@@ -4781,13 +4781,18 @@
           ],
           "dominance": [
             {
-              "player": "Gabriel",
-              "wins": 4,
+              "player": "Andrew",
+              "wins": 0,
               "rivals": 4
             },
             {
-              "player": "Logan",
+              "player": "Cleo",
               "wins": 0,
+              "rivals": 4
+            },
+            {
+              "player": "Gabriel",
+              "wins": 4,
               "rivals": 4
             },
             {
@@ -4796,12 +4801,7 @@
               "rivals": 4
             },
             {
-              "player": "Andrew",
-              "wins": 0,
-              "rivals": 4
-            },
-            {
-              "player": "Cleo",
+              "player": "Logan",
               "wins": 0,
               "rivals": 4
             }
@@ -5465,12 +5465,12 @@
             "William",
             "Iron"
           ],
-          "target_repr": "{'Iron', 'Cezar', 'Nathan', 'Haidan', 'William'}",
+          "target_repr": "{'William', 'Haidan', 'Cezar', 'Iron', 'Nathan'}",
           "h2h_keys": [
-            "Nathan",
             "Haidan",
-            "Iron",
+            "Nathan",
             "William",
+            "Iron",
             "Cezar"
           ],
           "coincidencias_5": 1,
@@ -5550,7 +5550,12 @@
           ],
           "dominance": [
             {
-              "player": "Iron",
+              "player": "William",
+              "wins": 0,
+              "rivals": 4
+            },
+            {
+              "player": "Haidan",
               "wins": 0,
               "rivals": 4
             },
@@ -5560,18 +5565,13 @@
               "rivals": 4
             },
             {
+              "player": "Iron",
+              "wins": 0,
+              "rivals": 4
+            },
+            {
               "player": "Nathan",
               "wins": 2,
-              "rivals": 4
-            },
-            {
-              "player": "Haidan",
-              "wins": 0,
-              "rivals": 4
-            },
-            {
-              "player": "William",
-              "wins": 0,
               "rivals": 4
             }
           ],
