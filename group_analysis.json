@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "analysis_scope": "historical TXT; h2h_alerts are operational JSONL-filtered",
-  "generated_at": "28/08/2026 07:49:53 CEST",
+  "generated_at": "28/08/2026 07:50:39 CEST",
   "league": "EADRIATIC",
   "files_count": 105,
   "data_from": "20260516",
@@ -468,7 +468,7 @@
         "William",
         "Beckham"
       ],
-      "target_repr": "{'William', 'Beckham', 'Cezar', 'VanGogh', 'Alexander'}",
+      "target_repr": "{'William', 'VanGogh', 'Beckham', 'Cezar', 'Alexander'}",
       "h2h_keys": [
         "Beckham",
         "Alexander",
@@ -591,17 +591,17 @@
           "rivals": 4
         },
         {
+          "player": "VanGogh",
+          "wins": 0,
+          "rivals": 4
+        },
+        {
           "player": "Beckham",
           "wins": 1,
           "rivals": 4
         },
         {
           "player": "Cezar",
-          "wins": 0,
-          "rivals": 4
-        },
-        {
-          "player": "VanGogh",
           "wins": 0,
           "rivals": 4
         },
@@ -1270,7 +1270,7 @@
         "Bruno",
         "Leonardo"
       ],
-      "target_repr": "{'Maverick', 'Gabriel', 'Flash', 'Leonardo', 'Bruno'}",
+      "target_repr": "{'Flash', 'Leonardo', 'Maverick', 'Gabriel', 'Bruno'}",
       "h2h_keys": [
         "Flash",
         "Bruno",
@@ -1340,7 +1340,7 @@
         {
           "position": 3,
           "player": "Maverick",
-          "score": -34.95928297700686
+          "score": -34.959282977006865
         },
         {
           "position": 4,
@@ -1350,20 +1350,10 @@
         {
           "position": 5,
           "player": "Bruno",
-          "score": -86.68784217627422
+          "score": -86.6878421762742
         }
       ],
       "dominance": [
-        {
-          "player": "Maverick",
-          "wins": 2,
-          "rivals": 4
-        },
-        {
-          "player": "Gabriel",
-          "wins": 3,
-          "rivals": 4
-        },
         {
           "player": "Flash",
           "wins": 2,
@@ -1372,6 +1362,16 @@
         {
           "player": "Leonardo",
           "wins": 0,
+          "rivals": 4
+        },
+        {
+          "player": "Maverick",
+          "wins": 2,
+          "rivals": 4
+        },
+        {
+          "player": "Gabriel",
+          "wins": 3,
           "rivals": 4
         },
         {
@@ -2442,12 +2442,12 @@
             "Delpiero",
             "Doctor"
           ],
-          "target_repr": "{'Vito', 'Delpiero', 'Jose', 'Doctor', 'Titan'}",
+          "target_repr": "{'Doctor', 'Delpiero', 'Titan', 'Jose', 'Vito'}",
           "h2h_keys": [
-            "Jose",
             "Titan",
-            "Vito",
+            "Jose",
             "Doctor",
+            "Vito",
             "Delpiero"
           ],
           "coincidencias_5": 2,
@@ -2553,7 +2553,7 @@
             {
               "position": 3,
               "player": "Vito",
-              "score": -53.24956273589247
+              "score": -53.249562735892475
             },
             {
               "position": 4,
@@ -2568,7 +2568,7 @@
           ],
           "dominance": [
             {
-              "player": "Vito",
+              "player": "Doctor",
               "wins": 0,
               "rivals": 4
             },
@@ -2578,18 +2578,18 @@
               "rivals": 4
             },
             {
+              "player": "Titan",
+              "wins": 1,
+              "rivals": 4
+            },
+            {
               "player": "Jose",
               "wins": 0,
               "rivals": 4
             },
             {
-              "player": "Doctor",
+              "player": "Vito",
               "wins": 0,
-              "rivals": 4
-            },
-            {
-              "player": "Titan",
-              "wins": 1,
               "rivals": 4
             }
           ],
@@ -3252,7 +3252,7 @@
             "Kingston",
             "Vendetta"
           ],
-          "target_repr": "{'Lio', 'Vendetta', 'Kingston', 'Baba', 'Lucas'}",
+          "target_repr": "{'Lucas', 'Vendetta', 'Lio', 'Kingston', 'Baba'}",
           "h2h_keys": [
             "Vendetta",
             "Baba",
@@ -3370,13 +3370,18 @@
           ],
           "dominance": [
             {
-              "player": "Lio",
-              "wins": 2,
+              "player": "Lucas",
+              "wins": 0,
               "rivals": 4
             },
             {
               "player": "Vendetta",
               "wins": 0,
+              "rivals": 4
+            },
+            {
+              "player": "Lio",
+              "wins": 2,
               "rivals": 4
             },
             {
@@ -3386,11 +3391,6 @@
             },
             {
               "player": "Baba",
-              "wins": 0,
-              "rivals": 4
-            },
-            {
-              "player": "Lucas",
               "wins": 0,
               "rivals": 4
             }
@@ -3435,12 +3435,12 @@
               "weighted_score": 11600.0,
               "best_matchups": [
                 {
-                  "rival": "Vendetta",
+                  "rival": "Lucas",
                   "win_pct": 67.3913043478261,
                   "matches": 46
                 },
                 {
-                  "rival": "Lucas",
+                  "rival": "Vendetta",
                   "win_pct": 67.3913043478261,
                   "matches": 46
                 },
@@ -3451,21 +3451,6 @@
                 }
               ],
               "best_matchup_details": [
-                {
-                  "rival": "Vendetta",
-                  "W": 31,
-                  "D": 4,
-                  "L": 11,
-                  "matches": 46,
-                  "win_pct": 67.3913043478261,
-                  "draw_pct": 8.695652173913043,
-                  "loss_pct": 23.91304347826087,
-                  "seq": "VVVVDVVEDDVDVEDDVVEVVVVVVVVDVVVVVVVVEVDDDVVVDV",
-                  "last5": "VVVDV",
-                  "last10": "EVDDDVVVDV",
-                  "stk_win": 1,
-                  "stk_lose": 1
-                },
                 {
                   "rival": "Lucas",
                   "W": 31,
@@ -3480,6 +3465,21 @@
                   "last10": "DDVDVDVVVV",
                   "stk_win": 4,
                   "stk_lose": 4
+                },
+                {
+                  "rival": "Vendetta",
+                  "W": 31,
+                  "D": 4,
+                  "L": 11,
+                  "matches": 46,
+                  "win_pct": 67.3913043478261,
+                  "draw_pct": 8.695652173913043,
+                  "loss_pct": 23.91304347826087,
+                  "seq": "VVVVDVVEDDVDVEDDVVEVVVVVVVVDVVVVVVVVEVDDDVVVDV",
+                  "last5": "VVVDV",
+                  "last10": "EVDDDVVVDV",
+                  "stk_win": 1,
+                  "stk_lose": 1
                 },
                 {
                   "rival": "Baba",
@@ -4514,7 +4514,7 @@
             "William",
             "Beckham"
           ],
-          "target_repr": "{'William', 'Beckham', 'Cezar', 'VanGogh', 'Alexander'}",
+          "target_repr": "{'William', 'VanGogh', 'Beckham', 'Cezar', 'Alexander'}",
           "h2h_keys": [
             "Beckham",
             "Alexander",
@@ -4637,17 +4637,17 @@
               "rivals": 4
             },
             {
+              "player": "VanGogh",
+              "wins": 0,
+              "rivals": 4
+            },
+            {
               "player": "Beckham",
               "wins": 1,
               "rivals": 4
             },
             {
               "player": "Cezar",
-              "wins": 0,
-              "rivals": 4
-            },
-            {
-              "player": "VanGogh",
               "wins": 0,
               "rivals": 4
             },
@@ -5316,7 +5316,7 @@
             "Bruno",
             "Leonardo"
           ],
-          "target_repr": "{'Maverick', 'Gabriel', 'Flash', 'Leonardo', 'Bruno'}",
+          "target_repr": "{'Flash', 'Leonardo', 'Maverick', 'Gabriel', 'Bruno'}",
           "h2h_keys": [
             "Flash",
             "Bruno",
@@ -5386,7 +5386,7 @@
             {
               "position": 3,
               "player": "Maverick",
-              "score": -34.95928297700686
+              "score": -34.959282977006865
             },
             {
               "position": 4,
@@ -5396,20 +5396,10 @@
             {
               "position": 5,
               "player": "Bruno",
-              "score": -86.68784217627422
+              "score": -86.6878421762742
             }
           ],
           "dominance": [
-            {
-              "player": "Maverick",
-              "wins": 2,
-              "rivals": 4
-            },
-            {
-              "player": "Gabriel",
-              "wins": 3,
-              "rivals": 4
-            },
             {
               "player": "Flash",
               "wins": 2,
@@ -5418,6 +5408,16 @@
             {
               "player": "Leonardo",
               "wins": 0,
+              "rivals": 4
+            },
+            {
+              "player": "Maverick",
+              "wins": 2,
+              "rivals": 4
+            },
+            {
+              "player": "Gabriel",
+              "wins": 3,
               "rivals": 4
             },
             {
