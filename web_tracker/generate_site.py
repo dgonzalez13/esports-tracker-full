@@ -24,11 +24,6 @@ from selected_players import (
     bettable_player_keys, excluded_player_keys, is_operational_record,
     load_coincident_config, load_tracked_players,
 )
-from upcoming_predictions import (
-    MIN_ESTIMATED_WIN_PCT, calculate_upcoming_predictions,
-)
-
-
 DOCS_DIR = BASE / "docs"
 GROUP_ANALYSIS_FILE = BASE / "group_analysis.json"
 TRACKED_PLAYERS_FILE = BASE / "tracked_players.txt"
@@ -276,7 +271,7 @@ def metric(label, value, hint=None):
     )
 
 
-def render_page(data, current_streaks, coincident_pairs=None, current_streaks_v2=None, upcoming_predictions=None):
+def render_page(data, current_streaks, coincident_pairs=None, current_streaks_v2=None):
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -297,9 +292,7 @@ def render_page(data, current_streaks, coincident_pairs=None, current_streaks_v2
     </div>
 </header>
 <main>
-    {render_current_streaks(current_streaks)}
     {render_current_streaks_v2(current_streaks_v2 or {})}
-    {render_upcoming_predictions(upcoming_predictions or [])}
     {render_coincident_matches(coincident_pairs or [], current_streaks_v2 or {})}
     {render_group_dashboard(data, current_streaks)}
 </main>
@@ -766,64 +759,11 @@ summary {
     border-top: 1px solid var(--line);
 }
 
-.reliability-high { background: var(--good-soft); }
-.reliability-medium { background: var(--warn-soft); }
-
-.reliability-list {
-    display: grid;
-    gap: 8px;
-    margin-bottom: 16px;
-}
-
-.reliability-item {
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 11px 13px;
-}
-
-.reliability-title {
-    font-weight: 800;
-}
-
-.reliability-meta {
-    margin-top: 4px;
-    color: var(--muted);
-    font-size: 12px;
-}
 </style>"""
 
 
 def metadata_badge(label, value):
     return f'<span class="badge">{text(label)}: {text(value)}</span>'
-
-
-def render_current_streaks(current_streaks):
-    panels = [
-        render_streak_panel(league, payload)
-        for league, payload in current_streaks.items()
-    ]
-
-    return (
-        '<section class="dashboard-section">'
-        '<div class="section-head">'
-        "<div>"
-        "<h2>Current Streaks — Legacy</h2>"
-        '<p class="section-subtitle">Tracked players use filtered JSONL for the displayed TXT day in Europe/Madrid; untracked rows remain daily TXT totals.</p>'
-        "</div>"
-        "</div>"
-        f'<div class="streak-grid">{"".join(panels)}</div>'
-        "</section>"
-    )
-
-
-def _session_local(value):
-    try:
-        parsed = datetime.fromisoformat(str(value))
-    except (TypeError, ValueError):
-        return "—"
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
-    return parsed.astimezone(ZoneInfo("Europe/Madrid")).strftime("%d/%m %H:%M")
 
 
 def render_session_streak_panel(league, rows):
@@ -862,7 +802,7 @@ def render_current_streaks_v2(payload):
     ]
     return (
         '<section class="dashboard-section">'
-        '<div class="section-head"><div><h2>Current Streaks V2 — Last 8 Hours</h2>'
+        '<div class="section-head"><div><h2>Current Streaks — Last 8 Hours</h2>'
         '<p class="section-subtitle">All valid normalized matches in the operational window.</p>'
         '</div><div class="badge-row">'
         f'{metadata_badge("Window", f"{payload.get("operational_window_hours", 8)} hours")}'
@@ -883,46 +823,6 @@ def _madrid_time(value):
 
 
 
-def render_upcoming_predictions(predictions):
-    rows = []
-    row_classes = []
-    for row in predictions:
-        group_label = f'{row.get("league", "")} · Group {int(row.get("group_index", 0)) + 1}'
-        matchup = f'{row.get("player_a", "")} ↔ {row.get("player_b", "")}'
-        prediction = f'{row.get("predicted_player", "")} WIN'
-        evidence = (
-            f'H2H {row.get("h2h_win_pct", 0):.2f}% ({row.get("h2h_matches", 0)}) · '
-            f'H2H L20 {row.get("recent_h2h_win_pct", 0):.2f}% ({row.get("recent_h2h_matches", 0)}) · '
-            f'Form {row.get("recent_player_win_pct", 0):.2f}% / Opp L {row.get("recent_opponent_loss_pct", 0):.2f}%'
-        )
-        rows.append([
-            group_label, matchup, prediction,
-            f'{row.get("estimated_win_pct", 0):.2f}%',
-            row.get("confidence", "LOW"), evidence,
-        ])
-        row_classes.append(
-            "prediction-high" if row.get("confidence") == "HIGH" else
-            "prediction-medium" if row.get("confidence") == "MEDIUM" else ""
-        )
-    if rows:
-        body = render_table(
-            ["Group", "Possible match", "Prediction", "Estimated win", "Confidence", "Evidence"],
-            rows, numeric_columns={3}, row_classes=row_classes,
-        )
-    else:
-        body = '<p class="section-subtitle">No possible group matchup currently reaches both the configured estimate threshold and MEDIUM/HIGH confidence.</p>'
-    return (
-        '<section class="dashboard-section">'
-        '<div class="section-head"><div><h2>Upcoming Match Predictions</h2>'
-        '<p class="section-subtitle">Only MEDIUM/HIGH estimates are shown. Estimated percentages are heuristic scores, not calibrated probabilities.</p>'
-        '</div><div class="badge-row">'
-        f'{metadata_badge("Minimum estimate", f"{MIN_ESTIMATED_WIN_PCT:.0f}%")}'
-        f'{metadata_badge("Recent form", "Last 24")}'
-        f'{metadata_badge("Recent H2H", "Last 20")}'
-        '</div></div>'
-        f'{body}</section>'
-    )
-
 def _coincident_indicator_strength_lookup(current_streaks_v2):
     lookup = {}
     for league, rows in (current_streaks_v2 or {}).get("leagues", {}).items():
@@ -941,22 +841,8 @@ def _coincident_indicator_strength_lookup(current_streaks_v2):
     return lookup
 
 
-def _coincident_pair_reliability(pair, strength_lookup):
+def _coincident_pair_metrics(pair, strength_lookup):
     matches = sorted(pair.get("matches", []), key=lambda row: row.get("pair_order", 0))
-    total = len(matches)
-    confirmed = sum(
-        1 for row in matches
-        if row.get("confirmation") in {"BOTH_GREEN", "BOTH_RED", "MIXED"}
-    )
-    historical_pct = (confirmed / total * 100.0) if total else 0.0
-
-    recent = matches[-5:]
-    recent_confirmed = sum(
-        1 for row in recent
-        if row.get("confirmation") in {"BOTH_GREEN", "BOTH_RED", "MIXED"}
-    )
-    recent_pct = (recent_confirmed / len(recent) * 100.0) if recent else 0.0
-
     key_a = (
         str(pair.get("player_a_league", "")).upper(),
         name_key(str(pair.get("player_a", ""))),
@@ -967,87 +853,19 @@ def _coincident_pair_reliability(pair, strength_lookup):
     )
     strength_a = float(strength_lookup.get(key_a, 0.0))
     strength_b = float(strength_lookup.get(key_b, 0.0))
-    indicator_strength = (
-        (strength_a + strength_b) / 2.0
-        if strength_a > 0 and strength_b > 0
-        else 0.0
-    )
-
-    score = historical_pct * 0.50 + recent_pct * 0.30 + indicator_strength * 0.20
-
-    if total >= 8 and score >= 70.0:
-        level = "HIGH"
-    elif total >= 5 and score >= 65.0:
-        level = "MEDIUM"
-    else:
-        level = "LOW"
+    combined_pct = strength_a * strength_b / 100.0
+    misses = 0
+    for row in reversed(matches):
+        if row.get("confirmation") in {"BOTH_GREEN", "BOTH_RED", "MIXED"}:
+            break
+        misses += 1
 
     return {
-        "score": round(score, 2),
-        "level": level,
-        "matches": total,
-        "confirmed": confirmed,
-        "historical_pct": round(historical_pct, 2),
-        "recent_matches": len(recent),
-        "recent_confirmed": recent_confirmed,
-        "recent_pct": round(recent_pct, 2),
-        "indicator_strength": round(indicator_strength, 2),
+        "combined_pct": round(combined_pct, 2),
+        "player_a_pct": round(strength_a, 2),
+        "player_b_pct": round(strength_b, 2),
+        "misses_since_hit": misses,
     }
-
-
-def render_reliable_coincident_pairs(pairs, current_streaks_v2=None):
-    strength_lookup = _coincident_indicator_strength_lookup(current_streaks_v2 or {})
-    ranked = []
-
-    for pair in pairs:
-        reliability = _coincident_pair_reliability(pair, strength_lookup)
-        if reliability["level"] not in {"HIGH", "MEDIUM"}:
-            continue
-        ranked.append((reliability, pair))
-
-    ranked.sort(key=lambda item: (
-        -item[0]["score"],
-        -item[0]["matches"],
-        str(item[1].get("player_a", "")).casefold(),
-        str(item[1].get("player_b", "")).casefold(),
-    ))
-    ranked = ranked[:5]
-
-    if not ranked:
-        return (
-            '<div class="reliability-list">'
-            '<p class="section-subtitle">'
-            'No coincident pair currently reaches MEDIUM or HIGH reliability.'
-            '</p></div>'
-        )
-
-    items = []
-    for reliability, pair in ranked:
-        title = (
-            f'{pair.get("player_a_league", "")} · {pair.get("player_a", "")} '
-            f'[{pair.get("player_a_indicator", "NONE")}] ↔ '
-            f'{pair.get("player_b_league", "")} · {pair.get("player_b", "")} '
-            f'[{pair.get("player_b_indicator", "NONE")}]'
-        )
-        css = (
-            "reliability-high"
-            if reliability["level"] == "HIGH"
-            else "reliability-medium"
-        )
-        items.append(
-            f'<div class="reliability-item {css}">'
-            f'<div class="reliability-title">{text(title)}</div>'
-            f'<div class="reliability-meta">'
-            f'Reliability {reliability["score"]:.0f}% · {text(reliability["level"])} · '
-            f'Historical {reliability["confirmed"]}/{reliability["matches"]} '
-            f'({reliability["historical_pct"]:.0f}%) · '
-            f'Recent {reliability["recent_confirmed"]}/{reliability["recent_matches"]} '
-            f'({reliability["recent_pct"]:.0f}%) · '
-            f'Indicator strength {reliability["indicator_strength"]:.0f}%'
-            '</div></div>'
-        )
-
-    return '<div class="reliability-list">' + "".join(items) + '</div>'
 
 
 def render_coincident_pair(pair, reliability=None):
@@ -1109,7 +927,8 @@ def render_coincident_pair(pair, reliability=None):
     if reliability:
         reliability_badge = (
             f'<span class="badge">'
-            f'Reliability: {reliability["score"]:.0f}% · {text(reliability["level"])}'
+            f'Combined: {reliability["combined_pct"]:.2f}% · '
+            f'Without a hit: {reliability["misses_since_hit"]}'
             f'</span>'
         )
 
@@ -1141,18 +960,21 @@ def render_coincident_matches(pairs, current_streaks_v2=None):
     excluded_candidates = getattr(pairs, "excluded_candidates", 0)
 
     strength_lookup = _coincident_indicator_strength_lookup(current_streaks_v2 or {})
-    reliable = render_reliable_coincident_pairs(pairs, current_streaks_v2 or {})
+    minimum_combined_pct = 35.0
+    visible_pairs = []
+    for pair in pairs:
+        metrics = _coincident_pair_metrics(pair, strength_lookup)
+        if metrics["combined_pct"] > minimum_combined_pct:
+            visible_pairs.append((pair, metrics))
+    visible_pairs.sort(key=lambda item: -item[1]["combined_pct"])
 
     content = (
         ''.join(
-            render_coincident_pair(
-                pair,
-                _coincident_pair_reliability(pair, strength_lookup),
-            )
-            for pair in pairs
+            render_coincident_pair(pair, reliability)
+            for pair, reliability in visible_pairs
         )
-        if pairs
-        else '<p class="section-subtitle">No player combinations in the last 8 hours.</p>'
+        if visible_pairs
+        else '<p class="section-subtitle">No pairs exceed the 35% combined threshold.</p>'
     )
 
     return (
@@ -1160,7 +982,7 @@ def render_coincident_matches(pairs, current_streaks_v2=None):
         '<div class="section-head"><div>'
         '<h2>Coincident Matches — Last 8 Hours</h2>'
         '<p class="section-subtitle">'
-        'Pairs are collapsed by default. Open only the matchup you want to inspect.'
+        'Only pairs with a combined percentage above 35% are shown.'
         '</p>'
         '</div><div class="badge-row">'
         f'{metadata_badge("Eligible players", eligible_players)}'
@@ -1168,84 +990,10 @@ def render_coincident_matches(pairs, current_streaks_v2=None):
         f'{metadata_badge("Selection mode", selection_mode)}'
         f'{metadata_badge("Excluded candidates", excluded_candidates)}'
         f'{metadata_badge("Candidate limit", candidate_limit if selection_mode == "automatic" else "manual")}'
+        f'{metadata_badge("Minimum combined", "> 35%")} '
         '</div></div>'
-        '<div class="streak-panel" style="padding: 16px; margin-bottom: 16px">'
-        '<div class="league-head">'
-        '<h3>Most Reliable Coincident Pairs</h3>'
-        '<span class="badge">Top 5 · MEDIUM/HIGH only</span>'
-        '</div>'
-        '<p class="section-subtitle">'
-        'Reliability combines historical confirmation (50%), recent confirmation (30%) '
-        'and current indicator strength (20%).'
-        '</p>'
-        f'{reliable}'
-        '</div>'
         f'{content}'
         '</section>'
-    )
-
-
-def render_streak_panel(league, payload):
-    rows = payload["rows"]
-
-    def render_streak_table(rows):
-
-        html = []
-
-        html.append('<div class="table-wrap"><table>')
-
-        html.append("""
-        <thead>
-        <tr>
-            <th>PLAYER</th>
-            <th></th>
-            <th>W</th>
-            <th>D</th>
-            <th>L</th>
-            <th>PLAYED</th>
-            <th>STK WIN</th>
-            <th>STK LOSE</th>
-            <th>SEQ</th>
-        </tr>
-        </thead>
-        <tbody>
-        """)
-
-        for row in rows:
-
-            style = (
-                ' style="background:#e8f7ee;font-weight:bold;"'
-                if row["tracked"]
-                else ""
-            )
-
-            html.append(f"<tr{style}>")
-
-            html.append(f"<td>{text(row['player'])}</td>")
-            html.append(f"<td>{row['balance']}</td>")
-            html.append(f'<td class="num">{row["W"]}</td>')
-            html.append(f'<td class="num">{row["D"]}</td>')
-            html.append(f'<td class="num">{row["L"]}</td>')
-            html.append(f'<td class="num">{row["played"]}</td>')
-            html.append(f'<td class="num">{row["stk_win"]}</td>')
-            html.append(f'<td class="num">{row["stk_lose"]}</td>')
-            html.append(f'<td class="seq">{row["seq"]}</td>')
-
-            html.append("</tr>")
-
-        html.append("</tbody></table></div>")
-
-        return "".join(html)
-
-    return (
-        '<article class="streak-panel">'
-        '<div class="league-head">'
-        f'<h3>{text(payload["title"])}</h3>'
-        f'{metadata_badge("Source", payload["source"])}'
-        f'{metadata_badge("Scope", payload.get("scope_note", "daily"))}'
-        "</div>"
-        + render_streak_table(rows)
-        + "</article>"
     )
 
 
@@ -1738,12 +1486,8 @@ def main():
         manual_selected_keys=coincident_config["selected_keys"],
         excluded_candidate_keys=coincident_config["excluded_keys"],
     )
-    upcoming_predictions = calculate_upcoming_predictions(
-        records, tracked_players, excluded_keys=excluded_keys,
-    )
     html = render_page(
         group_analysis, current_streaks, coincident_pairs, current_streaks_v2,
-        upcoming_predictions,
     )
 
     write_html(html)

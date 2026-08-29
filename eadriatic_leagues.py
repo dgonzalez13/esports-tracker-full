@@ -22,6 +22,21 @@ BASE = Path(__file__).resolve().parent
 
 OUTPUT_DIR = BASE / "eadriatic" / "data"
 MATCH_HISTORY_FILE = OUTPUT_DIR / "match_history.jsonl"
+EADRIATIC_URL = "https://eadriaticleague2.leaguerepublic.com/index.html"
+EADRIATIC_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/137.0 Safari/537.36"
+    )
+}
+
+
+def fetch_eadriatic_html():
+    """Download the shared page used for both results and tracked players."""
+    response = requests.get(EADRIATIC_URL, headers=EADRIATIC_HEADERS, timeout=30)
+    response.raise_for_status()
+    return response.text
 
 # -------------------------
 # EXTRAER JUGADOR (ROBUSTO)
@@ -515,26 +530,8 @@ def save_txt(df, vs_text):
 # MAIN
 # -------------------------
 def main():
-
-    URL = "https://eadriaticleague2.leaguerepublic.com/index.html"
-
     print("Descargando HTML...")
-
-    response = requests.get(
-        URL,
-        headers={
-            "User-Agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/137.0 Safari/537.36"
-            )
-        },
-        timeout=30
-    )
-
-    response.raise_for_status()
-
-    html = response.text
+    html = fetch_eadriatic_html()
 
     print(f"HTML descargado: {len(html):,} bytes")
     

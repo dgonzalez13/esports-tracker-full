@@ -1,0 +1,58 @@
+name: Update Tracked Players
+
+on:
+  workflow_dispatch:
+    inputs:
+      eadriatic_group_1:
+        description: "EADRIATIC group 1: C=current, N=next"
+        required: true
+        default: C
+        type: choice
+        options: [C, N]
+      eadriatic_group_2:
+        description: "EADRIATIC group 2: C=current, N=next"
+        required: true
+        default: C
+        type: choice
+        options: [C, N]
+      gt_group_1:
+        description: "GT group 1: C=current, N=next"
+        required: true
+        default: C
+        type: choice
+        options: [C, N]
+      gt_group_2:
+        description: "GT group 2: C=current, N=next"
+        required: true
+        default: C
+        type: choice
+        options: [C, N]
+
+jobs:
+  update-tracked-players:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update tracked players
+        run: >-
+          python update_tracked_players.py
+          --eadriatic-group-1 "${{ inputs.eadriatic_group_1 }}"
+          --eadriatic-group-2 "${{ inputs.eadriatic_group_2 }}"
+          --gt-group-1 "${{ inputs.gt_group_1 }}"
+          --gt-group-2 "${{ inputs.gt_group_2 }}"
+      - name: Commit tracked players
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add tracked_players.txt
+          git diff --cached --quiet || git commit -m "Update tracked players"
+          git push
