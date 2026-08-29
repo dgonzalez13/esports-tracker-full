@@ -61,14 +61,17 @@ class CoincidentRenderingTests(unittest.TestCase):
 
     def test_combined_threshold_percentage_and_misses_since_hit(self):
         value = pair([
-            {**pair()["matches"][0], "pair_order": 1, "confirmation": "MIXED"},
-            {**pair()["matches"][0], "pair_order": 2, "confirmation": "MIXED"},
+            {**pair()["matches"][0], "pair_order": 1, "confirmation": None},
+            {**pair()["matches"][0], "pair_order": 2, "confirmation": None},
             {**pair()["matches"][0], "pair_order": 3, "confirmation": None},
-            {**pair()["matches"][0], "pair_order": 4, "confirmation": None},
+            {**pair()["matches"][0], "pair_order": 4, "confirmation": "MIXED"},
+            {**pair()["matches"][0], "pair_order": 5, "confirmation": None},
+            {**pair()["matches"][0], "pair_order": 6, "confirmation": None},
         ])
         html = render_coincident_matches([value], indicators())
         self.assertIn("Combined: 40.00%", html)
         self.assertIn("Without a hit: 2", html)
+        self.assertIn("Max without a hit: 3", html)
 
         self.assertNotIn("GT · Lucas", render_coincident_matches([value], indicators(50, 50)))
 

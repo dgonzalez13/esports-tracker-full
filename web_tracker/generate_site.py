@@ -855,6 +855,14 @@ def _coincident_pair_metrics(pair, strength_lookup):
     strength_b = float(strength_lookup.get(key_b, 0.0))
     combined_pct = strength_a * strength_b / 100.0
     misses = 0
+    max_misses = 0
+    running_misses = 0
+    for row in matches:
+        if row.get("confirmation") in {"BOTH_GREEN", "BOTH_RED", "MIXED"}:
+            running_misses = 0
+        else:
+            running_misses += 1
+            max_misses = max(max_misses, running_misses)
     for row in reversed(matches):
         if row.get("confirmation") in {"BOTH_GREEN", "BOTH_RED", "MIXED"}:
             break
@@ -865,6 +873,7 @@ def _coincident_pair_metrics(pair, strength_lookup):
         "player_a_pct": round(strength_a, 2),
         "player_b_pct": round(strength_b, 2),
         "misses_since_hit": misses,
+        "max_misses_without_hit": max_misses,
     }
 
 
@@ -928,7 +937,8 @@ def render_coincident_pair(pair, reliability=None):
         reliability_badge = (
             f'<span class="badge">'
             f'Combined: {reliability["combined_pct"]:.2f}% · '
-            f'Without a hit: {reliability["misses_since_hit"]}'
+            f'Without a hit: {reliability["misses_since_hit"]} · '
+            f'Max without a hit: {reliability["max_misses_without_hit"]}'
             f'</span>'
         )
 
