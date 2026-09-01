@@ -23,7 +23,7 @@ def pair(matches=None, league_b="EADRIATIC"):
     }
 
 
-def indicators(lucas_pct=80.0, dexter_pct=50.0):
+def indicators(lucas_pct=80.0, dexter_pct=60.0):
     return {"leagues": {
         "GT": [{"player_key": "lucas", "indicator": "GREEN", "win_pct": lucas_pct}],
         "EADRIATIC": [{"player_key": "dexter", "indicator": "RED", "loss_pct": dexter_pct}],
@@ -44,8 +44,8 @@ class CoincidentRenderingTests(unittest.TestCase):
 
     def test_same_league_empty_pair_and_no_selection(self):
         same = render_coincident_matches([pair([], "GT")])
-        self.assertIn("No pairs meet the &gt; 35% and 6-match minimum.", same)
-        self.assertIn("No pairs meet the &gt; 35% and 6-match minimum.", render_coincident_matches([]))
+        self.assertIn("No pairs meet the &gt; 40% and 6-match minimum.", same)
+        self.assertIn("No pairs meet the &gt; 40% and 6-match minimum.", render_coincident_matches([]))
 
     def test_names_are_escaped_and_star_is_not_rendered(self):
         value = pair()
@@ -60,7 +60,7 @@ class CoincidentRenderingTests(unittest.TestCase):
     def test_render_page_legacy_call_still_works(self):
         html = render_page({}, {})
         self.assertIn("Coincident Matches", html)
-        self.assertIn("No pairs meet the &gt; 35% and 6-match minimum.", html)
+        self.assertIn("No pairs meet the &gt; 40% and 6-match minimum.", html)
 
     def test_pair_requires_six_coincident_matches(self):
         value = pair()
@@ -77,11 +77,11 @@ class CoincidentRenderingTests(unittest.TestCase):
             {**pair()["matches"][0], "pair_order": 6, "confirmation": None},
         ])
         html = render_coincident_matches([value], indicators())
-        self.assertIn("Combined: 40.00%", html)
+        self.assertIn("Combined: 48.00%", html)
         self.assertIn("Without a hit: 2", html)
         self.assertIn("Max without a hit: 3", html)
 
-        self.assertNotIn("GT · Lucas", render_coincident_matches([value], indicators(50, 50)))
+        self.assertNotIn("GT · Lucas", render_coincident_matches([value], indicators(80, 50)))
 
     def test_selected_player_remains_tracked_and_h2h_indicator_works(self):
         tracked = [{"league": "GT", "player": "Lucas", "player_key": "lucas", "tracked": True, "selected": True}]

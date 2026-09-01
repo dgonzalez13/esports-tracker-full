@@ -289,6 +289,16 @@ def _different_tracked_groups(players):
     return len(identities) > 1
 
 
+def _all_players_from_different_tracked_groups(players):
+    players = list(players)
+    identities = [
+        (str(player.get("league", "")).strip().upper(), player.get("group_index"))
+        for player in players
+        if isinstance(player.get("group_index"), int)
+    ]
+    return len(identities) == len(players) and len(set(identities)) == len(players)
+
+
 def _maximum_two_per_tracked_group(players):
     counts = {}
     for player in players:
@@ -372,7 +382,7 @@ def _match_group_histories(players, histories, max_gap_minutes):
             "indicator": player.get("indicator", "NONE"),
             "group_index": player.get("group_index"),
         } for player in players],
-        "different_groups": _different_tracked_groups(players),
+        "different_groups": _all_players_from_different_tracked_groups(players),
         "max_gap_minutes": max_gap_minutes,
         "operational_window_hours": DEFAULT_OPERATIONAL_WINDOW_HOURS,
         "matches": rows,

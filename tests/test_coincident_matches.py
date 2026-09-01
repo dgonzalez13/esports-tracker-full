@@ -136,8 +136,21 @@ class MatchingTests(unittest.TestCase):
         self.assertEqual(len(quartet["matches"]), 1)
         self.assertEqual(quartet["matches"][0]["confirmation"], "ALL_GREEN")
         self.assertEqual(quartet["matches"][0]["gap_minutes"], 3)
-        self.assertTrue(quartet["different_groups"])
+        self.assertFalse(quartet["different_groups"])
         self.assertTrue(any(pair["different_groups"] for pair in result))
+
+    def test_group_highlight_requires_every_player_to_have_a_distinct_group(self):
+        players = [
+            {**ref(name), "indicator": "GREEN", "group_index": index}
+            for index, name in enumerate(("A", "B", "C", "D"))
+        ]
+        result = cm.calculate_all_coincident_pairs([], players)
+        self.assertTrue(all(group["different_groups"] for group in result.groups))
+
+        players[3]["group_index"] = 2
+        result = cm.calculate_all_coincident_pairs([], players)
+        quartet = next(group for group in result.groups if group["size"] == 4)
+        self.assertFalse(quartet["different_groups"])
 
     def test_groups_never_contain_more_than_two_players_from_one_tracked_group(self):
         players = [
