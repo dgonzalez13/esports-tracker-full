@@ -124,8 +124,8 @@ class MatchingTests(unittest.TestCase):
 
     def test_triples_and_quartets_are_generated_without_changing_pair_list(self):
         players = [
-            {**ref(name), "indicator": "GREEN"}
-            for name in ("A", "B", "C", "D")
+            {**ref(name), "indicator": "GREEN", "group_index": index // 2}
+            for index, name in enumerate(("A", "B", "C", "D"))
         ]
         records = [event(name, minute, index=minute + 1) for minute, name in enumerate(("A", "B", "C", "D"))]
         result = cm.calculate_all_coincident_pairs(records, players)
@@ -136,6 +136,8 @@ class MatchingTests(unittest.TestCase):
         self.assertEqual(len(quartet["matches"]), 1)
         self.assertEqual(quartet["matches"][0]["confirmation"], "ALL_GREEN")
         self.assertEqual(quartet["matches"][0]["gap_minutes"], 3)
+        self.assertTrue(quartet["different_groups"])
+        self.assertTrue(any(pair["different_groups"] for pair in result))
 
     def test_loader_tolerates_one_or_both_missing_jsonl(self):
         root = Path(__file__).parent / ".tmp"

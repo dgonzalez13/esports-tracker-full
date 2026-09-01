@@ -758,6 +758,10 @@ summary {
     padding: 0 15px 15px;
     border-top: 1px solid var(--line);
 }
+.coincident-cross-group {
+    background: #e0f2fe;
+    border-color: #38bdf8;
+}
 
 </style>"""
 
@@ -942,8 +946,9 @@ def render_coincident_pair(pair, reliability=None):
             f'</span>'
         )
 
+    detail_class = "coincident-pair coincident-cross-group" if pair.get("different_groups") else "coincident-pair"
     return (
-        '<details class="coincident-pair">'
+        f'<details class="{detail_class}">'
         '<summary>'
         f'<span>{text(title)}</span>'
         '<span class="badge-row">'
@@ -1036,8 +1041,9 @@ def render_coincident_group(group, reliability):
         f'Without a hit: {reliability["misses_since_hit"]} · '
         f'Max without a hit: {reliability["max_misses_without_hit"]}</span>'
     )
+    detail_class = "coincident-pair coincident-cross-group" if group.get("different_groups") else "coincident-pair"
     return (
-        '<details class="coincident-pair"><summary>'
+        f'<details class="{detail_class}"><summary>'
         f'<span>{text(title)}</span><span class="badge-row">'
         f'{metadata_badge("Matches", len(matches))}{badge}</span></summary>'
         '<div class="coincident-pair-body"><div class="badge-row" style="margin-top: 12px">'
@@ -1047,26 +1053,27 @@ def render_coincident_group(group, reliability):
     )
 
 
-def _render_coincident_group_section(groups, size, strength_lookup, minimum=25.0):
+def _render_coincident_group_section(groups, size, strength_lookup, minimum=35.0, minimum_matches=8):
     visible = []
     for group in groups:
         if group.get("size") != size:
             continue
         metrics = _coincident_group_metrics(group, strength_lookup)
-        if metrics["combined_pct"] > minimum:
+        if metrics["combined_pct"] > minimum and len(group.get("matches", [])) >= minimum_matches:
             visible.append((group, metrics))
     visible.sort(key=lambda item: -item[1]["combined_pct"])
     noun = "Triples" if size == 3 else "Groups of 4"
     content = (
         "".join(render_coincident_group(group, metrics) for group, metrics in visible)
-        if visible else f'<p class="section-subtitle">No {noun.lower()} exceed the 25% combined threshold.</p>'
+        if visible else f'<p class="section-subtitle">No {noun.lower()} meet the &gt; 35% and 8-match minimum.</p>'
     )
     return (
         '<section class="dashboard-section"><div class="section-head"><div>'
         f'<h2>Coincident Matches — {noun} — Last 8 Hours</h2>'
-        '<p class="section-subtitle">Only groups with a combined percentage above 25% are shown.</p>'
+        '<p class="section-subtitle">Only groups above 35% combined with at least 8 coincident matches are shown.</p>'
         f'</div><div class="badge-row">{metadata_badge("Group size", size)}'
-        f'{metadata_badge("Minimum combined", "> 25%")}</div></div>{content}</section>'
+        f'{metadata_badge("Minimum combined", "> 35%")} '
+        f'{metadata_badge("Minimum matches", ">= 8")}</div></div>{content}</section>'
     )
 
 

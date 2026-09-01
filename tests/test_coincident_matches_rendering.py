@@ -84,13 +84,14 @@ class CoincidentRenderingTests(unittest.TestCase):
         self.assertIn("GREEN Lucas", html)
         self.assertNotIn("Lucas*", html)
 
-    def test_triples_and_quartets_use_twenty_five_percent_threshold(self):
+    def test_triples_and_quartets_require_35_percent_and_eight_matches(self):
         class Results(list):
             groups = [{
                 "size": 3, "max_gap_minutes": 30, "players": [
                     {"league": "GT", "player": name, "player_key": name.lower(), "indicator": "GREEN"}
                     for name in ("A", "B", "C")
-                ], "matches": [],
+                ], "matches": [{"group_order": index, "members": [], "gap_minutes": 0}
+                                for index in range(1, 9)],
             }]
         payload = {"leagues": {"GT": [
             {"player_key": name.lower(), "indicator": "GREEN", "win_pct": 70.0}
@@ -98,9 +99,21 @@ class CoincidentRenderingTests(unittest.TestCase):
         ]}}
         html = render_coincident_matches(Results(), payload)
         self.assertIn("Coincident Matches — Triples", html)
-        self.assertIn("Combined: 34.30%", html)
+        self.assertNotIn("Combined: 34.30%", html)
+        for row in payload["leagues"]["GT"]:
+            row["win_pct"] = 80.0
+        html = render_coincident_matches(Results(), payload)
+        self.assertIn("Combined: 51.20%", html)
+        Results.groups[0]["matches"] = Results.groups[0]["matches"][:7]
+        self.assertNotIn("Combined: 51.20%", render_coincident_matches(Results(), payload))
         self.assertIn("Coincident Matches — Groups of 4", html)
-        self.assertIn("No groups of 4 exceed the 25% combined threshold.", html)
+        self.assertIn("No groups of 4 meet the &gt; 35% and 8-match minimum.", html)
+
+    def test_different_tracked_groups_get_a_distinct_background_class(self):
+        value = pair()
+        value["different_groups"] = True
+        html = render_coincident_matches([value], indicators())
+        self.assertIn('class="coincident-pair coincident-cross-group"', html)
 
 
 if __name__ == "__main__":

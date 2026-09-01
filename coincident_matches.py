@@ -105,6 +105,7 @@ def build_selected_player_refs(tracked_players: Iterable[TrackedPlayer]) -> list
             continue
         ref: SelectedPlayerRef = {
             "league": league.strip().upper(), "player": player.strip(), "player_key": player_key,
+            "group_index": row.get("group_index"),
             "indicator": "NONE", "wins": 0, "draws": 0, "losses": 0,
             "played": 0, "win_pct": 0.0, "loss_pct": 0.0,
         }
@@ -129,6 +130,7 @@ def _eligible_automatic_player_refs(snapshot) -> list[SelectedPlayerRef]:
             "league", "player", "player_key", "indicator", "wins", "draws",
             "losses", "played", "win_pct", "loss_pct",
         )}
+        ref["group_index"] = row.get("group_index")
         found.setdefault(_ref_key(ref), ref)
     return sorted((dict(row) for row in found.values()), key=_automatic_candidate_sort)
 
@@ -153,6 +155,7 @@ def build_manual_player_refs(tracked_players, selected_keys, snapshot=None, excl
         source = snapshot_by_key.get(identity, {})
         ref = {
             "league": identity[0], "player": row["player"], "player_key": identity[1],
+            "group_index": source.get("group_index", row.get("group_index")),
             "indicator": source.get("indicator", "NONE"),
             "wins": source.get("wins", 0), "draws": source.get("draws", 0),
             "losses": source.get("losses", 0), "played": source.get("played", 0),
@@ -271,9 +274,19 @@ def _match_histories(player_a, history_a, player_b, history_b, max_gap_minutes):
         "player_b_league": player_b["league"], "player_b": player_b["player"],
         "player_a_indicator": player_a.get("indicator", "NONE"),
         "player_b_indicator": player_b.get("indicator", "NONE"),
+        "different_groups": _different_tracked_groups((player_a, player_b)),
         "max_gap_minutes": max_gap_minutes, "operational_window_hours": DEFAULT_OPERATIONAL_WINDOW_HOURS,
         "matches": rows,
     }
+
+
+def _different_tracked_groups(players):
+    identities = {
+        (str(player.get("league", "")).strip().upper(), player.get("group_index"))
+        for player in players
+        if isinstance(player.get("group_index"), int)
+    }
+    return len(identities) > 1
 
 
 def _match_group_histories(players, histories, max_gap_minutes):
@@ -344,7 +357,9 @@ def _match_group_histories(players, histories, max_gap_minutes):
             "league": player["league"], "player": player["player"],
             "player_key": player["player_key"],
             "indicator": player.get("indicator", "NONE"),
+            "group_index": player.get("group_index"),
         } for player in players],
+        "different_groups": _different_tracked_groups(players),
         "max_gap_minutes": max_gap_minutes,
         "operational_window_hours": DEFAULT_OPERATIONAL_WINDOW_HOURS,
         "matches": rows,
