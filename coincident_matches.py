@@ -289,6 +289,19 @@ def _different_tracked_groups(players):
     return len(identities) > 1
 
 
+def _maximum_two_per_tracked_group(players):
+    counts = {}
+    for player in players:
+        group_index = player.get("group_index")
+        if not isinstance(group_index, int):
+            continue
+        identity = (str(player.get("league", "")).strip().upper(), group_index)
+        counts[identity] = counts.get(identity, 0) + 1
+        if counts[identity] > 2:
+            return False
+    return True
+
+
 def _match_group_histories(players, histories, max_gap_minutes):
     """Match 3/4 histories using the same backward-only, no-reuse rule as pairs."""
     timeline = []
@@ -417,6 +430,7 @@ def calculate_all_coincident_pairs(records, selected_players=None, *, max_gap_mi
         _match_group_histories(group, [histories[_ref_key(p)] for p in group], max_gap_minutes)
         for size in (3, 4)
         for group in combinations(sorted(selected_players, key=_ref_sort), size)
+        if _maximum_two_per_tracked_group(group)
     ]
     return CoincidentPairResults(
         analyses, groups=group_analyses, eligible_players=eligible_count,

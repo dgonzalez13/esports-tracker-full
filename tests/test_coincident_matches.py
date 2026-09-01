@@ -139,6 +139,19 @@ class MatchingTests(unittest.TestCase):
         self.assertTrue(quartet["different_groups"])
         self.assertTrue(any(pair["different_groups"] for pair in result))
 
+    def test_groups_never_contain_more_than_two_players_from_one_tracked_group(self):
+        players = [
+            {**ref(name), "indicator": "GREEN", "group_index": 0 if name != "D" else 1}
+            for name in ("A", "B", "C", "D")
+        ]
+        result = cm.calculate_all_coincident_pairs([], players)
+        identities = [
+            [(player["league"], player["group_index"]) for player in group["players"]]
+            for group in result.groups
+        ]
+        self.assertEqual(len(result.groups), 3)
+        self.assertTrue(all(max(keys.count(key) for key in set(keys)) <= 2 for keys in identities))
+
     def test_loader_tolerates_one_or_both_missing_jsonl(self):
         root = Path(__file__).parent / ".tmp"
         tracked = root / f"{uuid.uuid4().hex}.txt"

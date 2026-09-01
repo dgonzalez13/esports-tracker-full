@@ -6,17 +6,20 @@ from web_tracker.generate_site import (
 
 
 def pair(matches=None, league_b="EADRIATIC"):
+    default_match = {
+        "pair_order": 1, "player_a": "Lucas", "player_a_timestamp": "2026-08-01T08:15:00Z",
+        "player_a_result": "V", "player_a_rival": "Fox",
+        "player_b": "Dexter", "player_b_timestamp": "2026-08-01T08:20:00Z",
+        "player_b_result": "D", "player_b_rival": "Eric", "gap_minutes": 5,
+        "confirmation": "MIXED",
+    }
     return {
         "player_a_league": "GT", "player_a": "Lucas",
         "player_b_league": league_b, "player_b": "Dexter",
         "max_gap_minutes": 30,
-        "matches": matches if matches is not None else [{
-            "pair_order": 1, "player_a": "Lucas", "player_a_timestamp": "2026-08-01T08:15:00Z",
-            "player_a_result": "V", "player_a_rival": "Fox",
-            "player_b": "Dexter", "player_b_timestamp": "2026-08-01T08:20:00Z",
-            "player_b_result": "D", "player_b_rival": "Eric", "gap_minutes": 5,
-            "confirmation": "MIXED",
-        }],
+        "matches": matches if matches is not None else [
+            {**default_match, "pair_order": index} for index in range(1, 7)
+        ],
     }
 
 
@@ -41,8 +44,8 @@ class CoincidentRenderingTests(unittest.TestCase):
 
     def test_same_league_empty_pair_and_no_selection(self):
         same = render_coincident_matches([pair([], "GT")])
-        self.assertIn("No pairs exceed the 35% combined threshold.", same)
-        self.assertIn("No pairs exceed the 35% combined threshold.", render_coincident_matches([]))
+        self.assertIn("No pairs meet the &gt; 35% and 6-match minimum.", same)
+        self.assertIn("No pairs meet the &gt; 35% and 6-match minimum.", render_coincident_matches([]))
 
     def test_names_are_escaped_and_star_is_not_rendered(self):
         value = pair()
@@ -57,7 +60,12 @@ class CoincidentRenderingTests(unittest.TestCase):
     def test_render_page_legacy_call_still_works(self):
         html = render_page({}, {})
         self.assertIn("Coincident Matches", html)
-        self.assertIn("No pairs exceed the 35% combined threshold.", html)
+        self.assertIn("No pairs meet the &gt; 35% and 6-match minimum.", html)
+
+    def test_pair_requires_six_coincident_matches(self):
+        value = pair()
+        value["matches"] = value["matches"][:5]
+        self.assertNotIn("GT Â· Lucas", render_coincident_matches([value], indicators()))
 
     def test_combined_threshold_percentage_and_misses_since_hit(self):
         value = pair([

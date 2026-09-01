@@ -1086,10 +1086,14 @@ def render_coincident_matches(pairs, current_streaks_v2=None):
 
     strength_lookup = _coincident_indicator_strength_lookup(current_streaks_v2 or {})
     minimum_combined_pct = 35.0
+    minimum_pair_matches = 6
     visible_pairs = []
     for pair in pairs:
         metrics = _coincident_pair_metrics(pair, strength_lookup)
-        if metrics["combined_pct"] > minimum_combined_pct:
+        if (
+            metrics["combined_pct"] > minimum_combined_pct
+            and len(pair.get("matches", [])) >= minimum_pair_matches
+        ):
             visible_pairs.append((pair, metrics))
     visible_pairs.sort(key=lambda item: -item[1]["combined_pct"])
 
@@ -1099,7 +1103,7 @@ def render_coincident_matches(pairs, current_streaks_v2=None):
             for pair, reliability in visible_pairs
         )
         if visible_pairs
-        else '<p class="section-subtitle">No pairs exceed the 35% combined threshold.</p>'
+        else '<p class="section-subtitle">No pairs meet the &gt; 35% and 6-match minimum.</p>'
     )
 
     pair_section = (
@@ -1107,7 +1111,7 @@ def render_coincident_matches(pairs, current_streaks_v2=None):
         '<div class="section-head"><div>'
         '<h2>Coincident Matches — Last 8 Hours</h2>'
         '<p class="section-subtitle">'
-        'Only pairs with a combined percentage above 35% are shown.'
+        'Only pairs above 35% combined with at least 6 coincident matches are shown.'
         '</p>'
         '</div><div class="badge-row">'
         f'{metadata_badge("Eligible players", eligible_players)}'
@@ -1116,6 +1120,7 @@ def render_coincident_matches(pairs, current_streaks_v2=None):
         f'{metadata_badge("Excluded candidates", excluded_candidates)}'
         f'{metadata_badge("Candidate limit", candidate_limit if selection_mode == "automatic" else "manual")}'
         f'{metadata_badge("Minimum combined", "> 35%")} '
+        f'{metadata_badge("Minimum matches", ">= 6")} '
         '</div></div>'
         f'{content}'
         '</section>'
