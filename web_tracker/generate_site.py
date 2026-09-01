@@ -1053,7 +1053,7 @@ def render_coincident_group(group, reliability):
     )
 
 
-def _render_coincident_group_section(groups, size, strength_lookup, minimum=35.0, minimum_matches=8):
+def _render_coincident_group_section(groups, size, strength_lookup, minimum=35.0, minimum_matches=6):
     visible = []
     for group in groups:
         if group.get("size") != size:
@@ -1065,15 +1065,15 @@ def _render_coincident_group_section(groups, size, strength_lookup, minimum=35.0
     noun = "Triples" if size == 3 else "Groups of 4"
     content = (
         "".join(render_coincident_group(group, metrics) for group, metrics in visible)
-        if visible else f'<p class="section-subtitle">No {noun.lower()} meet the &gt; 35% and 8-match minimum.</p>'
+        if visible else f'<p class="section-subtitle">No {noun.lower()} meet the &gt; 35% and 6-match minimum.</p>'
     )
     return (
         '<section class="dashboard-section"><div class="section-head"><div>'
         f'<h2>Coincident Matches — {noun} — Last 8 Hours</h2>'
-        '<p class="section-subtitle">Only groups above 35% combined with at least 8 coincident matches are shown.</p>'
+        '<p class="section-subtitle">Only groups above 35% combined with at least 6 coincident matches are shown.</p>'
         f'</div><div class="badge-row">{metadata_badge("Group size", size)}'
         f'{metadata_badge("Minimum combined", "> 35%")} '
-        f'{metadata_badge("Minimum matches", ">= 8")}</div></div>{content}</section>'
+        f'{metadata_badge("Minimum matches", ">= 6")}</div></div>{content}</section>'
     )
 
 
