@@ -84,6 +84,24 @@ class CoincidentRenderingTests(unittest.TestCase):
         self.assertIn("GREEN Lucas", html)
         self.assertNotIn("Lucas*", html)
 
+    def test_triples_and_quartets_use_twenty_five_percent_threshold(self):
+        class Results(list):
+            groups = [{
+                "size": 3, "max_gap_minutes": 30, "players": [
+                    {"league": "GT", "player": name, "player_key": name.lower(), "indicator": "GREEN"}
+                    for name in ("A", "B", "C")
+                ], "matches": [],
+            }]
+        payload = {"leagues": {"GT": [
+            {"player_key": name.lower(), "indicator": "GREEN", "win_pct": 70.0}
+            for name in ("A", "B", "C")
+        ]}}
+        html = render_coincident_matches(Results(), payload)
+        self.assertIn("Coincident Matches — Triples", html)
+        self.assertIn("Combined: 34.30%", html)
+        self.assertIn("Coincident Matches — Groups of 4", html)
+        self.assertIn("No groups of 4 exceed the 25% combined threshold.", html)
+
 
 if __name__ == "__main__":
     unittest.main()

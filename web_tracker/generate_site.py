@@ -962,6 +962,114 @@ def render_coincident_pair(pair, reliability=None):
     )
 
 
+def _coincident_group_metrics(group, strength_lookup):
+    strengths = [
+        float(strength_lookup.get((str(player.get("league", "")).upper(), player.get("player_key", "")), 0.0))
+        for player in group.get("players", [])
+    ]
+    combined = 0.0
+    if strengths:
+        combined = 100.0
+        for strength in strengths:
+            combined *= strength / 100.0
+    matches = sorted(group.get("matches", []), key=lambda row: row.get("group_order", 0))
+    misses = 0
+    max_misses = 0
+    running = 0
+    valid = {"ALL_GREEN", "ALL_RED", "MIXED"}
+    for row in matches:
+        if row.get("confirmation") in valid:
+            running = 0
+        else:
+            running += 1
+            max_misses = max(max_misses, running)
+    for row in reversed(matches):
+        if row.get("confirmation") in valid:
+            break
+        misses += 1
+    return {
+        "combined_pct": round(combined, 2),
+        "misses_since_hit": misses,
+        "max_misses_without_hit": max_misses,
+    }
+
+
+def render_coincident_group(group, reliability):
+    players = group.get("players", [])
+    matches = sorted(group.get("matches", []), key=lambda row: row.get("group_order", 0))
+    title = " ↔ ".join(
+        f'{player.get("league", "")} · {player.get("player", "")} [{player.get("indicator", "NONE")}]'
+        for player in players
+    )
+    headers = ["#"]
+    for index in range(len(players)):
+        label = chr(ord("A") + index)
+        headers.extend([f"Player {label}", f"Time {label}", f"Result {label}", f"Opponent {label}"])
+    headers.extend(["Gap", "Confirmation"])
+    rows = []
+    row_classes = []
+    labels = {"ALL_GREEN": "ALL GREEN", "ALL_RED": "ALL RED", "MIXED": "MIXED"}
+    classes = {
+        "ALL_GREEN": "coincident-both-green", "ALL_RED": "coincident-both-red",
+        "MIXED": "coincident-mixed-confirmed",
+    }
+    for row in matches:
+        values = [row.get("group_order", "")]
+        for member in row.get("members", []):
+            values.extend([
+                member.get("player", ""), _madrid_time(member.get("timestamp")),
+                member.get("result", ""), member.get("rival", ""),
+            ])
+        values.extend([
+            f'{row.get("gap_minutes", 0)} min',
+            labels.get(row.get("confirmation"), "—"),
+        ])
+        rows.append(values)
+        row_classes.append(classes.get(row.get("confirmation"), ""))
+    body = (
+        render_table(headers, rows, numeric_columns={0, len(headers) - 2}, row_classes=row_classes)
+        if rows else
+        f'<p class="section-subtitle">No coincident matches within {text(group.get("max_gap_minutes", 30))} minutes.</p>'
+    )
+    badge = (
+        f'<span class="badge">Combined: {reliability["combined_pct"]:.2f}% · '
+        f'Without a hit: {reliability["misses_since_hit"]} · '
+        f'Max without a hit: {reliability["max_misses_without_hit"]}</span>'
+    )
+    return (
+        '<details class="coincident-pair"><summary>'
+        f'<span>{text(title)}</span><span class="badge-row">'
+        f'{metadata_badge("Matches", len(matches))}{badge}</span></summary>'
+        '<div class="coincident-pair-body"><div class="badge-row" style="margin-top: 12px">'
+        f'{metadata_badge("Window", f"{group.get("operational_window_hours", 8)} hours")}'
+        f'{metadata_badge("Maximum gap", f"{group.get("max_gap_minutes", 30)} min")}'
+        f'</div>{body}</div></details>'
+    )
+
+
+def _render_coincident_group_section(groups, size, strength_lookup, minimum=25.0):
+    visible = []
+    for group in groups:
+        if group.get("size") != size:
+            continue
+        metrics = _coincident_group_metrics(group, strength_lookup)
+        if metrics["combined_pct"] > minimum:
+            visible.append((group, metrics))
+    visible.sort(key=lambda item: -item[1]["combined_pct"])
+    noun = "Triples" if size == 3 else "Groups of 4"
+    content = (
+        "".join(render_coincident_group(group, metrics) for group, metrics in visible)
+        if visible else f'<p class="section-subtitle">No {noun.lower()} exceed the 25% combined threshold.</p>'
+    )
+    return (
+        '<section class="dashboard-section"><div class="section-head"><div>'
+        f'<h2>Coincident Matches — {noun} — Last 8 Hours</h2>'
+        '<p class="section-subtitle">Only groups with a combined percentage above 25% are shown.</p>'
+        f'</div><div class="badge-row">{metadata_badge("Group size", size)}'
+        f'{metadata_badge("Minimum combined", "> 25%")}</div></div>{content}</section>'
+    )
+
+
 def render_coincident_matches(pairs, current_streaks_v2=None):
     eligible_players = getattr(pairs, "eligible_players", 0)
     selected_candidates = getattr(pairs, "selected_candidates", 0)
@@ -987,7 +1095,7 @@ def render_coincident_matches(pairs, current_streaks_v2=None):
         else '<p class="section-subtitle">No pairs exceed the 35% combined threshold.</p>'
     )
 
-    return (
+    pair_section = (
         '<section class="dashboard-section">'
         '<div class="section-head"><div>'
         '<h2>Coincident Matches — Last 8 Hours</h2>'
@@ -1004,6 +1112,12 @@ def render_coincident_matches(pairs, current_streaks_v2=None):
         '</div></div>'
         f'{content}'
         '</section>'
+    )
+    groups = getattr(pairs, "groups", [])
+    return (
+        pair_section
+        + _render_coincident_group_section(groups, 3, strength_lookup)
+        + _render_coincident_group_section(groups, 4, strength_lookup)
     )
 
 

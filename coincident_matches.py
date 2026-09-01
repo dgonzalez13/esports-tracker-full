@@ -22,8 +22,9 @@ MAX_AUTOMATIC_CANDIDATES = 8
 class CoincidentPairResults(list):
     """List-compatible pair collection carrying automatic-selection metadata."""
 
-    def __init__(self, values=(), *, eligible_players=0, selected_candidates=0, selection_mode="automatic", excluded_candidates=0):
+    def __init__(self, values=(), *, groups=None, eligible_players=0, selected_candidates=0, selection_mode="automatic", excluded_candidates=0):
         super().__init__(values)
+        self.groups = list(groups or [])
         self.eligible_players = eligible_players
         self.selected_candidates = selected_candidates
         self.candidate_limit = MAX_AUTOMATIC_CANDIDATES
@@ -275,6 +276,81 @@ def _match_histories(player_a, history_a, player_b, history_b, max_gap_minutes):
     }
 
 
+def _match_group_histories(players, histories, max_gap_minutes):
+    """Match 3/4 histories using the same backward-only, no-reuse rule as pairs."""
+    timeline = []
+    for side, history in enumerate(histories):
+        for record in history:
+            timeline.append((_event_sort(record), side, record))
+    timeline.sort(key=lambda item: (item[0][0], item[1], item[0][1], item[0][2]))
+    available = [[] for _ in players]
+    matched = []
+    for _, side, current in timeline:
+        current_time = _timestamp(current)
+        chosen = {}
+        for other in range(len(players)):
+            if other == side:
+                continue
+            candidates = available[other]
+            while candidates and (current_time - _timestamp(candidates[0])).total_seconds() > max_gap_minutes * 60:
+                candidates.pop(0)
+            if not candidates:
+                break
+            chosen[other] = candidates[-1]
+        else:
+            records = [None] * len(players)
+            records[side] = current
+            for other, record in chosen.items():
+                available[other].remove(record)
+                records[other] = record
+            matched.append((current_time, records))
+            continue
+        available[side].append(current)
+
+    rows = []
+    for order, (_, records) in enumerate(matched, 1):
+        members = []
+        confirms = []
+        indicators = []
+        timestamps = [_timestamp(record) for record in records]
+        for player, record in zip(players, records):
+            indicator = player.get("indicator", "NONE")
+            confirms.append(
+                (indicator == "GREEN" and record["result"] == "V")
+                or (indicator == "RED" and record["result"] == "D")
+            )
+            indicators.append(indicator)
+            members.append({
+                "league": player["league"], "player": player["player"],
+                "indicator": indicator, "match_id": str(record.get("match_id", "")),
+                "timestamp": _utc_z(record), "result": record["result"],
+                "rival": str(record.get("rival", "")),
+            })
+        confirmation = None
+        if all(confirms):
+            confirmation = (
+                "ALL_GREEN" if set(indicators) == {"GREEN"}
+                else "ALL_RED" if set(indicators) == {"RED"}
+                else "MIXED"
+            )
+        rows.append({
+            "group_order": order, "members": members,
+            "gap_minutes": int((max(timestamps) - min(timestamps)).total_seconds() // 60),
+            "confirmation": confirmation,
+        })
+    return {
+        "size": len(players),
+        "players": [{
+            "league": player["league"], "player": player["player"],
+            "player_key": player["player_key"],
+            "indicator": player.get("indicator", "NONE"),
+        } for player in players],
+        "max_gap_minutes": max_gap_minutes,
+        "operational_window_hours": DEFAULT_OPERATIONAL_WINDOW_HOURS,
+        "matches": rows,
+    }
+
+
 def match_coincident_pair(player_a, matches_a, player_b, matches_b, *, max_gap_minutes=DEFAULT_MAX_COINCIDENT_GAP_MINUTES):
     max_gap_minutes = _validate_gap(max_gap_minutes)
     history_a = player_match_history(matches_a, player_a)
@@ -314,7 +390,7 @@ def calculate_all_coincident_pairs(records, selected_players=None, *, max_gap_mi
         lower = reference - timedelta(hours=window_hours)
         materialized = [row for row in materialized if _timestamp(row) is not None and lower <= _timestamp(row) <= reference]
     histories = {}
-    for player in {(_ref_key(p)): p for pair in pairs for p in pair}.values():
+    for player in {_ref_key(p): p for p in selected_players}.values():
         histories[_ref_key(player)] = player_match_history(
             materialized, player, excluded_keys=excluded_keys,
         )
@@ -322,8 +398,13 @@ def calculate_all_coincident_pairs(records, selected_players=None, *, max_gap_mi
         _match_histories(a, histories[_ref_key(a)], b, histories[_ref_key(b)], max_gap_minutes)
         for a, b in pairs
     ]
+    group_analyses = [
+        _match_group_histories(group, [histories[_ref_key(p)] for p in group], max_gap_minutes)
+        for size in (3, 4)
+        for group in combinations(sorted(selected_players, key=_ref_sort), size)
+    ]
     return CoincidentPairResults(
-        analyses, eligible_players=eligible_count,
+        analyses, groups=group_analyses, eligible_players=eligible_count,
         selected_candidates=selected_count, selection_mode=selection_mode,
         excluded_candidates=len(candidate_exclusions),
     )

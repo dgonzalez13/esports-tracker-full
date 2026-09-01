@@ -122,6 +122,21 @@ class MatchingTests(unittest.TestCase):
         self.assertEqual(history.call_count, 3)
         self.assertTrue(any(not row["matches"] for row in rows))
 
+    def test_triples_and_quartets_are_generated_without_changing_pair_list(self):
+        players = [
+            {**ref(name), "indicator": "GREEN"}
+            for name in ("A", "B", "C", "D")
+        ]
+        records = [event(name, minute, index=minute + 1) for minute, name in enumerate(("A", "B", "C", "D"))]
+        result = cm.calculate_all_coincident_pairs(records, players)
+        self.assertEqual(len(result), 6)
+        self.assertEqual([group["size"] for group in result.groups].count(3), 4)
+        self.assertEqual([group["size"] for group in result.groups].count(4), 1)
+        quartet = next(group for group in result.groups if group["size"] == 4)
+        self.assertEqual(len(quartet["matches"]), 1)
+        self.assertEqual(quartet["matches"][0]["confirmation"], "ALL_GREEN")
+        self.assertEqual(quartet["matches"][0]["gap_minutes"], 3)
+
     def test_loader_tolerates_one_or_both_missing_jsonl(self):
         root = Path(__file__).parent / ".tmp"
         tracked = root / f"{uuid.uuid4().hex}.txt"
