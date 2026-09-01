@@ -1,30 +1,45 @@
 import unittest
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from update_tracked_players import (
     FixtureGroup, parse_eadriatic_fixture_groups, parse_gt_fixture_groups,
-    rewrite_tracked_players, select_fixture_group, target_start,
+    rewrite_tracked_players, select_stream_group,
 )
 
 
-class TargetSelectionTests(unittest.TestCase):
-    def test_each_stream_resolves_current_and_next_independently(self):
-        now = datetime(2026, 8, 29, 5, 10, tzinfo=timezone.utc)  # 07:10 Madrid
-        self.assertEqual(target_start("EADRIATIC", 1, "C", now).strftime("%H:%M"), "07:00")
-        self.assertEqual(target_start("EADRIATIC", 1, "N", now).strftime("%H:%M"), "15:00")
-        self.assertEqual(target_start("EADRIATIC", 2, "C", now).strftime("%H:%M"), "23:20")
-        self.assertEqual(target_start("EADRIATIC", 2, "N", now).strftime("%H:%M"), "07:20")
-        self.assertEqual(target_start("GT", 1, "C", now).strftime("%H:%M"), "05:00")
-        self.assertEqual(target_start("GT", 2, "N", now).strftime("%H:%M"), "14:00")
+class StreamSelectionTests(unittest.TestCase):
+    """Both leagues run two interleaved five-player streams back to back rather
+    than on a fixed daily clock, so selection is based on chronological
+    alternation (stream 1, 2, 1, 2, ...), not an assumed hour-of-day grid."""
 
-    def test_nearest_complete_group_must_be_close_to_target(self):
-        target = datetime(2026, 8, 29, 7, 0, tzinfo=timezone.utc)
-        group = FixtureGroup(target, ("A", "B", "C", "D", "E"), "x")
-        self.assertEqual(select_fixture_group([group], target), group)
+    def _groups(self, count=6, start_hour=6):
+        base = datetime(2026, 8, 29, start_hour, tzinfo=timezone.utc)
+        return [
+            FixtureGroup(
+                base + timedelta(hours=i),
+                (f"P{i}a", f"P{i}b", f"P{i}c", f"P{i}d", f"P{i}e"),
+                f"g{i}",
+            )
+            for i in range(count)
+        ]
+
+    def test_selects_alternating_streams_for_current_and_next(self):
+        groups = self._groups()
+        reference = groups[2].start_local + timedelta(minutes=30)
+        self.assertEqual(select_stream_group(groups, 1, "C", reference).source_id, "g2")
+        self.assertEqual(select_stream_group(groups, 2, "C", reference).source_id, "g1")
+        self.assertEqual(select_stream_group(groups, 1, "N", reference).source_id, "g4")
+        self.assertEqual(select_stream_group(groups, 2, "N", reference).source_id, "g3")
+
+    def test_raises_when_no_group_available_on_requested_side(self):
+        groups = self._groups()
+        reference = groups[0].start_local - timedelta(hours=1)
         with self.assertRaises(RuntimeError):
-            select_fixture_group([group], target.replace(hour=9))
+            select_stream_group(groups, 1, "C", reference)
+        with self.assertRaises(RuntimeError):
+            select_stream_group(groups, 2, "C", reference)
 
 
 class ParserTests(unittest.TestCase):
