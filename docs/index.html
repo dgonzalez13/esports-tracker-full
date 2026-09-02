@@ -415,10 +415,35 @@ summary {
         flex-direction: column;
     }
 }
-.coincident-both-green { background: #dcfce7; }
-.coincident-both-red { background: #fee2e2; }
-.coincident-mixed-confirmed { background: #fef3c7; }
+.coincident-both-green {
+    background: #bbf7d0;
+    color: #052e16;
+    box-shadow: inset 5px 0 0 #15803d;
+}
+.coincident-both-red {
+    background: #fecaca;
+    color: #450a0a;
+    box-shadow: inset 5px 0 0 #b91c1c;
+}
+.coincident-mixed-confirmed {
+    background: #fde68a;
+    color: #422006;
+    box-shadow: inset 5px 0 0 #b45309;
+}
 .streak-group-shaded { background: #eef4f8; }
+
+.coincident-pair tbody tr:not(.coincident-both-green):not(.coincident-both-red):not(.coincident-mixed-confirmed) {
+    background: #ffffff;
+}
+
+.coincident-pair tbody tr:not(.coincident-both-green):not(.coincident-both-red):not(.coincident-mixed-confirmed):nth-child(even) {
+    background: #f8fafc;
+}
+
+.coincident-pair th {
+    background: #e5e7eb;
+    color: #374151;
+}
 
 .coincident-pair {
     margin-bottom: 10px;
@@ -439,6 +464,17 @@ summary {
     align-items: center;
     justify-content: space-between;
     gap: 10px;
+    background: #ffffff;
+    color: #065f5b;
+}
+
+.coincident-pair > summary:hover {
+    background: #f0fdfa;
+}
+
+.coincident-pair > summary:focus-visible {
+    outline: 3px solid #0f766e;
+    outline-offset: -3px;
 }
 
 .coincident-pair > summary::-webkit-details-marker {
@@ -461,8 +497,22 @@ summary {
     border-top: 1px solid var(--line);
 }
 .coincident-cross-group {
-    background: #e0f2fe;
     border-color: #38bdf8;
+}
+
+.coincident-cross-group > summary {
+    background: #dbeafe;
+    color: #0c4a6e;
+}
+
+.coincident-cross-group > summary:hover {
+    background: #bfdbfe;
+}
+
+.coincident-pair > summary .badge {
+    background: #ffffff;
+    border-color: #cbd5e1;
+    color: #374151;
 }
 
 </style>
