@@ -23,6 +23,7 @@ TRACKED_PLAYERS_FILE = BASE / "tracked_players.txt"
 MADRID = ZoneInfo("Europe/Madrid")
 GROUP_SIZE = 5
 VALID_MODES = {"C", "N"}
+GT_GROUP_START_HOURS = {1: (5, 13, 21), 2: (6, 14, 22)}
 
 
 @dataclass(frozen=True)
@@ -113,6 +114,36 @@ def parse_eadriatic_fixture_groups(html: str, reference: datetime) -> list[Fixtu
         start = datetime.combine(block["date"], first_time, MADRID)
         groups.append(FixtureGroup(start, players, f'eadriatic:{block["label"]}'))
     return sorted(groups, key=lambda group: group.start_local)
+
+
+def gt_target_start(group_index: int, mode: str, reference: datetime) -> datetime:
+    mode = mode.upper()
+    if mode not in VALID_MODES:
+        raise ValueError(f"mode must be C or N, received {mode!r}")
+    if group_index not in GT_GROUP_START_HOURS:
+        raise ValueError(f"group_index must be 1 or 2, received {group_index!r}")
+    if reference.tzinfo is None:
+        raise ValueError("reference time must include a timezone")
+    local = reference.astimezone(MADRID)
+    candidates = [
+        datetime(day.year, day.month, day.day, hour, tzinfo=MADRID)
+        for day_delta in (-1, 0, 1, 2)
+        for day in [(local + timedelta(days=day_delta)).date()]
+        for hour in GT_GROUP_START_HOURS[group_index]
+    ]
+    if mode == "C":
+        return max(candidate for candidate in candidates if candidate <= local)
+    return min(candidate for candidate in candidates if candidate > local)
+
+
+def select_gt_group(groups: Iterable[FixtureGroup], target: datetime, tolerance=timedelta(minutes=30)) -> FixtureGroup:
+    candidates = sorted(groups, key=lambda group: abs(group.start_local - target))
+    if not candidates or abs(candidates[0].start_local - target) > tolerance:
+        available = ", ".join(group.start_local.isoformat() for group in candidates[:8]) or "none"
+        raise RuntimeError(
+            f"no complete GT five-player group found near {target.isoformat()}; available: {available}"
+        )
+    return candidates[0]
 
 
 def select_stream_group(groups: Iterable[FixtureGroup], group_index: int, mode: str, reference: datetime) -> FixtureGroup:
@@ -209,17 +240,24 @@ def rewrite_tracked_players(path: Path, replacements: dict[tuple[str, int], tupl
 
 def update_groups(modes: dict[tuple[str, int], str], path=TRACKED_PLAYERS_FILE, reference=None) -> dict:
     reference = reference or datetime.now(timezone.utc)
+    gt_targets = {
+        (league, index): gt_target_start(index, mode, reference)
+        for (league, index), mode in modes.items()
+        if league == "GT"
+    }
     gt_groups = (
-        fetch_gt_groups([reference - timedelta(hours=12), reference + timedelta(hours=48)])
-        if any(league == "GT" for league, _ in modes)
+        fetch_gt_groups(gt_targets.values())
+        if gt_targets
         else []
     )
     eadriatic_groups = fetch_eadriatic_groups(reference) if any(league == "EADRIATIC" for league, _ in modes) else []
     replacements = {}
     selected = {}
     for (league, index), mode in modes.items():
-        source = gt_groups if league == "GT" else eadriatic_groups
-        group = select_stream_group(source, index, mode, reference)
+        if league == "GT":
+            group = select_gt_group(gt_groups, gt_targets[(league, index)])
+        else:
+            group = select_stream_group(eadriatic_groups, index, mode, reference)
         replacements[(league, index)] = group.players
         selected[(league, index)] = group
     rewrite_tracked_players(Path(path), replacements)

@@ -2,10 +2,11 @@ import unittest
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from update_tracked_players import (
     FixtureGroup, parse_eadriatic_fixture_groups, parse_gt_fixture_groups,
-    rewrite_tracked_players, select_stream_group,
+    gt_target_start, rewrite_tracked_players, select_gt_group, select_stream_group,
 )
 
 
@@ -40,6 +41,29 @@ class StreamSelectionTests(unittest.TestCase):
             select_stream_group(groups, 1, "C", reference)
         with self.assertRaises(RuntimeError):
             select_stream_group(groups, 2, "C", reference)
+
+
+class GTSelectionTests(unittest.TestCase):
+    def test_current_and_next_follow_the_two_fixed_gt_schedules(self):
+        reference = datetime(2026, 9, 2, 5, 30, tzinfo=timezone.utc)  # 07:30 Madrid
+        self.assertEqual(gt_target_start(1, "C", reference).strftime("%d %H:%M"), "02 05:00")
+        self.assertEqual(gt_target_start(1, "N", reference).strftime("%d %H:%M"), "02 13:00")
+        self.assertEqual(gt_target_start(2, "C", reference).strftime("%d %H:%M"), "02 06:00")
+        self.assertEqual(gt_target_start(2, "N", reference).strftime("%d %H:%M"), "02 14:00")
+
+    def test_before_six_group_two_current_is_previous_day_at_22(self):
+        reference = datetime(2026, 9, 2, 3, 30, tzinfo=timezone.utc)  # 05:30 Madrid
+        self.assertEqual(gt_target_start(2, "C", reference).strftime("%d %H:%M"), "01 22:00")
+        self.assertEqual(gt_target_start(2, "N", reference).strftime("%d %H:%M"), "02 06:00")
+
+    def test_selects_nearest_scheduled_group_not_chronological_parity(self):
+        target = datetime(2026, 9, 2, 13, 0, tzinfo=ZoneInfo("Europe/Madrid"))
+        groups = [
+            FixtureGroup(target - timedelta(hours=1), ("X1", "X2", "X3", "X4", "X5"), "noise"),
+            FixtureGroup(target, ("A", "B", "C", "D", "E"), "expected"),
+            FixtureGroup(target + timedelta(hours=1), ("Y1", "Y2", "Y3", "Y4", "Y5"), "noise-2"),
+        ]
+        self.assertEqual(select_gt_group(groups, target).source_id, "expected")
 
 
 class ParserTests(unittest.TestCase):
