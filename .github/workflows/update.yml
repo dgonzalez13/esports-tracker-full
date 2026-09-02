@@ -4,10 +4,12 @@ on:
   workflow_dispatch:
 
   schedule:
-    - cron: '45 23 * * *'
-      timezone: 'Europe/Madrid'
-    - cron: '58 23 * * *'
-      timezone: 'Europe/Madrid'
+    # Europe/Madrid is UTC+2 in summer and UTC+1 in winter. GitHub cron is UTC,
+    # so both candidates run and the local-time guard below keeps only 23:45/23:58.
+    - cron: '45 21 * * *'
+    - cron: '58 21 * * *'
+    - cron: '45 22 * * *'
+    - cron: '58 22 * * *'
 
 jobs:
   update:
@@ -18,34 +20,61 @@ jobs:
 
     steps:
 
+      - name: Check Madrid schedule
+        id: schedule_guard
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            madrid_offset="$(TZ=Europe/Madrid date +%z)"
+            schedule="${{ github.event.schedule }}"
+            if { [ "$madrid_offset" = "+0200" ] && { [ "$schedule" = "45 21 * * *" ] || [ "$schedule" = "58 21 * * *" ]; }; } || \
+               { [ "$madrid_offset" = "+0100" ] && { [ "$schedule" = "45 22 * * *" ] || [ "$schedule" = "58 22 * * *" ]; }; }; then
+              echo "run=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "run=false" >> "$GITHUB_OUTPUT"
+              echo "Skipping UTC candidate $schedule for Madrid offset $madrid_offset"
+            fi
+          fi
+
       - name: Checkout
+        if: steps.schedule_guard.outputs.run == 'true'
         uses: actions/checkout@v4
 
       - name: Setup Python
+        if: steps.schedule_guard.outputs.run == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
 
       - name: Install dependencies
+        if: steps.schedule_guard.outputs.run == 'true'
         run: |
           pip install -r requirements.txt
 
       - name: Run GT
+        if: steps.schedule_guard.outputs.run == 'true'
         run: python gtleagues_api.py
 
       - name: Run Eadriatic
+        if: steps.schedule_guard.outputs.run == 'true'
         run: python eadriatic_leagues.py
         
       - name: Group Analysis GT
+        if: steps.schedule_guard.outputs.run == 'true'
         run: python group_analysis.py GT
 
       - name: Group Analysis Eadriatic
+        if: steps.schedule_guard.outputs.run == 'true'
         run: python group_analysis.py EADRIATIC        
 
       - name: Generate Site
+        if: steps.schedule_guard.outputs.run == 'true'
         run: python web_tracker/generate_site.py
 
       - name: Commit changes
+        if: steps.schedule_guard.outputs.run == 'true'
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
