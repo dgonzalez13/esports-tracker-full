@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "analysis_scope": "historical TXT; h2h_alerts are operational JSONL-filtered",
-  "generated_at": "04/09/2026 08:52:34 CEST",
+  "generated_at": "04/09/2026 09:00:11 CEST",
   "league": "EADRIATIC",
   "files_count": 112,
   "data_from": "20260516",
@@ -475,10 +475,10 @@
         "VanGogh",
         "Cezar"
       ],
-      "target_repr": "{'Cezar', 'Bruno', 'Haidan', 'Alexander', 'VanGogh'}",
+      "target_repr": "{'Alexander', 'Haidan', 'VanGogh', 'Bruno', 'Cezar'}",
       "h2h_keys": [
-        "Haidan",
         "Alexander",
+        "Haidan",
         "VanGogh",
         "Bruno",
         "Cezar"
@@ -601,7 +601,17 @@
       ],
       "dominance": [
         {
-          "player": "Cezar",
+          "player": "Alexander",
+          "wins": 1,
+          "rivals": 4
+        },
+        {
+          "player": "Haidan",
+          "wins": 0,
+          "rivals": 4
+        },
+        {
+          "player": "VanGogh",
           "wins": 0,
           "rivals": 4
         },
@@ -611,17 +621,7 @@
           "rivals": 4
         },
         {
-          "player": "Haidan",
-          "wins": 0,
-          "rivals": 4
-        },
-        {
-          "player": "Alexander",
-          "wins": 1,
-          "rivals": 4
-        },
-        {
-          "player": "VanGogh",
+          "player": "Cezar",
           "wins": 0,
           "rivals": 4
         }
@@ -1285,13 +1285,13 @@
         "Gabriel",
         "Leonardo"
       ],
-      "target_repr": "{'Leonardo', 'Donatello', 'Maverick', 'Gabriel', 'Flash'}",
+      "target_repr": "{'Donatello', 'Gabriel', 'Maverick', 'Flash', 'Leonardo'}",
       "h2h_keys": [
-        "Maverick",
         "Gabriel",
+        "Maverick",
         "Flash",
-        "Leonardo",
-        "Donatello"
+        "Donatello",
+        "Leonardo"
       ],
       "coincidencias_5": 2,
       "coincidencias_4": 14,
@@ -1411,18 +1411,8 @@
       ],
       "dominance": [
         {
-          "player": "Leonardo",
-          "wins": 0,
-          "rivals": 4
-        },
-        {
           "player": "Donatello",
           "wins": 0,
-          "rivals": 4
-        },
-        {
-          "player": "Maverick",
-          "wins": 1,
           "rivals": 4
         },
         {
@@ -1431,8 +1421,18 @@
           "rivals": 4
         },
         {
+          "player": "Maverick",
+          "wins": 1,
+          "rivals": 4
+        },
+        {
           "player": "Flash",
           "wins": 2,
+          "rivals": 4
+        },
+        {
+          "player": "Leonardo",
+          "wins": 0,
           "rivals": 4
         }
       ],
@@ -2709,11 +2709,11 @@
             "Scorpion",
             "Lost"
           ],
-          "target_repr": "{'Scorpion', 'Penn', 'Lost', 'Atlas', 'Lawyer'}",
+          "target_repr": "{'Lost', 'Scorpion', 'Lawyer', 'Atlas', 'Penn'}",
           "h2h_keys": [
             "Scorpion",
-            "Penn",
             "Lawyer",
+            "Penn",
             "Atlas",
             "Lost"
           ],
@@ -2827,18 +2827,18 @@
           ],
           "dominance": [
             {
+              "player": "Lost",
+              "wins": 0,
+              "rivals": 4
+            },
+            {
               "player": "Scorpion",
               "wins": 3,
               "rivals": 4
             },
             {
-              "player": "Penn",
-              "wins": 0,
-              "rivals": 4
-            },
-            {
-              "player": "Lost",
-              "wins": 0,
+              "player": "Lawyer",
+              "wins": 3,
               "rivals": 4
             },
             {
@@ -2847,8 +2847,8 @@
               "rivals": 4
             },
             {
-              "player": "Lawyer",
-              "wins": 3,
+              "player": "Penn",
+              "wins": 0,
               "rivals": 4
             }
           ],
@@ -2892,14 +2892,14 @@
               "weighted_score": 15800.0,
               "best_matchups": [
                 {
-                  "rival": "Penn",
-                  "win_pct": 66.66666666666666,
-                  "matches": 132
-                },
-                {
                   "rival": "Lost",
                   "win_pct": 66.66666666666666,
                   "matches": 6
+                },
+                {
+                  "rival": "Penn",
+                  "win_pct": 66.66666666666666,
+                  "matches": 132
                 },
                 {
                   "rival": "Atlas",
@@ -2908,21 +2908,6 @@
                 }
               ],
               "best_matchup_details": [
-                {
-                  "rival": "Penn",
-                  "W": 88,
-                  "D": 19,
-                  "L": 25,
-                  "matches": 132,
-                  "win_pct": 66.66666666666666,
-                  "draw_pct": 14.393939393939394,
-                  "loss_pct": 18.939393939393938,
-                  "seq": "EVVVVVVVDVVVDVVEVVVEVDVEVVDVVVVVEVDEEVDDV",
-                  "last5": "EVDDV",
-                  "last10": "VEVDEEVDDV",
-                  "stk_win": 1,
-                  "stk_lose": 1
-                },
                 {
                   "rival": "Lost",
                   "W": 4,
@@ -2937,6 +2922,21 @@
                   "last10": "VVDVEV",
                   "stk_win": 1,
                   "stk_lose": 3
+                },
+                {
+                  "rival": "Penn",
+                  "W": 88,
+                  "D": 19,
+                  "L": 25,
+                  "matches": 132,
+                  "win_pct": 66.66666666666666,
+                  "draw_pct": 14.393939393939394,
+                  "loss_pct": 18.939393939393938,
+                  "seq": "EVVVVVVVDVVVDVVEVVVEVDVEVVDVVVVVEVDEEVDDV",
+                  "last5": "EVDDV",
+                  "last10": "VEVDEEVDDV",
+                  "stk_win": 1,
+                  "stk_lose": 1
                 },
                 {
                   "rival": "Atlas",
@@ -3511,11 +3511,11 @@
             "Kratos",
             "Crysis"
           ],
-          "target_repr": "{'Eros', 'Kratos', 'Crysis', 'Fox', 'Banega'}",
+          "target_repr": "{'Banega', 'Kratos', 'Fox', 'Eros', 'Crysis'}",
           "h2h_keys": [
+            "Banega",
             "Eros",
             "Crysis",
-            "Banega",
             "Kratos",
             "Fox"
           ],
@@ -3629,8 +3629,8 @@
           ],
           "dominance": [
             {
-              "player": "Eros",
-              "wins": 3,
+              "player": "Banega",
+              "wins": 1,
               "rivals": 4
             },
             {
@@ -3639,17 +3639,17 @@
               "rivals": 4
             },
             {
-              "player": "Crysis",
-              "wins": 1,
-              "rivals": 4
-            },
-            {
               "player": "Fox",
               "wins": 0,
               "rivals": 4
             },
             {
-              "player": "Banega",
+              "player": "Eros",
+              "wins": 3,
+              "rivals": 4
+            },
+            {
+              "player": "Crysis",
               "wins": 1,
               "rivals": 4
             }
@@ -4780,10 +4780,10 @@
             "VanGogh",
             "Cezar"
           ],
-          "target_repr": "{'Cezar', 'Bruno', 'Haidan', 'Alexander', 'VanGogh'}",
+          "target_repr": "{'Alexander', 'Haidan', 'VanGogh', 'Bruno', 'Cezar'}",
           "h2h_keys": [
-            "Haidan",
             "Alexander",
+            "Haidan",
             "VanGogh",
             "Bruno",
             "Cezar"
@@ -4906,7 +4906,17 @@
           ],
           "dominance": [
             {
-              "player": "Cezar",
+              "player": "Alexander",
+              "wins": 1,
+              "rivals": 4
+            },
+            {
+              "player": "Haidan",
+              "wins": 0,
+              "rivals": 4
+            },
+            {
+              "player": "VanGogh",
               "wins": 0,
               "rivals": 4
             },
@@ -4916,17 +4926,7 @@
               "rivals": 4
             },
             {
-              "player": "Haidan",
-              "wins": 0,
-              "rivals": 4
-            },
-            {
-              "player": "Alexander",
-              "wins": 1,
-              "rivals": 4
-            },
-            {
-              "player": "VanGogh",
+              "player": "Cezar",
               "wins": 0,
               "rivals": 4
             }
@@ -5590,13 +5590,13 @@
             "Gabriel",
             "Leonardo"
           ],
-          "target_repr": "{'Leonardo', 'Donatello', 'Maverick', 'Gabriel', 'Flash'}",
+          "target_repr": "{'Donatello', 'Gabriel', 'Maverick', 'Flash', 'Leonardo'}",
           "h2h_keys": [
-            "Maverick",
             "Gabriel",
+            "Maverick",
             "Flash",
-            "Leonardo",
-            "Donatello"
+            "Donatello",
+            "Leonardo"
           ],
           "coincidencias_5": 2,
           "coincidencias_4": 14,
@@ -5716,18 +5716,8 @@
           ],
           "dominance": [
             {
-              "player": "Leonardo",
-              "wins": 0,
-              "rivals": 4
-            },
-            {
               "player": "Donatello",
               "wins": 0,
-              "rivals": 4
-            },
-            {
-              "player": "Maverick",
-              "wins": 1,
               "rivals": 4
             },
             {
@@ -5736,8 +5726,18 @@
               "rivals": 4
             },
             {
+              "player": "Maverick",
+              "wins": 1,
+              "rivals": 4
+            },
+            {
               "player": "Flash",
               "wins": 2,
+              "rivals": 4
+            },
+            {
+              "player": "Leonardo",
+              "wins": 0,
               "rivals": 4
             }
           ],
