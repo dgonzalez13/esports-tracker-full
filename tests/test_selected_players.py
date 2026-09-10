@@ -82,7 +82,7 @@ class SelectedPlayersTests(unittest.TestCase):
         try:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text("GT|A\n@COINCIDENT_SELECT||\n@COINCIDENT_EXCLUDE||\n", encoding="utf-8")
-            self.assertEqual(load_coincident_config(path), {"selected_keys": set(), "excluded_keys": set()})
+            self.assertEqual(load_coincident_config(path), {"selected_keys": set(), "excluded_keys": set(), "custom_pairs": []})
         finally:
             if path.exists():
                 path.unlink()

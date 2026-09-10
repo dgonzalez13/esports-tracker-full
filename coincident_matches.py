@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Iterable, TypedDict
 
 from history_query import EADRIATIC_HISTORY_PATH, GT_HISTORY_PATH, load_all_history
+from match_history import name_key
 from selected_players import (
     TrackedPlayer, excluded_player_keys, is_operational_record,
     load_coincident_config, load_tracked_players,
@@ -22,9 +23,10 @@ MAX_AUTOMATIC_CANDIDATES = 8
 class CoincidentPairResults(list):
     """List-compatible pair collection carrying automatic-selection metadata."""
 
-    def __init__(self, values=(), *, groups=None, eligible_players=0, selected_candidates=0, selection_mode="automatic", excluded_candidates=0):
+    def __init__(self, values=(), *, groups=None, custom_pairs=None, eligible_players=0, selected_candidates=0, selection_mode="automatic", excluded_candidates=0):
         super().__init__(values)
         self.groups = list(groups or [])
+        self.custom_pairs = list(custom_pairs or [])
         self.eligible_players = eligible_players
         self.selected_candidates = selected_candidates
         self.candidate_limit = MAX_AUTOMATIC_CANDIDATES
@@ -223,15 +225,55 @@ def _utc_z(record: dict[str, Any]) -> str:
     return (_timestamp(record) or datetime.min.replace(tzinfo=timezone.utc)).isoformat().replace("+00:00", "Z")
 
 
+def _against(record, player):
+    return (
+        str(record.get("league", "")).strip().upper() == _ref_key(player)[0]
+        and (record.get("rival_key") or name_key(str(record.get("rival", "")))) == player["player_key"]
+    )
+
+
+def _physical_match_key(record):
+    league = str(record.get("league", "")).strip().upper()
+    if record.get("match_id"):
+        return league, record["match_id"]
+    return league, _utc_z(record), tuple(sorted((record.get("player_key", ""), record.get("rival_key", ""))))
+
+
+def _prepare_pair_histories(players, histories, max_gap_minutes):
+    """Reserve direct GREEN matches for RED's immediate next game, before ordinary matching."""
+    direct = [[r for r in history if _against(r, players[1 - side])]
+              for side, history in enumerate(histories)]
+    paired, used = [], set()
+    if {p.get("indicator") for p in players} == {"GREEN", "RED"}:
+        green = next(i for i, p in enumerate(players) if p.get("indicator") == "GREEN")
+        red = 1 - green
+        for current in direct[green]:
+            if _physical_match_key(current) in used:
+                continue
+            following = next((r for r in histories[red] if _timestamp(r) > _timestamp(current)), None)
+            if following is None:
+                continue
+            seconds = (_timestamp(following) - _timestamp(current)).total_seconds()
+            if seconds > max_gap_minutes * 60 or _physical_match_key(following) in used:
+                continue
+            a, b = (current, following) if green == 0 else (following, current)
+            paired.append((_timestamp(following), a, b, int(seconds // 60)))
+            used.update((_physical_match_key(current), _physical_match_key(following)))
+    remaining = [[r for r in history if not _against(r, players[1 - side]) and _physical_match_key(r) not in used]
+                 for side, history in enumerate(histories)]
+    return remaining, paired
+
+
 def _match_histories(player_a, history_a, player_b, history_b, max_gap_minutes):
-    histories = [list(history_a), list(history_b)]
+    histories, paired = _prepare_pair_histories(
+        [player_a, player_b], [list(history_a), list(history_b)], max_gap_minutes,
+    )
     timeline = []
     for side, history in enumerate(histories):
         for record in history:
             timeline.append((_event_sort(record), side, record))
     timeline.sort(key=lambda item: (item[0][0], item[1], item[0][1], item[0][2]))
     available = [[], []]
-    paired = []
     for _, side, current in timeline:
         other = 1 - side
         if not available[other]:
@@ -396,8 +438,11 @@ def match_coincident_pair(player_a, matches_a, player_b, matches_b, *, max_gap_m
     return _match_histories(player_a, history_a, player_b, history_b, max_gap_minutes)
 
 
-def calculate_all_coincident_pairs(records, selected_players=None, *, max_gap_minutes=DEFAULT_MAX_COINCIDENT_GAP_MINUTES, snapshot=None, reference_time=None, window_hours=DEFAULT_OPERATIONAL_WINDOW_HOURS, excluded_keys=None, tracked_players=None, manual_selected_keys=None, excluded_candidate_keys=None):
+def calculate_all_coincident_pairs(records, selected_players=None, *, max_gap_minutes=DEFAULT_MAX_COINCIDENT_GAP_MINUTES, snapshot=None, reference_time=None, window_hours=DEFAULT_OPERATIONAL_WINDOW_HOURS, excluded_keys=None, tracked_players=None, manual_selected_keys=None, excluded_candidate_keys=None, custom_pairs=None):
     max_gap_minutes = _validate_gap(max_gap_minutes)
+    custom_pairs = list(custom_pairs or [])
+    if len(custom_pairs) > 3:
+        raise ValueError("at most 3 custom pairs are allowed")
     materialized = [
         row for row in records
         if excluded_keys is None or is_operational_record(row, excluded_keys)
@@ -428,7 +473,8 @@ def calculate_all_coincident_pairs(records, selected_players=None, *, max_gap_mi
         lower = reference - timedelta(hours=window_hours)
         materialized = [row for row in materialized if _timestamp(row) is not None and lower <= _timestamp(row) <= reference]
     histories = {}
-    for player in {_ref_key(p): p for p in selected_players}.values():
+    all_players = list(selected_players) + [p for pair in custom_pairs for p in pair]
+    for player in {_ref_key(p): p for p in all_players}.values():
         histories[_ref_key(player)] = player_match_history(
             materialized, player, excluded_keys=excluded_keys,
         )
@@ -436,6 +482,18 @@ def calculate_all_coincident_pairs(records, selected_players=None, *, max_gap_mi
         _match_histories(a, histories[_ref_key(a)], b, histories[_ref_key(b)], max_gap_minutes)
         for a, b in pairs
     ]
+    custom_analyses = [
+        _match_histories(a, histories[_ref_key(a)], b, histories[_ref_key(b)], max_gap_minutes)
+        for a, b in custom_pairs
+    ]
+    for analysis, players in zip(custom_analyses, custom_pairs):
+        analysis["operational_window_hours"] = window_hours
+        for label, player in zip(("a", "b"), players):
+            history = histories[_ref_key(player)]
+            expected = "V" if player["indicator"] == "GREEN" else "D"
+            analysis[f"player_{label}_pct"] = (
+                100.0 * sum(r["result"] == expected for r in history) / len(history) if history else 0.0
+            )
     group_analyses = [
         _match_group_histories(group, [histories[_ref_key(p)] for p in group], max_gap_minutes)
         for size in (3, 4)
@@ -443,7 +501,7 @@ def calculate_all_coincident_pairs(records, selected_players=None, *, max_gap_mi
         if _maximum_two_per_tracked_group(group)
     ]
     return CoincidentPairResults(
-        analyses, groups=group_analyses, eligible_players=eligible_count,
+        analyses, groups=group_analyses, custom_pairs=custom_analyses, eligible_players=eligible_count,
         selected_candidates=selected_count, selection_mode=selection_mode,
         excluded_candidates=len(candidate_exclusions),
     )
@@ -463,4 +521,5 @@ def load_all_coincident_pairs(tracked_players_path: str | Path, gt_path=GT_HISTO
         max_gap_minutes=max_gap_minutes, excluded_keys=excluded,
         tracked_players=tracked, manual_selected_keys=config["selected_keys"],
         excluded_candidate_keys=config["excluded_keys"],
+        custom_pairs=config["custom_pairs"],
     )

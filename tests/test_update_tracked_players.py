@@ -108,17 +108,23 @@ class RewriteTests(unittest.TestCase):
         path = self.temp_path()
         try:
             old = [f"EADRIATIC|E{i}" for i in range(1, 11)] + [f"GT|G{i}" for i in range(1, 10)] + ["GT|Keep*"]
-            path.write_text("\n".join(old) + "\n\n@COINCIDENT_SELECT||GT|Keep\n@COINCIDENT_EXCLUDE||\n", encoding="utf-8")
+            path.write_text("\n".join(old) + "\n\n@COINCIDENT_SELECT||GT|Keep\n@COINCIDENT_EXCLUDE||\n@COINCIDENT_PAIR||GT|G1|GREEN||EADRIATIC|E1|RED\n@COINCIDENT_PAIR||\n", encoding="utf-8")
             replacements = {
                 ("EADRIATIC", 1): tuple(f"EA{i}" for i in range(1, 6)),
                 ("EADRIATIC", 2): tuple(f"EB{i}" for i in range(1, 6)),
                 ("GT", 1): tuple(f"GA{i}" for i in range(1, 6)),
                 ("GT", 2): ("GB1", "GB2", "GB3", "GB4", "Keep"),
             }
+            disabled = "  * @COINCIDENT_PAIR||GT|William|GREEN||EADRIATIC|Dexter|RED"
+            with path.open("a", encoding="utf-8") as handle:
+                handle.write(disabled + "\n")
             rewrite_tracked_players(path, replacements)
             value = path.read_text(encoding="utf-8")
             self.assertIn("GT|Keep*", value)
+            self.assertIn(disabled, value)
             self.assertIn("@COINCIDENT_SELECT||GT|Keep", value)
+            self.assertIn("@COINCIDENT_PAIR||GT|G1|GREEN||EADRIATIC|E1|RED", value)
+            self.assertIn("\n@COINCIDENT_PAIR||\n", value)
             self.assertEqual(len([line for line in value.splitlines() if line.startswith(("GT|", "EADRIATIC|"))]), 20)
         finally:
             path.unlink(missing_ok=True)

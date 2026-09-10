@@ -15,7 +15,7 @@ from bs4 import BeautifulSoup
 from eadriatic_leagues import extract_player, fetch_eadriatic_html
 from gtleagues_api import BASE_URL as GT_FIXTURES_URL, HEADERS as GT_HEADERS
 from match_history import clean_name, name_key
-from selected_players import load_tracked_players
+from selected_players import is_disabled_coincident_pair_line, load_tracked_players
 
 
 BASE = Path(__file__).resolve().parent
@@ -234,7 +234,8 @@ def rewrite_tracked_players(path: Path, replacements: dict[tuple[str, int], tupl
             for player in players:
                 marker = "*" if (league, name_key(player)) in excluded else ""
                 output.append(f"{league}|{player}{marker}")
-    directives = [line for line in trailing if line.strip().startswith("@")]
+    directives = [line for line in trailing
+                  if line.strip().startswith("@") or is_disabled_coincident_pair_line(line)]
     path.write_text("\n".join(output) + "\n\n" + "\n".join(directives) + "\n", encoding="utf-8")
 
 

@@ -293,7 +293,7 @@ def render_page(data, current_streaks, coincident_pairs=None, current_streaks_v2
 </header>
 <main>
     {render_current_streaks_v2(current_streaks_v2 or {})}
-    {render_coincident_matches(coincident_pairs or [], current_streaks_v2 or {})}
+    {render_coincident_matches(coincident_pairs if coincident_pairs is not None else [], current_streaks_v2 or {})}
     {render_group_dashboard(data, current_streaks)}
 </main>
 </body>
@@ -905,8 +905,8 @@ def _coincident_pair_metrics(pair, strength_lookup):
         str(pair.get("player_b_league", "")).upper(),
         name_key(str(pair.get("player_b", ""))),
     )
-    strength_a = float(strength_lookup.get(key_a, 0.0))
-    strength_b = float(strength_lookup.get(key_b, 0.0))
+    strength_a = float(pair.get("player_a_pct", strength_lookup.get(key_a, 0.0)))
+    strength_b = float(pair.get("player_b_pct", strength_lookup.get(key_b, 0.0)))
     combined_pct = strength_a * strength_b / 100.0
     misses = 0
     max_misses = 0
@@ -1176,8 +1176,19 @@ def render_coincident_matches(pairs, current_streaks_v2=None):
         '</section>'
     )
     groups = getattr(pairs, "groups", [])
+    custom = getattr(pairs, "custom_pairs", [])
+    custom_section = (
+        '<section class="dashboard-section"><div class="section-head"><div>'
+        '<h2>Coincident Matches — Custom Pairs — Last 8 Hours</h2>'
+        '<p class="section-subtitle">Up to 3 configured pairs with fixed GREEN/RED indicators. '
+        'No minimum percentage or match count.</p></div></div>'
+        + (''.join(render_coincident_pair(pair, _coincident_pair_metrics(pair, strength_lookup)) for pair in custom)
+           if custom else '<p class="section-subtitle">No custom pairs configured in tracked_players.txt.</p>')
+        + '</section>'
+    )
     return (
         pair_section
+        + custom_section
         + _render_coincident_group_section(groups, 3, strength_lookup)
         + _render_coincident_group_section(groups, 4, strength_lookup)
     )
@@ -1671,6 +1682,7 @@ def main():
         excluded_keys=excluded_keys, tracked_players=tracked_players,
         manual_selected_keys=coincident_config["selected_keys"],
         excluded_candidate_keys=coincident_config["excluded_keys"],
+        custom_pairs=coincident_config["custom_pairs"],
     )
     html = render_page(
         group_analysis, current_streaks, coincident_pairs, current_streaks_v2,

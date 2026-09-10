@@ -25,19 +25,42 @@ class TrackedPlayerEntry(TrackedPlayer, total=False):
 class CoincidentConfig(TypedDict):
     selected_keys: set[tuple[str, str]]
     excluded_keys: set[tuple[str, str]]
+    custom_pairs: list[list[dict[str, str]]]
 
 
 __all__ = [
     "TrackedPlayer", "TrackedPlayerEntry", "parse_tracked_player_line", "load_tracked_players",
     "tracked_player_keys", "bettable_player_keys", "excluded_player_keys",
     "selected_player_keys", "is_operational_record",
-    "CoincidentConfig", "load_coincident_config",
+    "CoincidentConfig", "load_coincident_config", "is_disabled_coincident_pair_line",
 ]
 
 
 
 _COINCIDENT_SELECT = "@COINCIDENT_SELECT||"
 _COINCIDENT_EXCLUDE = "@COINCIDENT_EXCLUDE||"
+_COINCIDENT_PAIR = "@COINCIDENT_PAIR||"
+
+
+def is_disabled_coincident_pair_line(line: str) -> bool:
+    value = line.strip()
+    return value.startswith("*") and value[1:].lstrip().startswith(_COINCIDENT_PAIR)
+
+
+def _parse_custom_pair(payload):
+    members = []
+    for value in payload.split("||"):
+        parts = [part.strip() for part in value.split("|")]
+        if len(parts) != 3:
+            raise ValueError("use LIGA|Jugador|GREEN/RED||LIGA|Jugador|GREEN/RED")
+        league, player, indicator = parts
+        league, indicator = league.upper(), indicator.upper()
+        if league not in {"GT", "EADRIATIC"} or not player or indicator not in {"GREEN", "RED"}:
+            raise ValueError("each player needs GT/EADRIATIC, a name and GREEN/RED")
+        members.append(dict(league=league, player=player, player_key=name_key(player), indicator=indicator))
+    if len(members) != 2 or (members[0]["league"], members[0]["player_key"]) == (members[1]["league"], members[1]["player_key"]):
+        raise ValueError("a custom pair must contain two distinct players")
+    return members
 
 
 def _parse_coincident_identity(value: str) -> tuple[str, str]:
@@ -54,12 +77,27 @@ def _parse_coincident_identity(value: str) -> tuple[str, str]:
 
 def load_coincident_config(path: str | Path) -> CoincidentConfig:
     source = Path(path)
-    config: CoincidentConfig = {"selected_keys": set(), "excluded_keys": set()}
+    config: CoincidentConfig = {"selected_keys": set(), "excluded_keys": set(), "custom_pairs": []}
     if not source.exists():
         return config
     with source.open("r", encoding="utf-8") as handle:
         for line_number, raw in enumerate(handle, 1):
             value = raw.strip()
+            if value.startswith(_COINCIDENT_PAIR):
+                payload = value[len(_COINCIDENT_PAIR):].strip()
+                if not payload:
+                    continue
+                try:
+                    pair = _parse_custom_pair(payload)
+                    if len(config["custom_pairs"]) >= 3:
+                        raise ValueError("at most 3 custom pairs are allowed")
+                    identities = {(p["league"], p["player_key"]) for p in pair}
+                    if any(identities == {(p["league"], p["player_key"]) for p in existing} for existing in config["custom_pairs"]):
+                        raise ValueError("duplicate custom pair")
+                    config["custom_pairs"].append(pair)
+                except ValueError as exc:
+                    raise ValueError(f"invalid coincident directive at line {line_number}: {exc}") from exc
+                continue
             target = None
             payload = ""
             if value.startswith(_COINCIDENT_SELECT):
@@ -87,7 +125,7 @@ def parse_tracked_player_line(line: str) -> TrackedPlayerEntry | None:
     value = line.strip()
     if not value:
         return None
-    if value.startswith("@COINCIDENT_"):
+    if value.startswith("@COINCIDENT_") or is_disabled_coincident_pair_line(value):
         return None
     if "|" not in value:
         raise ValueError("tracked player line must use LIGA|Nombre format")
