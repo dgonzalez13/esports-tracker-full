@@ -80,10 +80,10 @@ class CustomPairsTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "duplicate"):
             self.config("@COINCIDENT_PAIR||GT|A|GREEN||GT|B|RED\n@COINCIDENT_PAIR||GT|B|RED||GT|A|GREEN")
 
-    def test_three_pair_limit(self):
-        lines = [f"@COINCIDENT_PAIR||GT|A{i}|GREEN||GT|B{i}|RED" for i in range(4)]
-        self.assertEqual(len(self.config("\n".join(lines[:3]))["custom_pairs"]), 3)
-        with self.assertRaisesRegex(ValueError, "at most 3"):
+    def test_ten_pair_limit(self):
+        lines = [f"@COINCIDENT_PAIR||GT|A{i}|GREEN||GT|B{i}|RED" for i in range(11)]
+        self.assertEqual(len(self.config("\n".join(lines[:10]))["custom_pairs"]), 10)
+        with self.assertRaisesRegex(ValueError, "at most 10"):
             self.config("\n".join(lines))
 
     def test_disabled_pairs_are_ignored_even_when_incomplete_and_can_be_reactivated(self):
@@ -92,8 +92,8 @@ class CustomPairsTests(unittest.TestCase):
             self.assertEqual(self.config(prefix + active)["custom_pairs"], [])
             self.assertEqual(self.config(prefix + "@COINCIDENT_PAIR||GT|Unfinished")["custom_pairs"], [])
         self.assertEqual(len(self.config(active)["custom_pairs"]), 1)
-        lines = [f"@COINCIDENT_PAIR||GT|A{i}|GREEN||GT|B{i}|RED" for i in range(3)]
-        self.assertEqual(len(self.config("\n".join(lines + ["*" + active, "*" + lines[0]]))["custom_pairs"]), 3)
+        lines = [f"@COINCIDENT_PAIR||GT|A{i}|GREEN||GT|B{i}|RED" for i in range(10)]
+        self.assertEqual(len(self.config("\n".join(lines + ["*" + active, "*" + lines[0]]))["custom_pairs"]), 10)
 
     def test_custom_only_rendering_with_fixed_indicators_and_no_automatic_thresholds(self):
         config = self.config("@COINCIDENT_PAIR||GT|A|GREEN||GT|B|RED")

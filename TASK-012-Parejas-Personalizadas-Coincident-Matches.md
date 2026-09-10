@@ -2,9 +2,16 @@
 
 ## Configuración
 
-Al final de `tracked_players.txt` hay tres líneas disponibles:
+Al final de `tracked_players.txt` hay diez líneas disponibles:
 
 ```text
+@COINCIDENT_PAIR||
+@COINCIDENT_PAIR||
+@COINCIDENT_PAIR||
+@COINCIDENT_PAIR||
+@COINCIDENT_PAIR||
+@COINCIDENT_PAIR||
+@COINCIDENT_PAIR||
 @COINCIDENT_PAIR||
 @COINCIDENT_PAIR||
 @COINCIDENT_PAIR||
@@ -24,12 +31,12 @@ Para desactivar una pareja sin borrar su configuración, añade `*` delante:
 
 Al quitar el `*` vuelve a activarse. Se permiten espacios alrededor del asterisco.
 Las líneas desactivadas se ignoran por completo, incluso si están incompletas,
-no cuentan para el máximo de tres parejas activas y se conservan al actualizar
+no cuentan para el máximo de diez parejas activas y se conservan al actualizar
 los grupos de jugadores.
 
 Se admiten GT y EADRIATIC, y los indicadores GREEN (victoria) y RED
 (derrota). Liga e indicador no distinguen mayúsculas. Las líneas vacías no
-cuentan. Se rechazan más de tres parejas, parejas duplicadas incluso en
+cuentan. Se rechazan más de diez parejas, parejas duplicadas incluso en
 orden inverso, un jugador contra sí mismo y formatos o indicadores inválidos;
 el error identifica la línea.
 

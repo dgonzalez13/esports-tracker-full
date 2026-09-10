@@ -1180,7 +1180,7 @@ def render_coincident_matches(pairs, current_streaks_v2=None):
     custom_section = (
         '<section class="dashboard-section"><div class="section-head"><div>'
         '<h2>Coincident Matches — Custom Pairs — Last 8 Hours</h2>'
-        '<p class="section-subtitle">Up to 3 configured pairs with fixed GREEN/RED indicators. '
+        '<p class="section-subtitle">Up to 10 configured pairs with fixed GREEN/RED indicators. '
         'No minimum percentage or match count.</p></div></div>'
         + (''.join(render_coincident_pair(pair, _coincident_pair_metrics(pair, strength_lookup)) for pair in custom)
            if custom else '<p class="section-subtitle">No custom pairs configured in tracked_players.txt.</p>')

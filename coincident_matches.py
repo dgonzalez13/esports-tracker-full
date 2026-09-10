@@ -441,8 +441,8 @@ def match_coincident_pair(player_a, matches_a, player_b, matches_b, *, max_gap_m
 def calculate_all_coincident_pairs(records, selected_players=None, *, max_gap_minutes=DEFAULT_MAX_COINCIDENT_GAP_MINUTES, snapshot=None, reference_time=None, window_hours=DEFAULT_OPERATIONAL_WINDOW_HOURS, excluded_keys=None, tracked_players=None, manual_selected_keys=None, excluded_candidate_keys=None, custom_pairs=None):
     max_gap_minutes = _validate_gap(max_gap_minutes)
     custom_pairs = list(custom_pairs or [])
-    if len(custom_pairs) > 3:
-        raise ValueError("at most 3 custom pairs are allowed")
+    if len(custom_pairs) > 10:
+        raise ValueError("at most 10 custom pairs are allowed")
     materialized = [
         row for row in records
         if excluded_keys is None or is_operational_record(row, excluded_keys)

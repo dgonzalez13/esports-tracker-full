@@ -89,8 +89,8 @@ def load_coincident_config(path: str | Path) -> CoincidentConfig:
                     continue
                 try:
                     pair = _parse_custom_pair(payload)
-                    if len(config["custom_pairs"]) >= 3:
-                        raise ValueError("at most 3 custom pairs are allowed")
+                    if len(config["custom_pairs"]) >= 10:
+                        raise ValueError("at most 10 custom pairs are allowed")
                     identities = {(p["league"], p["player_key"]) for p in pair}
                     if any(identities == {(p["league"], p["player_key"]) for p in existing} for existing in config["custom_pairs"]):
                         raise ValueError("duplicate custom pair")
