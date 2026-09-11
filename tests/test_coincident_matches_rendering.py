@@ -1,6 +1,7 @@
 import unittest
 
 from web_tracker.generate_site import (
+    _coincident_pair_metrics,
     load_current_streaks, render_coincident_matches, render_h2h_alerts, render_page,
 )
 
@@ -31,6 +32,45 @@ def indicators(lucas_pct=80.0, dexter_pct=60.0):
 
 
 class CoincidentRenderingTests(unittest.TestCase):
+    def test_both_failed_counts_only_current_streak_against_each_indicator(self):
+        for indicator_a, indicator_b, hit_a, hit_b in (
+            ("GREEN", "GREEN", "V", "V"),
+            ("RED", "RED", "D", "D"),
+            ("GREEN", "RED", "V", "D"),
+        ):
+            with self.subTest(indicators=(indicator_a, indicator_b)):
+                value = pair()
+                value.update(player_a_indicator=indicator_a, player_b_indicator=indicator_b)
+                outcomes = [
+                    ("E", "E", None),
+                    (hit_a, hit_b, "MIXED"),
+                    ("E", "E", None),
+                    (hit_a, "E", None),
+                    ("E", hit_b, None),
+                    ("E", "E", None),
+                ]
+                value["matches"] = [
+                    {**value["matches"][0], "pair_order": index,
+                     "player_a_result": a, "player_b_result": b, "confirmation": confirmation}
+                    for index, (a, b, confirmation) in enumerate(outcomes, 1)
+                ][::-1]
+                metrics = _coincident_pair_metrics(value, {})
+                self.assertEqual(metrics["misses_since_hit"], 4)
+                self.assertEqual(metrics["both_failed_since_hit"], 2)
+                self.assertEqual(metrics["unclassified_misses_since_hit"], 0)
+                self.assertIn("Without a hit: 4 (both failed: 2)",
+                              render_coincident_matches([value], indicators()))
+
+    def test_missing_indicator_or_result_is_not_a_double_failure(self):
+        value = pair()
+        metrics = _coincident_pair_metrics(value, {})
+        self.assertEqual(metrics["both_failed_since_hit"], 0)
+        value.update(player_a_indicator="GREEN", player_b_indicator="RED")
+        value["matches"] = [{"pair_order": 1, "player_a_result": "D"}]
+        metrics = _coincident_pair_metrics(value, {})
+        self.assertEqual(metrics["both_failed_since_hit"], 0)
+        self.assertEqual(metrics["unclassified_misses_since_hit"], 1)
+
     def test_section_pair_columns_madrid_time_results_and_gap(self):
         html = render_coincident_matches([pair()], indicators())
         self.assertIn("<h2>Coincident Matches — Last 8 Hours</h2>", html)

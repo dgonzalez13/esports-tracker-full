@@ -909,6 +909,8 @@ def _coincident_pair_metrics(pair, strength_lookup):
     strength_b = float(pair.get("player_b_pct", strength_lookup.get(key_b, 0.0)))
     combined_pct = strength_a * strength_b / 100.0
     misses = 0
+    both_failed = 0
+    unclassified_misses = 0
     max_misses = 0
     running_misses = 0
     for row in matches:
@@ -921,12 +923,21 @@ def _coincident_pair_metrics(pair, strength_lookup):
         if row.get("confirmation") in {"BOTH_GREEN", "BOTH_RED", "MIXED"}:
             break
         misses += 1
+        expected_a = {"GREEN": "V", "RED": "D"}.get(pair.get("player_a_indicator"))
+        expected_b = {"GREEN": "V", "RED": "D"}.get(pair.get("player_b_indicator"))
+        result_a, result_b = row.get("player_a_result"), row.get("player_b_result")
+        if expected_a is None or expected_b is None or result_a not in {"V", "E", "D"} or result_b not in {"V", "E", "D"}:
+            unclassified_misses += 1
+        elif result_a != expected_a and result_b != expected_b:
+            both_failed += 1
 
     return {
         "combined_pct": round(combined_pct, 2),
         "player_a_pct": round(strength_a, 2),
         "player_b_pct": round(strength_b, 2),
         "misses_since_hit": misses,
+        "both_failed_since_hit": both_failed,
+        "unclassified_misses_since_hit": unclassified_misses,
         "max_misses_without_hit": max_misses,
     }
 
@@ -988,10 +999,16 @@ def render_coincident_pair(pair, reliability=None):
 
     reliability_badge = ""
     if reliability:
+        breakdown = (
+            f' (both failed: {reliability["both_failed_since_hit"]}'
+            + (f'; unclassified: {reliability["unclassified_misses_since_hit"]}'
+               if reliability.get("unclassified_misses_since_hit") else "")
+            + ')'
+        ) if "both_failed_since_hit" in reliability else ""
         reliability_badge = (
             f'<span class="badge">'
             f'Combined: {reliability["combined_pct"]:.2f}% · '
-            f'Without a hit: {reliability["misses_since_hit"]} · '
+            f'Without a hit: {reliability["misses_since_hit"]}{breakdown} · '
             f'Max without a hit: {reliability["max_misses_without_hit"]}'
             f'</span>'
         )
