@@ -20,6 +20,8 @@ from current_streaks_v2 import (
 )
 from history_query import load_all_history
 from match_history import name_key
+from fixture_schedule import load_schedule
+from coincident_schedule import attach_schedules, fixture_label
 from selected_players import (
     bettable_player_keys, excluded_player_keys, is_operational_record,
     load_coincident_config, load_tracked_players,
@@ -811,6 +813,22 @@ summary {
     background: #ffffff;
     border-color: #cbd5e1;
     color: #374151;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.coincident-pair > summary > span {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+    .coincident-pair > summary .badge-row {
+        flex-basis: 100%;
+    }
 }
 
 </style>"""
@@ -896,7 +914,7 @@ def _coincident_indicator_strength_lookup(current_streaks_v2):
 
 
 def _coincident_pair_metrics(pair, strength_lookup):
-    matches = sorted(pair.get("matches", []), key=lambda row: row.get("pair_order", 0))
+    matches = sorted(pair.get("metric_matches", pair.get("matches", [])), key=lambda row: row.get("pair_order", 0))
     key_a = (
         str(pair.get("player_a_league", "")).upper(),
         name_key(str(pair.get("player_a", ""))),
@@ -911,6 +929,7 @@ def _coincident_pair_metrics(pair, strength_lookup):
     misses = 0
     both_failed = 0
     unclassified_misses = 0
+    pending_second_result = 0
     max_misses = 0
     running_misses = 0
     for row in matches:
@@ -926,7 +945,9 @@ def _coincident_pair_metrics(pair, strength_lookup):
         expected_a = {"GREEN": "V", "RED": "D"}.get(pair.get("player_a_indicator"))
         expected_b = {"GREEN": "V", "RED": "D"}.get(pair.get("player_b_indicator"))
         result_a, result_b = row.get("player_a_result"), row.get("player_b_result")
-        if expected_a is None or expected_b is None or result_a not in {"V", "E", "D"} or result_b not in {"V", "E", "D"}:
+        if row.get("state") == "Failed" and (result_a not in {"V", "E", "D"} or result_b not in {"V", "E", "D"}):
+            pending_second_result += 1
+        elif expected_a is None or expected_b is None or result_a not in {"V", "E", "D"} or result_b not in {"V", "E", "D"}:
             unclassified_misses += 1
         elif result_a != expected_a and result_b != expected_b:
             both_failed += 1
@@ -938,8 +959,43 @@ def _coincident_pair_metrics(pair, strength_lookup):
         "misses_since_hit": misses,
         "both_failed_since_hit": both_failed,
         "unclassified_misses_since_hit": unclassified_misses,
+        "pending_second_result": pending_second_result,
         "max_misses_without_hit": max_misses,
     }
+
+
+def render_pair_calendar(pair):
+    if "calendar_matches" not in pair:
+        return ""
+    reference = pair["calendar_reference"]
+    notices = []
+    for league, source in pair.get("calendar_sources", {}).items():
+        stamp = source.get("updated_at")
+        label = _madrid_time(stamp) if stamp else "Unavailable"
+        warning = " — refresh failed; previous data" if source.get("error") else ""
+        notices.append(f'{league}: {label}{warning}')
+    rows = []
+    for row in pair["calendar_matches"]:
+        values = []
+        for side in ("a", "b"):
+            values.extend([row[f"player_{side}"], _madrid_time(row[f"player_{side}_timestamp"]),
+                           row[f"player_{side}_rival"],
+                           fixture_label(row.get(f"player_{side}_result"), row[f"player_{side}_timestamp"], reference,
+                                         row.get(f"player_{side}_fixture_status"))])
+        rows.append(values + [f'{row["gap_minutes"]} min', row["state"]])
+    body = render_table(
+        ["Player A", "Time A", "Opponent A", "Status A", "Player B", "Time B", "Opponent B", "Status B", "Gap", "Coincidence"], rows,
+    ) if rows else '<p class="section-subtitle">No upcoming coincidences in the available calendar.</p>'
+    unpaired = pair.get("unpaired_matches", [])
+    if unpaired:
+        body += '<h4>Unpaired matches — excluded from coincidence statistics</h4>' + render_table(
+            ["Side", "Player", "Time", "Opponent", "Status"],
+            [[r["side"], r["player"], _madrid_time(r["timestamp_utc"]), r["rival"],
+              fixture_label(r.get("result"), r["timestamp_utc"], reference, r.get("fixture_status"))] for r in unpaired])
+    return ('<h4>Upcoming and pending coincidences</h4>'
+            '<p class="section-subtitle">All published fixtures available at the last refresh. '
+            'Times in Madrid. This page is not live. A confirmed failure settles the coincidence immediately.</p>'
+            f'<p class="section-subtitle">Calendar updated: {text(" · ".join(notices))}</p>' + body)
 
 
 def render_coincident_pair(pair, reliability=None):
@@ -1003,6 +1059,8 @@ def render_coincident_pair(pair, reliability=None):
             f' (both failed: {reliability["both_failed_since_hit"]}'
             + (f'; unclassified: {reliability["unclassified_misses_since_hit"]}'
                if reliability.get("unclassified_misses_since_hit") else "")
+            + (f'; awaiting second result: {reliability["pending_second_result"]}'
+               if reliability.get("pending_second_result") else "")
             + ')'
         ) if "both_failed_since_hit" in reliability else ""
         reliability_badge = (
@@ -1029,6 +1087,7 @@ def render_coincident_pair(pair, reliability=None):
         f'{metadata_badge("Maximum gap", f"{maximum} min")}'
         '</div>'
         f'{body}'
+        f'{render_pair_calendar(pair)}'
         '</div>'
         '</details>'
     )
@@ -1192,7 +1251,6 @@ def render_coincident_matches(pairs, current_streaks_v2=None):
         f'{content}'
         '</section>'
     )
-    groups = getattr(pairs, "groups", [])
     custom = getattr(pairs, "custom_pairs", [])
     custom_section = (
         '<section class="dashboard-section"><div class="section-head"><div>'
@@ -1206,8 +1264,6 @@ def render_coincident_matches(pairs, current_streaks_v2=None):
     return (
         pair_section
         + custom_section
-        + _render_coincident_group_section(groups, 3, strength_lookup)
-        + _render_coincident_group_section(groups, 4, strength_lookup)
     )
 
 
@@ -1701,6 +1757,7 @@ def main():
         excluded_candidate_keys=coincident_config["excluded_keys"],
         custom_pairs=coincident_config["custom_pairs"],
     )
+    attach_schedules(coincident_pairs, records, load_schedule(), reference_time, excluded_keys)
     html = render_page(
         group_analysis, current_streaks, coincident_pairs, current_streaks_v2,
     )

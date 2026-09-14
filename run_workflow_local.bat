@@ -33,6 +33,8 @@ echo.
 echo =====================================
 echo GENERANDO WEB
 echo =====================================
+python fixture_schedule.py
+if errorlevel 1 goto :error
 python web_tracker\generate_site.py
 if errorlevel 1 goto :error
 

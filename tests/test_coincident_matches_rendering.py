@@ -132,30 +132,13 @@ class CoincidentRenderingTests(unittest.TestCase):
         self.assertIn("GREEN Lucas", html)
         self.assertNotIn("Lucas*", html)
 
-    def test_triples_and_quartets_require_35_percent_and_six_matches(self):
+    def test_triples_and_quartets_are_not_rendered(self):
         class Results(list):
-            groups = [{
-                "size": 3, "max_gap_minutes": 30, "players": [
-                    {"league": "GT", "player": name, "player_key": name.lower(), "indicator": "GREEN"}
-                    for name in ("A", "B", "C")
-                ], "matches": [{"group_order": index, "members": [], "gap_minutes": 0}
-                                for index in range(1, 7)],
-            }]
-        payload = {"leagues": {"GT": [
-            {"player_key": name.lower(), "indicator": "GREEN", "win_pct": 70.0}
-            for name in ("A", "B", "C")
-        ]}}
-        html = render_coincident_matches(Results(), payload)
-        self.assertIn("Coincident Matches — Triples", html)
-        self.assertNotIn("Combined: 34.30%", html)
-        for row in payload["leagues"]["GT"]:
-            row["win_pct"] = 80.0
-        html = render_coincident_matches(Results(), payload)
-        self.assertIn("Combined: 51.20%", html)
-        Results.groups[0]["matches"] = Results.groups[0]["matches"][:5]
-        self.assertNotIn("Combined: 51.20%", render_coincident_matches(Results(), payload))
-        self.assertIn("Coincident Matches — Groups of 4", html)
-        self.assertIn("No groups of 4 meet the &gt; 35% and 6-match minimum.", html)
+            groups = [{"size": 3}, {"size": 4}]
+        html = render_coincident_matches(Results())
+        self.assertNotIn("Triples", html)
+        self.assertNotIn("Groups of 4", html)
+        self.assertIn("Custom Pairs", html)
 
     def test_different_tracked_groups_get_a_distinct_background_class(self):
         value = pair()

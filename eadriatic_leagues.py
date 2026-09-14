@@ -278,8 +278,8 @@ def _parse_group_heading(label, resolved_date=None):
     }
 
 
-def parse_history_records(html, source_file, collected_at=None):
-    """Extract finalized perspectives; EADRIATIC times are inferred as Madrid time."""
+def parse_history_records(html, source_file, collected_at=None, *, include_scheduled=False):
+    """Extract results, optionally VS fixtures; times are inferred as Madrid time."""
     soup = BeautifulSoup(html, "html.parser")
     block_dates = {
         block["element_id"]: block["match_date"]
@@ -322,7 +322,7 @@ def parse_history_records(html, source_file, collected_at=None):
             continue
 
         score_match = re.search(r"(\d+)\s*-\s*(\d+)", cols[1].get_text(" ", strip=True))
-        if not score_match:
+        if not score_match and not (include_scheduled and cols[1].get_text(strip=True).upper() == "VS"):
             continue
 
         try:
@@ -337,7 +337,7 @@ def parse_history_records(html, source_file, collected_at=None):
             continue
         seen_ids.add(match_id)
 
-        home_score, away_score = map(int, score_match.groups())
+        home_score, away_score = map(int, score_match.groups()) if score_match else (None, None)
         local_timestamp = datetime.combine(
             current_block["match_date"],
             datetime.strptime(current_time, "%H:%M").time(),
@@ -347,7 +347,7 @@ def parse_history_records(html, source_file, collected_at=None):
         timestamp_utc = local_timestamp.astimezone(ZoneInfo("UTC")).isoformat(
             timespec="minutes"
         ).replace("+00:00", "Z")
-        home_result, away_result = result_pair(home_score, away_score)
+        home_result, away_result = result_pair(home_score, away_score) if score_match else (None, None)
 
         common = {
             "schema_version": SCHEMA_VERSION,
@@ -390,7 +390,11 @@ def parse_history_records(html, source_file, collected_at=None):
                 "home_away": home_away,
             })
 
-        validate_perspective_pair(pair)
+        if score_match:
+            validate_perspective_pair(pair)
+        if include_scheduled:
+            for record in pair:
+                record["fixture_status"] = "finished" if score_match else "scheduled"
         records.extend(pair)
 
     return records

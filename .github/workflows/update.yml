@@ -69,6 +69,10 @@ jobs:
         if: steps.schedule_guard.outputs.run == 'true'
         run: python group_analysis.py EADRIATIC        
 
+      - name: Refresh fixture calendars
+        if: steps.schedule_guard.outputs.run == 'true'
+        run: python fixture_schedule.py
+
       - name: Generate Site
         if: steps.schedule_guard.outputs.run == 'true'
         run: python web_tracker/generate_site.py
