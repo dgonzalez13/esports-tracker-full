@@ -842,20 +842,18 @@ def render_session_streak_panel(league, rows):
     table_rows = []
     for row in rows:
         player = f'{row.get("balance", "")} {row.get("player", "")}'.strip()
-        streak = (
-            f'{row.get("current_streak_result")} × {row.get("current_streak")}'
-            if row.get("current_streak_result") and row.get("current_streak")
-            else "—"
-        )
+        sequence = row.get("sequence", row.get("last_24", ""))
+        without_win = len(sequence.rsplit("V", 1)[-1])
+        without_loss = len(sequence.rsplit("D", 1)[-1])
         table_rows.append([
             player, f'{row.get("wins", 0)} ({row.get("win_pct", 0):.2f}%)',
             row.get("draws", 0), f'{row.get("losses", 0)} ({row.get("loss_pct", 0):.2f}%)',
             row.get("played", 0),
-            row.get("last_24", ""), streak,
+            row.get("last_24", ""), without_win, without_loss,
         ])
     body = render_table(
-        ["PLAYER", "W", "D", "L", "PLAYED", "LAST 24", "STREAK"],
-        table_rows, numeric_columns={1, 2, 3, 4}, seq_columns={5},
+        ["PLAYER", "W", "D", "L", "PLAYED", "LAST 24", "SIN GANAR", "SIN PERDER"],
+        table_rows, numeric_columns={1, 2, 3, 4, 6, 7}, seq_columns={5},
         row_classes=["streak-group-shaded" if int(row.get("group_index", 0)) % 2 == 0 else "" for row in rows],
     )
     return (
