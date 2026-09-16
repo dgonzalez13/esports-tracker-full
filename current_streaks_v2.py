@@ -277,6 +277,7 @@ def calculate_operational_snapshot(
             "draw_pct": round(draws / played * 100, 2),
             "loss_pct": round(losses / played * 100, 2),
             "sequence": sequence, "last_24": sequence[-24:],
+            "last_result_timestamp": _record_time(history[-1]).isoformat(),
             "current_streak_result": streak_result, "current_streak": streak,
             "balance": "🟢" if indicator == "GREEN" else ("🔴" if indicator == "RED" else ""),
             "indicator": indicator, "tracked": True, "group_index": int(row.get("group_index", 0)),

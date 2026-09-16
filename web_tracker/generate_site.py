@@ -732,6 +732,21 @@ summary {
     box-shadow: inset 5px 0 0 #b45309;
 }
 .streak-group-shaded { background: #eef4f8; }
+.player-result { margin: 0; }
+.player-result > summary {
+    color: inherit;
+    font-weight: inherit;
+    text-decoration: underline dotted;
+    text-underline-offset: 4px;
+    list-style: none;
+}
+.player-result > summary::-webkit-details-marker { display: none; }
+.player-result > summary:focus-visible { outline: 2px solid var(--accent); }
+.player-result-note { display: none; white-space: normal; font-size: 12px; color: var(--muted); padding-top: 6px; }
+.player-result[open] .player-result-note { display: block; }
+@media (hover: hover) and (pointer: fine) {
+    .player-result:hover .player-result-note { display: block; }
+}
 
 .coincident-pair tbody tr:not(.coincident-both-green):not(.coincident-both-red):not(.coincident-mixed-confirmed) {
     background: #ffffff;
@@ -870,8 +885,14 @@ def render_long_current_runs(payload):
 
 def render_session_streak_panel(league, rows):
     table_rows = []
+    cell_notes = {}
     for row in rows:
         player = f'{row.get("balance", "")} {row.get("player", "")}'.strip()
+        last_result = _event_local_time({"timestamp_utc": row.get("last_result_timestamp")})
+        cell_notes[(len(table_rows), 0)] = (
+            f'Último resultado contabilizado: {last_result:%d/%m/%Y %H:%M} (Madrid)'
+            if last_result else 'Hora del último resultado no disponible'
+        )
         without_win, without_loss = current_run_lengths(row)
         table_rows.append([
             player, f'{row.get("wins", 0)} ({row.get("win_pct", 0):.2f}%)',
@@ -882,6 +903,7 @@ def render_session_streak_panel(league, rows):
     body = render_table(
         ["PLAYER", "W", "D", "L", "PLAYED", "LAST 24", "SIN GANAR", "SIN PERDER"],
         table_rows, numeric_columns={1, 2, 3, 4, 6, 7}, seq_columns={5},
+        cell_notes=cell_notes,
         row_classes=["streak-group-shaded" if int(row.get("group_index", 0)) % 2 == 0 else "" for row in rows],
     )
     return (
@@ -902,6 +924,7 @@ def render_current_streaks_v2(payload):
         '<section class="dashboard-section">'
         '<div class="section-head"><div><h2>Current Streaks — Last 8 Hours</h2>'
         '<p class="section-subtitle">All valid normalized matches in the operational window.</p>'
+        '<p class="section-subtitle">Pasa el cursor o toca el nombre para ver la fecha y hora del último resultado (Madrid).</p>'
         '</div><div class="badge-row">'
         f'{metadata_badge("Window", f"{payload.get("operational_window_hours", 8)} hours")}'
         f'{metadata_badge("Source", "match_history.jsonl")}'
@@ -1719,7 +1742,7 @@ def render_extra_details(group):
     )
 
 
-def render_table(headers, rows, numeric_columns=None, seq_columns=None, row_classes=None):
+def render_table(headers, rows, numeric_columns=None, seq_columns=None, row_classes=None, cell_notes=None):
     numeric_columns = numeric_columns or set()
     seq_columns = seq_columns or set()
 
@@ -1739,7 +1762,14 @@ def render_table(headers, rows, numeric_columns=None, seq_columns=None, row_clas
                 classes.append("seq")
 
             class_attr = f' class="{" ".join(classes)}"' if classes else ""
-            cells.append(f"<td{class_attr}>{text(value)}</td>")
+            content = text(value)
+            note = (cell_notes or {}).get((row_index, index))
+            if note:
+                content = (
+                    f'<details class="player-result"><summary>{content}'
+                    f'<span class="player-result-note">{text(note)}</span></summary></details>'
+                )
+            cells.append(f"<td{class_attr}>{content}</td>")
 
         row_class = row_classes[row_index] if row_classes and row_index < len(row_classes) else ""
         class_attr = f' class="{text(row_class)}"' if row_class else ""

@@ -65,6 +65,17 @@ class CurrentStreaksRenderingTests(unittest.TestCase):
         self.assertIn("&lt;Lucas&gt;", html)
         self.assertNotIn("<Lucas>", html)
 
+    def test_last_result_uses_madrid_date_and_handles_missing_time(self):
+        for timestamp, expected in (
+            ("2026-08-01T23:15:00Z", "02/08/2026 01:15 (Madrid)"),
+            ("2026-01-01T23:15:00Z", "02/01/2026 00:15 (Madrid)"),
+            (None, "Hora del último resultado no disponible"),
+        ):
+            with self.subTest(timestamp=timestamp):
+                html = render_current_streaks_v2(payload([session(last_result_timestamp=timestamp)]))
+                self.assertIn(expected, html)
+                self.assertIn('<details class="player-result"><summary>', html)
+
     def test_current_unbeaten_and_winless_runs(self):
         for sequence, without_win, without_loss in (
             ("VEDDE", 4, 1), ("DEVVE", 1, 4),
