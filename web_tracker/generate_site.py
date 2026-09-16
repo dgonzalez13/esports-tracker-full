@@ -295,6 +295,7 @@ def render_page(data, current_streaks, coincident_pairs=None, current_streaks_v2
 </header>
 <main>
     {render_current_streaks_v2(current_streaks_v2 or {})}
+    {render_long_current_runs(current_streaks_v2 or {})}
     {render_coincident_matches(coincident_pairs if coincident_pairs is not None else [], current_streaks_v2 or {})}
     {render_group_dashboard(data, current_streaks)}
 </main>
@@ -838,13 +839,40 @@ def metadata_badge(label, value):
     return f'<span class="badge">{text(label)}: {text(value)}</span>'
 
 
+def current_run_lengths(row):
+    sequence = row.get("sequence", row.get("last_24", ""))
+    return len(sequence.rsplit("V", 1)[-1]), len(sequence.rsplit("D", 1)[-1])
+
+
+def render_long_current_runs(payload):
+    candidates = []
+    for league in ("GT", "EADRIATIC"):
+        for row in payload.get("leagues", {}).get(league, []):
+            without_win, without_loss = current_run_lengths(row)
+            longest = max(without_win, without_loss)
+            if longest >= 5:
+                candidates.append((longest, row.get("player", ""), league, without_win, without_loss))
+    candidates.sort(key=lambda item: (-item[0], item[1].casefold(), item[2]))
+    body = render_table(
+        ["PLAYER", "LIGA", "SIN GANAR", "SIN PERDER"],
+        [[player, league, without_win, without_loss]
+         for _, player, league, without_win, without_loss in candidates],
+        numeric_columns={2, 3},
+    ) if candidates else '<p class="section-subtitle">No hay jugadores con rachas de al menos 5 partidos.</p>'
+    return (
+        '<section class="dashboard-section">'
+        '<div class="section-head"><div><h2>Rachas actuales de 5 o más partidos</h2>'
+        '<p class="section-subtitle">Sin ganar o sin perder, con los partidos de Current Streaks. '
+        'Ordenados de mayor a menor por la racha más larga.</p></div></div>'
+        f'{body}</section>'
+    )
+
+
 def render_session_streak_panel(league, rows):
     table_rows = []
     for row in rows:
         player = f'{row.get("balance", "")} {row.get("player", "")}'.strip()
-        sequence = row.get("sequence", row.get("last_24", ""))
-        without_win = len(sequence.rsplit("V", 1)[-1])
-        without_loss = len(sequence.rsplit("D", 1)[-1])
+        without_win, without_loss = current_run_lengths(row)
         table_rows.append([
             player, f'{row.get("wins", 0)} ({row.get("win_pct", 0):.2f}%)',
             row.get("draws", 0), f'{row.get("losses", 0)} ({row.get("loss_pct", 0):.2f}%)',

@@ -1,6 +1,6 @@
 import unittest
 
-from web_tracker.generate_site import render_current_streaks_v2, render_page
+from web_tracker.generate_site import render_current_streaks_v2, render_long_current_runs, render_page
 
 
 def session(**overrides):
@@ -22,6 +22,28 @@ def payload(rows=None):
 
 
 class CurrentStreaksRenderingTests(unittest.TestCase):
+    def test_long_runs_filter_sort_and_combine_leagues(self):
+        data = payload([
+            session(player="Five", sequence="VDDDDD"),
+            session(player="Below", sequence="VDDDD"),
+            session(player="Both", sequence="EEEEEE"),
+        ])
+        data["leagues"]["EADRIATIC"] = [session(player="<Seven>", sequence="DVVVVVVV")]
+        html = render_long_current_runs(data)
+        self.assertNotIn("Below", html)
+        self.assertLess(html.index("&lt;Seven&gt;"), html.index("Both"))
+        self.assertLess(html.index("Both"), html.index("Five"))
+        self.assertEqual(html.count("Both"), 1)
+        self.assertIn('<td>EADRIATIC</td><td class="num">0</td><td class="num">7</td>', html)
+        self.assertIn('<td>GT</td><td class="num">5</td><td class="num">0</td>', html)
+        self.assertIn('<td class="num">6</td><td class="num">6</td>', html)
+
+    def test_long_runs_empty_and_position(self):
+        self.assertIn("No hay jugadores", render_long_current_runs({}))
+        html = render_page({}, {}, [], payload())
+        self.assertLess(html.index("<h2>Current Streaks"), html.index("<h2>Rachas actuales"))
+        self.assertLess(html.index("<h2>Rachas actuales"), html.index("<h2>Coincident Matches"))
+
     def test_v2_is_the_only_current_streaks_block_and_has_the_final_name(self):
         html = render_page({}, {}, [], payload())
         self.assertEqual(html.count("<h2>Current Streaks — Last 8 Hours</h2>"), 1)
