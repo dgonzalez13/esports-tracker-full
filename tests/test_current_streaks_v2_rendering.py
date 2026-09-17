@@ -49,8 +49,10 @@ class CurrentStreaksRenderingTests(unittest.TestCase):
         self.assertEqual(html.count("<h2>Current Streaks — Last 8 Hours</h2>"), 1)
         self.assertNotIn("Current Streaks V2", html)
         self.assertNotIn("Current Streaks — Legacy", html)
-        for header in ("PLAYER", "W", "D", "L", "PLAYED", "LAST 24", "SIN GANAR", "SIN PERDER"):
+        for header in ("PLAYER", "W", "D", "L", "PLAYED", "LAST 24"):
             self.assertIn(f"<th>{header}</th>", html)
+        self.assertIn('<abbr title="Sin ganar">SG</abbr>', html)
+        self.assertIn('<abbr title="Sin perder">SP</abbr>', html)
         self.assertNotIn("<th>STREAK</th>", html)
 
     def test_sequence_streak_balance_and_empty_payload(self):

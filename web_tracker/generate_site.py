@@ -901,8 +901,9 @@ def render_session_streak_panel(league, rows):
             row.get("last_24", ""), without_win, without_loss,
         ])
     body = render_table(
-        ["PLAYER", "W", "D", "L", "PLAYED", "LAST 24", "SIN GANAR", "SIN PERDER"],
+        ["PLAYER", "W", "D", "L", "PLAYED", "LAST 24", "SG", "SP"],
         table_rows, numeric_columns={1, 2, 3, 4, 6, 7}, seq_columns={5},
+        header_titles={6: "Sin ganar", 7: "Sin perder"},
         cell_notes=cell_notes,
         row_classes=["streak-group-shaded" if int(row.get("group_index", 0)) % 2 == 0 else "" for row in rows],
     )
@@ -925,6 +926,7 @@ def render_current_streaks_v2(payload):
         '<div class="section-head"><div><h2>Current Streaks — Last 8 Hours</h2>'
         '<p class="section-subtitle">All valid normalized matches in the operational window.</p>'
         '<p class="section-subtitle">Pasa el cursor o toca el nombre para ver la fecha y hora del último resultado (Madrid).</p>'
+        '<p class="section-subtitle">SG: Sin ganar · SP: Sin perder.</p>'
         '</div><div class="badge-row">'
         f'{metadata_badge("Window", f"{payload.get("operational_window_hours", 8)} hours")}'
         f'{metadata_badge("Source", "match_history.jsonl")}'
@@ -1742,11 +1744,15 @@ def render_extra_details(group):
     )
 
 
-def render_table(headers, rows, numeric_columns=None, seq_columns=None, row_classes=None, cell_notes=None):
+def render_table(headers, rows, numeric_columns=None, seq_columns=None, row_classes=None, cell_notes=None, header_titles=None):
     numeric_columns = numeric_columns or set()
     seq_columns = seq_columns or set()
 
-    header_html = "".join(f"<th>{text(header)}</th>" for header in headers)
+    header_html = "".join(
+        f'<th><abbr title="{text(header_titles[index])}">{text(header)}</abbr></th>'
+        if header_titles and index in header_titles else f"<th>{text(header)}</th>"
+        for index, header in enumerate(headers)
+    )
     row_html = []
 
     for row_index, row in enumerate(rows):
