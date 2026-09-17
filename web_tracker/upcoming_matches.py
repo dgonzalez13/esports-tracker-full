@@ -37,12 +37,12 @@ def render_upcoming_matches(schedule, reference=None):
     for row in upcoming_fixtures(schedule, reference):
         local = row["timestamp"].astimezone(ZoneInfo("Europe/Madrid"))
         rows.append(
-            f'<li class="upcoming-match" data-start="{int(row["timestamp"].timestamp() * 1000)}" '
+            f'<tr class="upcoming-match" data-start="{int(row["timestamp"].timestamp() * 1000)}" '
             f'data-league="{escape(row["league"])}" hidden>'
-            f'<time datetime="{row["timestamp"].isoformat()}">{local:%d/%m %H:%M}</time>'
-            f'<span><strong>{escape(row["player"])}</strong> vs '
-            f'<strong>{escape(row["rival"])}</strong>'
-            f'<small>{escape(row["league"])}</small></span></li>'
+            f'<td><time datetime="{row["timestamp"].isoformat()}" title="{local:%d/%m/%Y %H:%M} (Madrid)">{local:%H:%M}</time></td>'
+            f'<td>{escape(row["league"])}</td>'
+            f'<td>{escape(row["player"])} <span class="upcoming-vs">vs</span> '
+            f'{escape(row["rival"])}</td></tr>'
         )
     updates = []
     for league in ("GT", "EADRIATIC"):
@@ -66,7 +66,10 @@ def render_upcoming_matches(schedule, reference=None):
         '<option value="">Todas las ligas</option><option value="GT">GT</option>'
         '<option value="EADRIATIC">EADRIATIC</option></select></label></div>'
         '<p id="upcoming-status" role="status"></p>'
-        '<ul class="upcoming-list">' + "".join(rows) + '</ul>'
+        '<table class="upcoming-table" aria-label="Próximos partidos">'
+        '<colgroup><col class="upcoming-time-col"><col class="upcoming-league-col"><col></colgroup>'
+        '<thead><tr><th scope="col">Hora</th><th scope="col">Liga</th>'
+        '<th scope="col">Partido</th></tr></thead><tbody>' + "".join(rows) + '</tbody></table>'
         '<p class="section-subtitle">Última actualización del calendario (Madrid): '
         + escape(" · ".join(updates)) + '</p>'
         '<noscript>Activa JavaScript para consultar los partidos de la próxima hora o las próximas 2 horas.</noscript>'

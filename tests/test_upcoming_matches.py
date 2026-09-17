@@ -34,7 +34,8 @@ class UpcomingMatchesTests(unittest.TestCase):
             "updated_at": self.now.isoformat(), "error": "failure"}}}
         html = render_upcoming_matches(schedule, self.now)
         self.assertIn("&lt;script&gt;", html)
-        self.assertIn("18/09 01:10", html)
+        self.assertIn('title="18/09/2026 01:10 (Madrid)"', html)
+        self.assertIn('>01:10</time>', html)
         self.assertIn("falló la última actualización", html)
         self.assertIn("EADRIATIC: sin actualización disponible", html)
 

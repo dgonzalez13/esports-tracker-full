@@ -734,15 +734,18 @@ summary {
     box-shadow: inset 5px 0 0 #b45309;
 }
 .streak-group-shaded { background: #eef4f8; }
-.upcoming-filters { display: flex; flex-wrap: wrap; gap: 16px; }
-.upcoming-filters label { display: flex; align-items: center; gap: 8px; }
-.upcoming-filters select { font: inherit; padding: 8px; max-width: 100%; }
-.upcoming-list { list-style: none; padding: 0; margin: 0; }
-.upcoming-match { display: flex; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.upcoming-filters { display: flex; flex-wrap: wrap; gap: 8px 12px; font-size: 12px; }
+.upcoming-filters label { display: flex; align-items: center; gap: 5px; }
+.upcoming-filters select { font: inherit; padding: 4px; max-width: 100%; }
+#upcoming-status { margin: 6px 0; font-size: 12px; }
+.upcoming-table { width: 100%; min-width: 0; table-layout: fixed; font-size: 12px; }
+.upcoming-time-col { width: 52px; }
+.upcoming-league-col { width: 82px; }
+.upcoming-table th, .upcoming-table td { padding: 3px 6px; line-height: 1.3; white-space: normal; overflow-wrap: anywhere; }
+.upcoming-table tbody tr:nth-child(even) { background: var(--surface-soft); }
 .upcoming-match[hidden] { display: none; }
-.upcoming-match time { flex-shrink: 0; font-variant-numeric: tabular-nums; }
-.upcoming-match > span { min-width: 0; overflow-wrap: anywhere; }
-.upcoming-match small { display: block; color: var(--muted); margin-top: 4px; }
+.upcoming-match time { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.upcoming-vs { color: var(--muted); }
 .player-result { margin: 0; }
 .player-result > summary {
     color: inherit;
