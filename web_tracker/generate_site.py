@@ -736,13 +736,14 @@ summary {
 .streak-group-shaded { background: #eef4f8; }
 .upcoming-filters { display: flex; flex-wrap: wrap; gap: 8px 12px; font-size: 12px; }
 .upcoming-filters label { display: flex; align-items: center; gap: 5px; }
-.upcoming-filters select { font: inherit; padding: 4px; max-width: 100%; }
+.upcoming-filters select { font: inherit; padding: 5px 8px; max-width: 100%; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); }
 #upcoming-status { margin: 6px 0; font-size: 12px; }
-.upcoming-table { width: 100%; min-width: 0; table-layout: fixed; font-size: 12px; }
-.upcoming-time-col { width: 52px; }
-.upcoming-league-col { width: 82px; }
-.upcoming-table th, .upcoming-table td { padding: 3px 6px; line-height: 1.3; white-space: normal; overflow-wrap: anywhere; }
-.upcoming-table tbody tr:nth-child(even) { background: var(--surface-soft); }
+.coincident-pair.upcoming-panel > summary { justify-content: flex-start; }
+.upcoming-panel > summary h2 { margin: 0; font-size: 16px; color: inherit; }
+.upcoming-table { width: 100%; min-width: 0; table-layout: fixed; }
+.upcoming-time-col { width: 60px; }
+.upcoming-league-col { width: 98px; }
+.upcoming-table th, .upcoming-table td { padding: 5px 9px; white-space: normal; overflow-wrap: anywhere; }
 .upcoming-match[hidden] { display: none; }
 .upcoming-match time { white-space: nowrap; font-variant-numeric: tabular-nums; }
 .upcoming-vs { color: var(--muted); }

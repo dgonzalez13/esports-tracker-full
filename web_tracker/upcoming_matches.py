@@ -58,7 +58,9 @@ def render_upcoming_matches(schedule, reference=None):
         updates.append(f"{league}: {updated}{suffix}")
     return (
         '<section class="dashboard-section" id="upcoming-matches">'
-        '<h2>Próximos partidos</h2>'
+        '<details class="coincident-pair upcoming-panel">'
+        '<summary><h2>Próximos partidos</h2></summary>'
+        '<div class="coincident-pair-body">'
         '<p class="section-subtitle">Todos los jugadores · Horario de Madrid · Calendario publicado, no en directo.</p>'
         '<div class="upcoming-filters"><label>Ventana <select id="upcoming-window">'
         '<option value="1">Próxima hora</option><option value="2">Próximas 2 horas</option>'
@@ -66,14 +68,14 @@ def render_upcoming_matches(schedule, reference=None):
         '<option value="">Todas las ligas</option><option value="GT">GT</option>'
         '<option value="EADRIATIC">EADRIATIC</option></select></label></div>'
         '<p id="upcoming-status" role="status"></p>'
-        '<table class="upcoming-table" aria-label="Próximos partidos">'
+        '<div class="table-wrap"><table class="upcoming-table" aria-label="Próximos partidos">'
         '<colgroup><col class="upcoming-time-col"><col class="upcoming-league-col"><col></colgroup>'
         '<thead><tr><th scope="col">Hora</th><th scope="col">Liga</th>'
-        '<th scope="col">Partido</th></tr></thead><tbody>' + "".join(rows) + '</tbody></table>'
+        '<th scope="col">Partido</th></tr></thead><tbody>' + "".join(rows) + '</tbody></table></div>'
         '<p class="section-subtitle">Última actualización del calendario (Madrid): '
         + escape(" · ".join(updates)) + '</p>'
         '<noscript>Activa JavaScript para consultar los partidos de la próxima hora o las próximas 2 horas.</noscript>'
-        '</section>' + SCRIPT
+        '</div></details></section>' + SCRIPT
     )
 
 
@@ -99,6 +101,7 @@ SCRIPT = """<script>
     }
     windowSelect.addEventListener('change', update);
     leagueSelect.addEventListener('change', update);
+    section.querySelector('details').addEventListener('toggle', update);
     document.addEventListener('visibilitychange', update);
     update();
     setInterval(update, 30000);
