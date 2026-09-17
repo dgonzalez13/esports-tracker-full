@@ -21,6 +21,7 @@ from current_streaks_v2 import (
 from history_query import load_all_history
 from match_history import name_key
 from fixture_schedule import load_schedule
+from web_tracker.upcoming_matches import render_upcoming_matches
 from coincident_schedule import attach_schedules, fixture_label
 from selected_players import (
     bettable_player_keys, excluded_player_keys, is_operational_record,
@@ -273,7 +274,7 @@ def metric(label, value, hint=None):
     )
 
 
-def render_page(data, current_streaks, coincident_pairs=None, current_streaks_v2=None):
+def render_page(data, current_streaks, coincident_pairs=None, current_streaks_v2=None, schedule=None):
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -295,6 +296,7 @@ def render_page(data, current_streaks, coincident_pairs=None, current_streaks_v2
 </header>
 <main>
     {render_current_streaks_v2(current_streaks_v2 or {})}
+    {render_upcoming_matches(schedule or {})}
     {render_long_current_runs(current_streaks_v2 or {})}
     {render_coincident_matches(coincident_pairs if coincident_pairs is not None else [], current_streaks_v2 or {})}
     {render_group_dashboard(data, current_streaks)}
@@ -732,6 +734,15 @@ summary {
     box-shadow: inset 5px 0 0 #b45309;
 }
 .streak-group-shaded { background: #eef4f8; }
+.upcoming-filters { display: flex; flex-wrap: wrap; gap: 16px; }
+.upcoming-filters label { display: flex; align-items: center; gap: 8px; }
+.upcoming-filters select { font: inherit; padding: 8px; max-width: 100%; }
+.upcoming-list { list-style: none; padding: 0; margin: 0; }
+.upcoming-match { display: flex; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.upcoming-match[hidden] { display: none; }
+.upcoming-match time { flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.upcoming-match > span { min-width: 0; overflow-wrap: anywhere; }
+.upcoming-match small { display: block; color: var(--muted); margin-top: 4px; }
 .player-result { margin: 0; }
 .player-result > summary {
     color: inherit;
@@ -1819,9 +1830,10 @@ def main():
         excluded_candidate_keys=coincident_config["excluded_keys"],
         custom_pairs=coincident_config["custom_pairs"],
     )
-    attach_schedules(coincident_pairs, records, load_schedule(), reference_time, excluded_keys)
+    schedule = load_schedule()
+    attach_schedules(coincident_pairs, records, schedule, reference_time, excluded_keys)
     html = render_page(
-        group_analysis, current_streaks, coincident_pairs, current_streaks_v2,
+        group_analysis, current_streaks, coincident_pairs, current_streaks_v2, schedule,
     )
 
     write_html(html)
