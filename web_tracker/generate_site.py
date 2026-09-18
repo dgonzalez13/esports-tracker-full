@@ -19,6 +19,8 @@ from current_streaks_v2 import (
     calculate_operational_snapshot,
 )
 from history_query import load_all_history
+from streak_break_stats import build_streak_statistics
+from web_tracker.streak_statistics import render_streak_statistics
 from match_history import name_key
 from fixture_schedule import load_schedule
 from web_tracker.upcoming_matches import render_upcoming_matches
@@ -274,7 +276,7 @@ def metric(label, value, hint=None):
     )
 
 
-def render_page(data, current_streaks, coincident_pairs=None, current_streaks_v2=None, schedule=None):
+def render_page(data, current_streaks, coincident_pairs=None, current_streaks_v2=None, schedule=None, streak_statistics=None):
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -296,6 +298,7 @@ def render_page(data, current_streaks, coincident_pairs=None, current_streaks_v2
 </header>
 <main>
     {render_current_streaks_v2(current_streaks_v2 or {})}
+    {render_streak_statistics(streak_statistics)}
     {render_upcoming_matches(schedule or {})}
     {render_long_current_runs(current_streaks_v2 or {})}
     {render_coincident_matches(coincident_pairs if coincident_pairs is not None else [], current_streaks_v2 or {})}
@@ -1838,6 +1841,7 @@ def main():
     attach_schedules(coincident_pairs, records, schedule, reference_time, excluded_keys)
     html = render_page(
         group_analysis, current_streaks, coincident_pairs, current_streaks_v2, schedule,
+        build_streak_statistics(records, reference_time, excluded_keys),
     )
 
     write_html(html)
