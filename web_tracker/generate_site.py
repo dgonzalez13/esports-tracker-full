@@ -1841,7 +1841,8 @@ def main():
     attach_schedules(coincident_pairs, records, schedule, reference_time, excluded_keys)
     html = render_page(
         group_analysis, current_streaks, coincident_pairs, current_streaks_v2, schedule,
-        build_streak_statistics(records, reference_time, excluded_keys),
+        build_streak_statistics(records, reference_time, excluded_keys,
+                                tracked_players=tracked_players, schedule=schedule),
     )
 
     write_html(html)

@@ -94,7 +94,40 @@ def historical_windows(records, reference_time):
     return windows
 
 
-def build_streak_statistics(records, reference_time, excluded_keys=()):
+def pending_matches(schedule, league, key, active, reference_time, finished_ids):
+    """Count only published future fixtures in this player's current turn.
+
+    None means no usable calendar coverage, not zero remaining matches.
+    """
+    source = (schedule or {}).get("sources", {}).get(league, {})
+    if not active or not source.get("updated_at") or source.get("error"):
+        return None
+    start, end = (datetime.fromisoformat(active[field]) for field in ("start", "end"))
+    seen, covered = set(), False
+    for row in source.get("records", []):
+        if row.get("player_key") != key:
+            continue
+        try:
+            stamp = datetime.fromisoformat(row["timestamp_utc"].replace("Z", "+00:00"))
+        except (KeyError, ValueError, TypeError, AttributeError):
+            continue
+        if stamp.tzinfo is None or not start <= stamp < end:
+            continue
+        covered = True
+        if (stamp < reference_time or row.get("result") in {"V", "E", "D"}
+                or row.get("fixture_status") != "scheduled"
+                or (league, row.get("match_id")) in finished_ids):
+            continue
+        seen.add(row.get("match_id") or (stamp.isoformat(), row.get("rival_key")))
+    return len(seen) if covered else None
+
+
+def build_streak_statistics(records, reference_time, excluded_keys=(), *, tracked_players=(), schedule=None):
+    records = list(records)
+    tracked = {(row["league"], row["player_key"]) for row in tracked_players
+               if row.get("tracked") and row.get("bettable", True)}
+    finished_ids = {(row.get("league"), row.get("match_id")) for row in records
+                    if row.get("result") in {"V", "E", "D"}}
     windows = historical_windows(records, reference_time)
     grouped = defaultdict(list)
     for window in windows:
@@ -117,7 +150,13 @@ def build_streak_statistics(records, reference_time, excluded_keys=()):
             if active:
                 for kind, breaker in (("SG", "V"), ("SP", "D")):
                     current[kind] = len(active["sequence"].split(breaker)[-1])
+            if (league, key) not in tracked:
+                continue
             players.append({"player": entries[-1]["player"], "player_key": key,
+                            "league": league,
+                            "remaining": pending_matches(schedule, league, key, active,
+                                                         reference_time, finished_ids),
+                            "current_end": active["end"] if active else None,
                             "current": current, "windows": len(entries),
                             "rows": summarize_windows(sequences)})
         selected = [w for w in windows if w["league"] == league

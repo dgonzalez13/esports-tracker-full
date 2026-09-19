@@ -48,8 +48,21 @@ partidos de ambos rivales como ensayos independientes. «Pocos datos» usa un um
 descriptivo de 30 casos resueltos. No se calcula rentabilidad ni se recomienda apostar.
 
 La vista del turno actual usa estas ventanas fijas; Current Streaks mantiene su ventana
-móvil original. Se muestran todos los jugadores con turno reconstruible, no solo los
-del archivo de seguimiento. El histórico incluye lo observado del turno abierto.
+móvil original. Solo se ofrecen jugadores habilitados de `tracked_players` en las
+tablas y el selector individual. El resumen general conserva el histórico de la liga.
+El histórico incluye lo observado del turno abierto.
+
+La vista inicial reúne GT y Eadriatic, SG y SP, con racha positiva y porcentaje en
+3 partidos estrictamente mayor que 85 (comparado sin redondear), en orden descendente.
+La vista «Todos los activos» permite consultar también porcentajes menores o desconocidos.
+Las identidades incluyen la liga para distinguir nombres iguales entre competiciones.
+
+Los pendientes cuentan partidos futuros publicados dentro del turno, deduplicados por
+partido y excluyendo resultados confirmados. Se muestran como desconocidos si no hay
+cobertura del jugador en ese turno o la fuente informa de un error. No se inventan
+partidos para completar calendarios parciales. Un cero significa cero partidos futuros
+publicados, no una certificación de que el calendario esté completo. Todo corresponde
+a la hora de generación indicada en pantalla.
 
 ## Validación
 

@@ -9,9 +9,9 @@ def render_streak_statistics(payload):
 <div class="section-head"><div><h2>Estadísticas de rachas · Turnos de 8 horas</h2>
 <p class="section-subtitle">SG se rompe con una victoria. SP se rompe con una derrota. Los empates prolongan ambas.</p></div></div>
 <div class="streak-filters">
-<label>Liga <select id="ss-league"><option>GT</option><option>EADRIATIC</option></select></label>
-<label>Racha <select id="ss-kind"><option value="SG">SG · Sin ganar</option><option value="SP">SP · Sin perder</option></select></label>
-<label>Vista <select id="ss-view"><option value="current">Turno actual</option><option value="general">General de la liga</option><option value="player">Por jugador</option></select></label>
+<label>Liga <select id="ss-league"><option value="all">Todas las ligas</option><option>GT</option><option>EADRIATIC</option></select></label>
+<label>Racha <select id="ss-kind"><option value="all">SG y SP</option><option value="SG">SG · Sin ganar</option><option value="SP">SP · Sin perder</option></select></label>
+<label>Vista <select id="ss-view"><option value="current">Activos · Más del 85 % en 3</option><option value="active">Todos los activos</option><option value="general">General de la liga</option><option value="player">Por jugador</option></select></label>
 <label id="ss-player-label" hidden>Jugador <select id="ss-player"></select></label>
 </div>
 <p id="ss-period" class="section-subtitle"></p>
@@ -31,6 +31,8 @@ si los incompletos se comportan de otra manera. Los horizontes tienen denominado
 todos esos partidos sin ruptura. «Pocos datos» indica menos de 30 casos resueltos, no una garantía
 de fiabilidad por encima de ese umbral. El resumen general reúne observaciones de jugadores;
 dos rivales pueden aportar observaciones del mismo partido.</p>
+<p>Solo aparecen jugadores de tracked_players habilitados para apostar. La vista inicial reúne ambas ligas y ambas rachas, con porcentaje estrictamente superior al 85 % en 3 partidos, ordenado de mayor a menor. Un jugador puede tener una fila SG y otra SP.</p>
+<p>Los pendientes son partidos futuros publicados en el calendario dentro del turno, sin duplicados ni resultados ya confirmados. «Sin calendario» indica falta de cobertura o error de actualización; un calendario parcial puede omitir partidos. Los datos corresponden a la actualización indicada, no a un seguimiento en directo.</p>
 <p>La racha del turno actual se limita a su grupo y puede diferir de Current Streaks, que muestra
 las últimas 8 horas móviles. No se enlazan turnos ni se cuentan actualizaciones repetidas.</p>
 </details></section>
@@ -57,36 +59,51 @@ const cell = h => {
  const main = h.resolved ? '<strong>' + pct(h.break_pct) + '</strong><small>' + h.broken + ' / ' + h.resolved + ' resueltos</small><small>Continúa: ' + pct(100-h.break_pct) + '</small>' : '—<small>Sin casos resueltos</small>';
  return '<td>' + main + '<small>Incompletos: ' + h.incomplete + (h.resolved < 30 ? ' · Pocos datos' : '') + '</small></td>';
 };
+const selectedGroups = () => Object.entries(data.leagues).filter(([name]) => league.value === 'all' || name === league.value);
+const selectedPlayers = () => selectedGroups().flatMap(([name, group]) => (group.players || []).map(p => ({...p, league:name})));
+const identity = p => p.league + '|' + p.player_key;
 function populate() {
- const players = (data.leagues[league.value] || {}).players || [];
- player.innerHTML = players.map(p => '<option value="' + esc(p.player_key) + '">' + esc(p.player) + '</option>').join('');
+ const previous = player.value;
+ const players = selectedPlayers();
+ player.innerHTML = players.map(p => '<option value="' + esc(identity(p)) + '">' + esc(p.player + ' · ' + p.league) + '</option>').join('');
+ player.value = players.some(p => identity(p) === previous) ? previous : (players[0] ? identity(players[0]) : '');
  render();
 }
 function render() {
- const group = data.leagues[league.value] || {}, players = group.players || [];
+ const players = selectedPlayers();
+ const currentView = view.value === 'current' || view.value === 'active';
  get('player-label').hidden = view.value !== 'player';
  const date = raw => raw ? new Date(raw).toLocaleString('es-ES', {timeZone:'Europe/Madrid'}) : '—';
- get('period').textContent = 'Histórico utilizado: ' + date(group.from) + ' → ' + date(group.to) + ' (Madrid). ' + (group.windows || 0) + ' ventanas de jugador.';
+ get('period').textContent = 'Actualizado: ' + date(data.generated_at) + ' (Madrid). ' + selectedGroups().map(([name, g]) => name + ': ' + date(g.from) + ' → ' + date(g.to) + ', ' + (g.windows || 0) + ' ventanas históricas de jugador.').join(' ');
  const headings = '<th>Rompe en 1 partido</th><th>Rompe en próximos 2</th><th>Rompe en próximos 3</th>';
  let rows = [], first;
- if (view.value === 'current') {
-  first = '<th>Jugador</th><th>Racha del turno</th>';
-  rows = players.filter(p => p.current && p.current[kind.value] > 0).sort((a,b) => b.current[kind.value]-a.current[kind.value]).map(p => {
-   const length = p.current[kind.value], stats = p.rows.find(r => r.kind === kind.value && r.length === length);
-   return '<tr><td><button type="button" data-player="' + esc(p.player_key) + '">' + esc(p.player) + '</button></td><td>' + kind.value + ' ' + length + '</td>' + [1,2,3].map(h => cell(stats && stats.horizons[h])).join('') + '</tr>';
+ if (currentView) {
+  first = '<th>Jugador</th><th>Liga</th><th>Racha del turno</th><th>Partidos pendientes</th>';
+  const candidates = players.flatMap(p => ['SG', 'SP'].filter(k => kind.value === 'all' || kind.value === k).map(k => {
+   const length = (p.current || {})[k] || 0;
+   const stats = p.rows.find(r => r.kind === k && r.length === length);
+   const h = stats && stats.horizons[3];
+   return {p, k, length, stats, percentage: h && h.resolved ? 100 * h.broken / h.resolved : null};
+  })).filter(r => r.length > 0 && (view.value === 'active' || (r.percentage !== null && r.percentage > 85)));
+  candidates.sort((a,b) => (b.percentage ?? -1) - (a.percentage ?? -1) || a.p.player.localeCompare(b.p.player) || a.k.localeCompare(b.k));
+  rows = candidates.map(({p,k,length,stats}) => {
+   const remaining = p.remaining == null ? '—<small>Sin calendario</small>' : p.remaining + '<small>Publicados' + (p.remaining < 3 ? ' · Quedan menos de 3' : '') + '</small>';
+   return '<tr><td><button type="button" data-player="' + esc(identity(p)) + '" data-kind="' + k + '">' + esc(p.player) + '</button></td><td>' + esc(p.league) + '</td><td>' + k + ' ' + length + '</td><td>' + remaining + '</td>' + [1,2,3].map(h => cell(stats && stats.horizons[h])).join('') + '</tr>';
   });
  } else {
-  first = '<th>Racha alcanzada</th>';
-  const source = view.value === 'general' ? group : players.find(p => p.player_key === player.value);
-  rows = ((source || {}).rows || []).filter(r => r.kind === kind.value).map(r => '<tr><td>' + kind.value + ' ' + r.length + '</td>' + [1,2,3].map(h => cell(r.horizons[h])).join('') + '</tr>');
+  first = '<th>Liga</th><th>Racha alcanzada</th>';
+  const sources = view.value === 'general' ? selectedGroups().map(([league, group]) => ({...group, league})) : players.filter(p => identity(p) === player.value);
+  rows = sources.flatMap(source => (source.rows || []).filter(r => kind.value === 'all' || r.kind === kind.value).map(r => '<tr><td>' + esc(source.league) + '</td><td>' + r.kind + ' ' + r.length + '</td>' + [1,2,3].map(h => cell(r.horizons[h])).join('') + '</tr>'));
  }
- get('table').innerHTML = rows.length ? '<table><thead><tr>' + first + headings + '</tr></thead><tbody>' + rows.join('') + '</tbody></table>' : '<p>No hay casos disponibles para esta selección. Puedes consultar el histórico en la vista general o por jugador.</p>';
+ const hasCurrent = players.some(p => Object.values(p.current || {}).some(n => n > 0));
+ const empty = currentView && !hasCurrent ? 'No hay rachas del turno actual disponibles para los jugadores de tracked_players. Comprueba la hora de actualización de los resultados y los jugadores seleccionados.' : view.value === 'current' ? 'Ningún jugador activo supera el 85 % en los próximos 3 partidos para esta selección. Puedes elegir «Todos los activos».' : 'No hay casos disponibles para esta selección.';
+ get('table').innerHTML = rows.length ? '<table><thead><tr>' + first + headings + '</tr></thead><tbody>' + rows.join('') + '</tbody></table>' : '<p>' + empty + '</p>';
 }
 league.addEventListener('change', populate);
 [kind, view, player].forEach(el => el.addEventListener('change', render));
 get('table').addEventListener('click', event => {
  const button = event.target.closest('button[data-player]');
- if (button) { player.value = button.dataset.player; view.value = 'player'; render(); }
+ if (button) { player.value = button.dataset.player; kind.value = button.dataset.kind; view.value = 'player'; render(); }
 });
 populate();
 })();

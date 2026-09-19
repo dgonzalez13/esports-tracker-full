@@ -1,7 +1,9 @@
 import unittest
 
 from datetime import datetime, timedelta
-from streak_break_stats import MADRID, historical_windows, summarize_windows
+from streak_break_stats import (MADRID, historical_windows, summarize_windows,
+                                build_streak_statistics, pending_matches)
+from unittest.mock import patch
 from web_tracker.streak_statistics import render_streak_statistics
 
 
@@ -18,6 +20,40 @@ def group_matches(start, prefix, league="GT"):
 
 
 class StreakBreakStatsTests(unittest.TestCase):
+    def test_only_tracked_bettable_players_are_exposed(self):
+        reference = datetime(2026, 9, 19, 10, tzinfo=MADRID)
+        windows = [{"league": "GT", "player": key, "player_key": key,
+                    "start": reference.replace(hour=5).isoformat(),
+                    "end": reference.replace(hour=13).isoformat(),
+                    "sequence": "DDDDV", "last_timestamp": reference.isoformat()}
+                   for key in ("active", "untracked", "excluded")]
+        tracked = [{"league": "GT", "player_key": "active", "tracked": True},
+                   {"league": "GT", "player_key": "excluded", "tracked": True, "bettable": False}]
+        with patch("streak_break_stats.historical_windows", return_value=windows):
+            payload = build_streak_statistics([], reference, tracked_players=tracked)
+        self.assertEqual([p["player_key"] for p in payload["leagues"]["GT"]["players"]], ["active"])
+        self.assertEqual(payload["leagues"]["GT"]["players"][0]["current"], {"SG": 0, "SP": 1})
+
+    def test_pending_matches_boundaries_dedup_and_missing_calendar(self):
+        reference = datetime(2026, 9, 19, 1, tzinfo=MADRID)
+        active = {"start": (reference - timedelta(hours=2)).isoformat(),
+                  "end": (reference + timedelta(hours=6)).isoformat()}
+        def fixture(key, hours, **extra):
+            return dict(player_key="a", match_id=key, fixture_status="scheduled",
+                        timestamp_utc=(reference + timedelta(hours=hours)).isoformat(), **extra)
+        rows = [fixture("next", 1), fixture("next", 1), fixture("later", 5),
+                fixture("past", -1), fixture("boundary", 6), fixture("finished", 2, result="V"),
+                fixture("history_finished", 3)]
+        schedule = {"sources": {"GT": {"updated_at": reference.isoformat(), "records": rows}}}
+        self.assertEqual(pending_matches(schedule, "GT", "a", active, reference,
+                                         {("GT", "history_finished")}), 2)
+        self.assertIsNone(pending_matches({}, "GT", "a", active, reference, set()))
+        self.assertIsNone(pending_matches(schedule, "GT", "other", active, reference, set()))
+        self.assertEqual(pending_matches(schedule, "GT", "a", active,
+                                         reference + timedelta(hours=5, minutes=1), set()), 0)
+        schedule["sources"]["GT"]["error"] = "offline"
+        self.assertIsNone(pending_matches(schedule, "GT", "a", active, reference, set()))
+
     def lookup(self, sequences, kind, length):
         return next(row["horizons"] for row in summarize_windows(sequences)
                     if row["kind"] == kind and row["length"] == length)
