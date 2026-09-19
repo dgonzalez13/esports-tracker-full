@@ -52,6 +52,14 @@ móvil original. Solo se ofrecen jugadores habilitados de `tracked_players` en l
 tablas y el selector individual. El resumen general conserva el histórico de la liga.
 El histórico incluye lo observado del turno abierto.
 
+El turno actual se calcula por separado usando `group_index` de `tracked_players`
+(0: primer horario, 1: segundo horario; cinco puestos por grupo en cada liga).
+No requiere reconstrucción de rivales ni partido exactamente a la hora de inicio.
+Admite el primer resultado disponible, deduplica partidos y excluye los anteriores
+al inicio, posteriores al corte o al momento de generación. Los jugadores sin
+histórico también aparecen en «Todos los activos» con porcentajes desconocidos;
+no superan el filtro inicial del 85 % hasta disponer de estadísticas suficientes.
+
 La vista inicial reúne GT y Eadriatic, SG y SP, con racha positiva y porcentaje en
 3 partidos estrictamente mayor que 85 (comparado sin redondear), en orden descendente.
 La vista «Todos los activos» permite consultar también porcentajes menores o desconocidos.

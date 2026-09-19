@@ -122,10 +122,57 @@ def pending_matches(schedule, league, key, active, reference_time, finished_ids)
     return len(seen) if covered else None
 
 
+def tracked_current_windows(records, tracked_players, reference_time):
+    """Use known tracked group positions immediately, independently of history inference."""
+    local = reference_time.astimezone(MADRID)
+    indexed = defaultdict(list)
+    seen = set()
+    for row in records:
+        if row.get("result") not in {"V", "E", "D"}:
+            continue
+        try:
+            stamp = datetime.fromisoformat(row["timestamp_utc"].replace("Z", "+00:00"))
+        except (KeyError, TypeError, ValueError, AttributeError):
+            continue
+        identity = (row.get("league"), row.get("player_key"), row.get("match_id"))
+        if stamp.tzinfo is None or stamp > reference_time or not all(identity) or identity in seen:
+            continue
+        seen.add(identity)
+        indexed[identity[:2]].append((stamp, row))
+    windows = {}
+    for player in tracked_players:
+        league, key = player.get("league"), player.get("player_key")
+        group = player.get("group_index")
+        if league not in STARTS or group not in (0, 1) or not player.get("tracked"):
+            continue
+        starts = [datetime(day.year, day.month, day.day, hour, tzinfo=MADRID)
+                  + timedelta(minutes=group * OFFSETS[league])
+                  for delta in (-1, 0) for day in [(local + timedelta(days=delta)).date()]
+                  for hour in STARTS[league]]
+        start_local = max(start for start in starts if start <= local)
+        start = start_local.astimezone(timezone.utc)
+        end = min((start_local + timedelta(hours=8)).astimezone(timezone.utc),
+                  start + timedelta(hours=8))
+        if reference_time >= end:
+            continue
+        matches = sorted(((t, r) for t, r in indexed[league, key] if start <= t < end),
+                         key=lambda item: (item[0], item[1]["match_id"]))
+        windows[league, key] = {
+            "start": start.isoformat(), "end": end.isoformat(),
+            "sequence": "".join(row["result"] for _, row in matches),
+        }
+    return windows
+
+
 def build_streak_statistics(records, reference_time, excluded_keys=(), *, tracked_players=(), schedule=None):
     records = list(records)
+    tracked_players = list(tracked_players)
     tracked = {(row["league"], row["player_key"]) for row in tracked_players
-               if row.get("tracked") and row.get("bettable", True)}
+               if row.get("tracked") and row.get("bettable", True)
+               and (row["league"], row["player_key"]) not in excluded_keys}
+    names = {(row["league"], row["player_key"]): row.get("player", row["player_key"])
+             for row in tracked_players if row.get("tracked")}
+    current_windows = tracked_current_windows(records, tracked_players, reference_time)
     finished_ids = {(row.get("league"), row.get("match_id")) for row in records
                     if row.get("result") in {"V", "E", "D"}}
     windows = historical_windows(records, reference_time)
@@ -134,6 +181,8 @@ def build_streak_statistics(records, reference_time, excluded_keys=(), *, tracke
         identity = (window["league"], window["player_key"])
         if identity not in excluded_keys:
             grouped[identity].append(window)
+    for identity in tracked:
+        grouped.setdefault(identity, [])
     leagues = {}
     for league in STARTS:
         players = []
@@ -143,16 +192,14 @@ def build_streak_statistics(records, reference_time, excluded_keys=(), *, tracke
                 continue
             sequences = [entry["sequence"] for entry in entries]
             league_sequences.extend(sequences)
-            active = next((entry for entry in reversed(entries)
-                           if datetime.fromisoformat(entry["start"]) <= reference_time
-                           < datetime.fromisoformat(entry["end"])), None)
+            active = current_windows.get((league, key))
             current = {}
             if active:
                 for kind, breaker in (("SG", "V"), ("SP", "D")):
                     current[kind] = len(active["sequence"].split(breaker)[-1])
             if (league, key) not in tracked:
                 continue
-            players.append({"player": entries[-1]["player"], "player_key": key,
+            players.append({"player": names[league, key], "player_key": key,
                             "league": league,
                             "remaining": pending_matches(schedule, league, key, active,
                                                          reference_time, finished_ids),

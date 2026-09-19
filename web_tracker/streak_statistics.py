@@ -23,6 +23,10 @@ desde su inicio hasta el siguiente turno, con un máximo de 8 horas. Medianoche 
 <p>Los grupos históricos se reconstruyen por sus enfrentamientos. Se exige un partido registrado
 en la hora de inicio y un grupo separable de 4 o 5 jugadores. Los bloques ambiguos se excluyen.
 El cálculo usa los partidos disponibles: las ausencias en la fuente pueden afectar las rachas.</p>
+<p>Para el turno actual se usa directamente el grupo indicado en tracked_players:
+los primeros cinco puestos de cada liga corresponden al primer horario y los siguientes cinco al segundo.
+La racha se calcula desde el primer resultado disponible dentro del turno, sin mínimo de partidos
+ni espera a reconstruir el grupo. Si falta histórico, se muestra «Sin casos históricos» en «Todos los activos».</p>
 <p>Cada racha aporta una observación al alcanzar N. En cada horizonte se muestra rupturas / casos resueltos,
 y aparte los casos incompletos. Una ruptura temprana resuelve el caso; si no hay ruptura y faltan partidos
 antes del corte, queda incompleto. Los porcentajes describen los casos resueltos y pueden estar sesgados

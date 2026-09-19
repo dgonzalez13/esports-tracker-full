@@ -2,7 +2,7 @@ import unittest
 
 from datetime import datetime, timedelta
 from streak_break_stats import (MADRID, historical_windows, summarize_windows,
-                                build_streak_statistics, pending_matches)
+                                build_streak_statistics, pending_matches, tracked_current_windows)
 from unittest.mock import patch
 from web_tracker.streak_statistics import render_streak_statistics
 
@@ -32,7 +32,34 @@ class StreakBreakStatsTests(unittest.TestCase):
         with patch("streak_break_stats.historical_windows", return_value=windows):
             payload = build_streak_statistics([], reference, tracked_players=tracked)
         self.assertEqual([p["player_key"] for p in payload["leagues"]["GT"]["players"]], ["active"])
-        self.assertEqual(payload["leagues"]["GT"]["players"][0]["current"], {"SG": 0, "SP": 1})
+        self.assertEqual(payload["leagues"]["GT"]["players"][0]["current"], {})
+
+    def test_first_result_without_reconstructible_history(self):
+        for league, hour, offset in (("EADRIATIC", 7, 20), ("GT", 5, 60)):
+            for group in (0, 1):
+                start = datetime(2026, 9, 19, hour, tzinfo=MADRID) + timedelta(minutes=group * offset)
+                tracked = [{"league": league, "player_key": "new", "player": "New",
+                            "tracked": True, "group_index": group}]
+                row = {"league": league, "player_key": "new", "player": "New",
+                       "match_id": "first", "result": "E", "rival_key": "rival",
+                       "timestamp_utc": (start + timedelta(minutes=5)).isoformat()}
+                previous = dict(row, match_id="previous", timestamp_utc=(start-timedelta(minutes=1)).isoformat())
+                future = dict(row, match_id="future", timestamp_utc=(start+timedelta(minutes=30)).isoformat())
+                payload = build_streak_statistics([row, row, previous, future], start+timedelta(minutes=10),
+                                                  tracked_players=tracked)
+                player = payload["leagues"][league]["players"][0]
+                self.assertEqual(player["current"], {"SG": 1, "SP": 1})
+                self.assertEqual(player["rows"], [])
+
+    def test_tracked_turn_crosses_midnight_and_resets_at_next_start(self):
+        start = datetime(2026, 9, 18, 23, 20, tzinfo=MADRID)
+        tracked = [{"league": "EADRIATIC", "player_key": "a", "tracked": True, "group_index": 1}]
+        row = {"league": "EADRIATIC", "player_key": "a", "match_id": "one", "result": "D",
+               "timestamp_utc": start.isoformat()}
+        active = tracked_current_windows([row], tracked, start + timedelta(hours=2))
+        self.assertEqual(active["EADRIATIC", "a"]["sequence"], "D")
+        next_turn = tracked_current_windows([row], tracked, start + timedelta(hours=8))
+        self.assertEqual(next_turn["EADRIATIC", "a"]["sequence"], "")
 
     def test_pending_matches_boundaries_dedup_and_missing_calendar(self):
         reference = datetime(2026, 9, 19, 1, tzinfo=MADRID)
