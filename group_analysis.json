@@ -1,11 +1,11 @@
 {
   "schema_version": 2,
   "analysis_scope": "historical TXT; h2h_alerts are operational JSONL-filtered",
-  "generated_at": "27/09/2026 01:53:50 CEST",
+  "generated_at": "27/09/2026 02:16:46 CEST",
   "league": "EADRIATIC",
-  "files_count": 134,
+  "files_count": 135,
   "data_from": "20260516",
-  "data_to": "20260926",
+  "data_to": "20260927",
   "files": [
     "20260516_eadriatic_player_stats.txt",
     "20260517_eadriatic_player_stats.txt",
@@ -140,7 +140,8 @@
     "20260923_eadriatic_player_stats.txt",
     "20260924_eadriatic_player_stats.txt",
     "20260925_eadriatic_player_stats.txt",
-    "20260926_eadriatic_player_stats.txt"
+    "20260926_eadriatic_player_stats.txt",
+    "20260927_eadriatic_player_stats.txt"
   ],
   "h2h_alert_threshold": 48,
   "min_h2h_alert_matches": 20,
@@ -429,7 +430,7 @@
         "Beckham",
         "Gael"
       ],
-      "target_repr": "{'Beckham', 'Gael', 'Juan', 'Lucas', 'Eric'}",
+      "target_repr": "{'Gael', 'Beckham', 'Lucas', 'Eric', 'Juan'}",
       "h2h_keys": [
         "Gael",
         "Eric",
@@ -473,18 +474,13 @@
       ],
       "dominance": [
         {
-          "player": "Beckham",
-          "wins": 1,
-          "rivals": 4
-        },
-        {
           "player": "Gael",
           "wins": 2,
           "rivals": 4
         },
         {
-          "player": "Juan",
-          "wins": 0,
+          "player": "Beckham",
+          "wins": 1,
           "rivals": 4
         },
         {
@@ -495,6 +491,11 @@
         {
           "player": "Eric",
           "wins": 4,
+          "rivals": 4
+        },
+        {
+          "player": "Juan",
+          "wins": 0,
           "rivals": 4
         }
       ],
@@ -543,12 +544,12 @@
               "matches": 6
             },
             {
-              "rival": "Juan",
+              "rival": "Lucas",
               "win_pct": 66.66666666666666,
               "matches": 6
             },
             {
-              "rival": "Lucas",
+              "rival": "Juan",
               "win_pct": 66.66666666666666,
               "matches": 6
             }
@@ -570,21 +571,6 @@
               "stk_lose": 1
             },
             {
-              "rival": "Juan",
-              "W": 4,
-              "D": 1,
-              "L": 1,
-              "matches": 6,
-              "win_pct": 66.66666666666666,
-              "draw_pct": 16.666666666666664,
-              "loss_pct": 16.666666666666664,
-              "seq": "VDEVVV",
-              "last5": "DEVVV",
-              "last10": "VDEVVV",
-              "stk_win": 3,
-              "stk_lose": 4
-            },
-            {
               "rival": "Lucas",
               "W": 4,
               "D": 0,
@@ -598,6 +584,21 @@
               "last10": "VVDVDV",
               "stk_win": 1,
               "stk_lose": 1
+            },
+            {
+              "rival": "Juan",
+              "W": 4,
+              "D": 1,
+              "L": 1,
+              "matches": 6,
+              "win_pct": 66.66666666666666,
+              "draw_pct": 16.666666666666664,
+              "loss_pct": 16.666666666666664,
+              "seq": "VDEVVV",
+              "last5": "DEVVV",
+              "last10": "VDEVVV",
+              "stk_win": 3,
+              "stk_lose": 4
             }
           ]
         },
@@ -608,12 +609,12 @@
           "weighted_score": 2000.0,
           "worst_matchups": [
             {
-              "rival": "Beckham",
+              "rival": "Gael",
               "win_pct": 16.666666666666664,
               "matches": 6
             },
             {
-              "rival": "Gael",
+              "rival": "Beckham",
               "win_pct": 16.666666666666664,
               "matches": 6
             },
@@ -624,21 +625,6 @@
             }
           ],
           "worst_matchup_details": [
-            {
-              "rival": "Beckham",
-              "W": 1,
-              "D": 1,
-              "L": 4,
-              "matches": 6,
-              "win_pct": 16.666666666666664,
-              "draw_pct": 16.666666666666664,
-              "loss_pct": 66.66666666666666,
-              "seq": "",
-              "last5": "",
-              "last10": "",
-              "stk_win": 0,
-              "stk_lose": 0
-            },
             {
               "rival": "Gael",
               "W": 1,
@@ -651,6 +637,21 @@
               "seq": "DDVDDD",
               "last5": "DVDDD",
               "last10": "DDVDDD",
+              "stk_win": 0,
+              "stk_lose": 0
+            },
+            {
+              "rival": "Beckham",
+              "W": 1,
+              "D": 1,
+              "L": 4,
+              "matches": 6,
+              "win_pct": 16.666666666666664,
+              "draw_pct": 16.666666666666664,
+              "loss_pct": 66.66666666666666,
+              "seq": "",
+              "last5": "",
+              "last10": "",
               "stk_win": 0,
               "stk_lose": 0
             },
@@ -1152,9 +1153,9 @@
     "GT": {
       "league": "GT",
       "analysis_scope": "historical TXT; h2h_alerts are operational JSONL-filtered",
-      "files_count": 179,
+      "files_count": 180,
       "data_from": "20260401",
-      "data_to": "20260926",
+      "data_to": "20260927",
       "files": [
         "20260401_player_stats.txt",
         "20260402_player_stats.txt",
@@ -1334,7 +1335,8 @@
         "20260923_player_stats.txt",
         "20260924_player_stats.txt",
         "20260925_player_stats.txt",
-        "20260926_player_stats.txt"
+        "20260926_player_stats.txt",
+        "20260927_player_stats.txt"
       ],
       "h2h_alert_threshold": 48,
       "min_h2h_alert_matches": 20,
@@ -1419,7 +1421,7 @@
             "Fernando",
             "Walnut"
           ],
-          "target_repr": "{'Delpiero', 'Amado', 'Shelby', 'Walnut', 'Fernando'}",
+          "target_repr": "{'Delpiero', 'Amado', 'Walnut', 'Shelby', 'Fernando'}",
           "h2h_keys": [
             "Amado",
             "Fernando",
@@ -1555,12 +1557,12 @@
               "rivals": 4
             },
             {
-              "player": "Shelby",
+              "player": "Walnut",
               "wins": 0,
               "rivals": 4
             },
             {
-              "player": "Walnut",
+              "player": "Shelby",
               "wins": 0,
               "rivals": 4
             },
@@ -2229,7 +2231,7 @@
             "Arthur",
             "Habibi"
           ],
-          "target_repr": "{'Carlos', 'Fred', 'Habibi', 'Arthur', 'Sensei'}",
+          "target_repr": "{'Carlos', 'Habibi', 'Fred', 'Sensei', 'Arthur'}",
           "h2h_keys": [
             "Carlos",
             "Sensei",
@@ -2350,7 +2352,7 @@
             {
               "position": 5,
               "player": "Habibi",
-              "score": -61.996178410654046
+              "score": -61.99617841065404
             }
           ],
           "dominance": [
@@ -2360,22 +2362,22 @@
               "rivals": 4
             },
             {
-              "player": "Fred",
-              "wins": 1,
-              "rivals": 4
-            },
-            {
               "player": "Habibi",
               "wins": 0,
               "rivals": 4
             },
             {
-              "player": "Arthur",
-              "wins": 0,
+              "player": "Fred",
+              "wins": 1,
               "rivals": 4
             },
             {
               "player": "Sensei",
+              "wins": 0,
+              "rivals": 4
+            },
+            {
+              "player": "Arthur",
               "wins": 0,
               "rivals": 4
             }
@@ -3034,9 +3036,9 @@
     "EADRIATIC": {
       "league": "EADRIATIC",
       "analysis_scope": "historical TXT; h2h_alerts are operational JSONL-filtered",
-      "files_count": 134,
+      "files_count": 135,
       "data_from": "20260516",
-      "data_to": "20260926",
+      "data_to": "20260927",
       "files": [
         "20260516_eadriatic_player_stats.txt",
         "20260517_eadriatic_player_stats.txt",
@@ -3171,7 +3173,8 @@
         "20260923_eadriatic_player_stats.txt",
         "20260924_eadriatic_player_stats.txt",
         "20260925_eadriatic_player_stats.txt",
-        "20260926_eadriatic_player_stats.txt"
+        "20260926_eadriatic_player_stats.txt",
+        "20260927_eadriatic_player_stats.txt"
       ],
       "h2h_alert_threshold": 48,
       "min_h2h_alert_matches": 20,
@@ -3460,7 +3463,7 @@
             "Beckham",
             "Gael"
           ],
-          "target_repr": "{'Beckham', 'Gael', 'Juan', 'Lucas', 'Eric'}",
+          "target_repr": "{'Gael', 'Beckham', 'Lucas', 'Eric', 'Juan'}",
           "h2h_keys": [
             "Gael",
             "Eric",
@@ -3504,18 +3507,13 @@
           ],
           "dominance": [
             {
-              "player": "Beckham",
-              "wins": 1,
-              "rivals": 4
-            },
-            {
               "player": "Gael",
               "wins": 2,
               "rivals": 4
             },
             {
-              "player": "Juan",
-              "wins": 0,
+              "player": "Beckham",
+              "wins": 1,
               "rivals": 4
             },
             {
@@ -3526,6 +3524,11 @@
             {
               "player": "Eric",
               "wins": 4,
+              "rivals": 4
+            },
+            {
+              "player": "Juan",
+              "wins": 0,
               "rivals": 4
             }
           ],
@@ -3574,12 +3577,12 @@
                   "matches": 6
                 },
                 {
-                  "rival": "Juan",
+                  "rival": "Lucas",
                   "win_pct": 66.66666666666666,
                   "matches": 6
                 },
                 {
-                  "rival": "Lucas",
+                  "rival": "Juan",
                   "win_pct": 66.66666666666666,
                   "matches": 6
                 }
@@ -3601,21 +3604,6 @@
                   "stk_lose": 1
                 },
                 {
-                  "rival": "Juan",
-                  "W": 4,
-                  "D": 1,
-                  "L": 1,
-                  "matches": 6,
-                  "win_pct": 66.66666666666666,
-                  "draw_pct": 16.666666666666664,
-                  "loss_pct": 16.666666666666664,
-                  "seq": "VDEVVV",
-                  "last5": "DEVVV",
-                  "last10": "VDEVVV",
-                  "stk_win": 3,
-                  "stk_lose": 4
-                },
-                {
                   "rival": "Lucas",
                   "W": 4,
                   "D": 0,
@@ -3629,6 +3617,21 @@
                   "last10": "VVDVDV",
                   "stk_win": 1,
                   "stk_lose": 1
+                },
+                {
+                  "rival": "Juan",
+                  "W": 4,
+                  "D": 1,
+                  "L": 1,
+                  "matches": 6,
+                  "win_pct": 66.66666666666666,
+                  "draw_pct": 16.666666666666664,
+                  "loss_pct": 16.666666666666664,
+                  "seq": "VDEVVV",
+                  "last5": "DEVVV",
+                  "last10": "VDEVVV",
+                  "stk_win": 3,
+                  "stk_lose": 4
                 }
               ]
             },
@@ -3639,12 +3642,12 @@
               "weighted_score": 2000.0,
               "worst_matchups": [
                 {
-                  "rival": "Beckham",
+                  "rival": "Gael",
                   "win_pct": 16.666666666666664,
                   "matches": 6
                 },
                 {
-                  "rival": "Gael",
+                  "rival": "Beckham",
                   "win_pct": 16.666666666666664,
                   "matches": 6
                 },
@@ -3655,21 +3658,6 @@
                 }
               ],
               "worst_matchup_details": [
-                {
-                  "rival": "Beckham",
-                  "W": 1,
-                  "D": 1,
-                  "L": 4,
-                  "matches": 6,
-                  "win_pct": 16.666666666666664,
-                  "draw_pct": 16.666666666666664,
-                  "loss_pct": 66.66666666666666,
-                  "seq": "",
-                  "last5": "",
-                  "last10": "",
-                  "stk_win": 0,
-                  "stk_lose": 0
-                },
                 {
                   "rival": "Gael",
                   "W": 1,
@@ -3682,6 +3670,21 @@
                   "seq": "DDVDDD",
                   "last5": "DVDDD",
                   "last10": "DDVDDD",
+                  "stk_win": 0,
+                  "stk_lose": 0
+                },
+                {
+                  "rival": "Beckham",
+                  "W": 1,
+                  "D": 1,
+                  "L": 4,
+                  "matches": 6,
+                  "win_pct": 16.666666666666664,
+                  "draw_pct": 16.666666666666664,
+                  "loss_pct": 66.66666666666666,
+                  "seq": "",
+                  "last5": "",
+                  "last10": "",
                   "stk_win": 0,
                   "stk_lose": 0
                 },
