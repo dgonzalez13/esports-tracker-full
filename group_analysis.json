@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "analysis_scope": "historical TXT; h2h_alerts are operational JSONL-filtered",
-  "generated_at": "01/10/2026 18:38:33 CEST",
+  "generated_at": "01/10/2026 18:41:24 CEST",
   "league": "EADRIATIC",
   "files_count": 139,
   "data_from": "20260516",
@@ -570,10 +570,10 @@
         "Andrew",
         "Logan"
       ],
-      "target_repr": "{'Alexis', 'Logan', 'Eric', 'Maverick', 'Andrew'}",
+      "target_repr": "{'Maverick', 'Andrew', 'Logan', 'Alexis', 'Eric'}",
       "h2h_keys": [
-        "Logan",
         "Andrew",
+        "Logan",
         "Maverick",
         "Alexis",
         "Eric"
@@ -676,7 +676,7 @@
         {
           "position": 2,
           "player": "Eric",
-          "score": -44.222572826633744
+          "score": -44.22257282663374
         },
         {
           "position": 3,
@@ -696,8 +696,13 @@
       ],
       "dominance": [
         {
-          "player": "Alexis",
-          "wins": 3,
+          "player": "Maverick",
+          "wins": 0,
+          "rivals": 4
+        },
+        {
+          "player": "Andrew",
+          "wins": 0,
           "rivals": 4
         },
         {
@@ -706,17 +711,12 @@
           "rivals": 4
         },
         {
+          "player": "Alexis",
+          "wins": 3,
+          "rivals": 4
+        },
+        {
           "player": "Eric",
-          "wins": 0,
-          "rivals": 4
-        },
-        {
-          "player": "Maverick",
-          "wins": 0,
-          "rivals": 4
-        },
-        {
-          "player": "Andrew",
           "wins": 0,
           "rivals": 4
         }
@@ -1380,10 +1380,10 @@
         "Conde",
         "Gael"
       ],
-      "target_repr": "{'Spartan', 'Alexander', 'Gael', 'Conde', 'Bruno'}",
+      "target_repr": "{'Bruno', 'Alexander', 'Conde', 'Spartan', 'Gael'}",
       "h2h_keys": [
-        "Gael",
         "Conde",
+        "Gael",
         "Alexander",
         "Bruno",
         "Spartan"
@@ -1440,7 +1440,7 @@
         {
           "position": 1,
           "player": "Conde",
-          "score": 30.76923076923077
+          "score": 30.769230769230774
         },
         {
           "position": 2,
@@ -1465,8 +1465,8 @@
       ],
       "dominance": [
         {
-          "player": "Spartan",
-          "wins": 0,
+          "player": "Bruno",
+          "wins": 1,
           "rivals": 4
         },
         {
@@ -1475,17 +1475,17 @@
           "rivals": 4
         },
         {
-          "player": "Gael",
-          "wins": 1,
-          "rivals": 4
-        },
-        {
           "player": "Conde",
           "wins": 2,
           "rivals": 4
         },
         {
-          "player": "Bruno",
+          "player": "Spartan",
+          "wins": 0,
+          "rivals": 4
+        },
+        {
+          "player": "Gael",
           "wins": 1,
           "rivals": 4
         }
@@ -1605,12 +1605,12 @@
               "matches": 2
             },
             {
-              "rival": "Gael",
+              "rival": "Bruno",
               "win_pct": 22.22222222222222,
               "matches": 9
             },
             {
-              "rival": "Bruno",
+              "rival": "Gael",
               "win_pct": 22.22222222222222,
               "matches": 9
             }
@@ -1632,21 +1632,6 @@
               "stk_lose": 0
             },
             {
-              "rival": "Gael",
-              "W": 2,
-              "D": 1,
-              "L": 6,
-              "matches": 9,
-              "win_pct": 22.22222222222222,
-              "draw_pct": 11.11111111111111,
-              "loss_pct": 66.66666666666666,
-              "seq": "DVDEDDDVD",
-              "last5": "DDDVD",
-              "last10": "DVDEDDDVD",
-              "stk_win": 0,
-              "stk_lose": 0
-            },
-            {
               "rival": "Bruno",
               "W": 2,
               "D": 2,
@@ -1658,6 +1643,21 @@
               "seq": "VDVEDDEDD",
               "last5": "DDEDD",
               "last10": "VDVEDDEDD",
+              "stk_win": 0,
+              "stk_lose": 0
+            },
+            {
+              "rival": "Gael",
+              "W": 2,
+              "D": 1,
+              "L": 6,
+              "matches": 9,
+              "win_pct": 22.22222222222222,
+              "draw_pct": 11.11111111111111,
+              "loss_pct": 66.66666666666666,
+              "seq": "DVDEDDDVD",
+              "last5": "DDDVD",
+              "last10": "DVDEDDDVD",
               "stk_win": 0,
               "stk_lose": 0
             }
@@ -2790,10 +2790,10 @@
             "Punk",
             "Thunder"
           ],
-          "target_repr": "{'Thunder', 'Punk', 'Tiago', 'Penn', 'Snake'}",
+          "target_repr": "{'Snake', 'Tiago', 'Thunder', 'Punk', 'Penn'}",
           "h2h_keys": [
-            "Penn",
             "Snake",
+            "Penn",
             "Tiago",
             "Thunder",
             "Punk"
@@ -2870,10 +2870,20 @@
             {
               "position": 5,
               "player": "Penn",
-              "score": -129.89424427940588
+              "score": -129.89424427940585
             }
           ],
           "dominance": [
+            {
+              "player": "Snake",
+              "wins": 2,
+              "rivals": 4
+            },
+            {
+              "player": "Tiago",
+              "wins": 2,
+              "rivals": 4
+            },
             {
               "player": "Thunder",
               "wins": 1,
@@ -2885,18 +2895,8 @@
               "rivals": 4
             },
             {
-              "player": "Tiago",
-              "wins": 2,
-              "rivals": 4
-            },
-            {
               "player": "Penn",
               "wins": 0,
-              "rivals": 4
-            },
-            {
-              "player": "Snake",
-              "wins": 2,
               "rivals": 4
             }
           ],
@@ -3559,10 +3559,10 @@
             "Rossi",
             "Titan"
           ],
-          "target_repr": "{'Titan', 'Rossi', 'Hulk', 'Viper', 'Jose'}",
+          "target_repr": "{'Rossi', 'Hulk', 'Titan', 'Jose', 'Viper'}",
           "h2h_keys": [
-            "Titan",
             "Rossi",
+            "Titan",
             "Jose",
             "Hulk",
             "Viper"
@@ -3685,11 +3685,6 @@
           ],
           "dominance": [
             {
-              "player": "Titan",
-              "wins": 0,
-              "rivals": 4
-            },
-            {
               "player": "Rossi",
               "wins": 0,
               "rivals": 4
@@ -3700,13 +3695,18 @@
               "rivals": 4
             },
             {
-              "player": "Viper",
+              "player": "Titan",
               "wins": 0,
               "rivals": 4
             },
             {
               "player": "Jose",
               "wins": 1,
+              "rivals": 4
+            },
+            {
+              "player": "Viper",
+              "wins": 0,
               "rivals": 4
             }
           ],
@@ -4931,10 +4931,10 @@
             "Andrew",
             "Logan"
           ],
-          "target_repr": "{'Alexis', 'Logan', 'Eric', 'Maverick', 'Andrew'}",
+          "target_repr": "{'Maverick', 'Andrew', 'Logan', 'Alexis', 'Eric'}",
           "h2h_keys": [
-            "Logan",
             "Andrew",
+            "Logan",
             "Maverick",
             "Alexis",
             "Eric"
@@ -5037,7 +5037,7 @@
             {
               "position": 2,
               "player": "Eric",
-              "score": -44.222572826633744
+              "score": -44.22257282663374
             },
             {
               "position": 3,
@@ -5057,8 +5057,13 @@
           ],
           "dominance": [
             {
-              "player": "Alexis",
-              "wins": 3,
+              "player": "Maverick",
+              "wins": 0,
+              "rivals": 4
+            },
+            {
+              "player": "Andrew",
+              "wins": 0,
               "rivals": 4
             },
             {
@@ -5067,17 +5072,12 @@
               "rivals": 4
             },
             {
+              "player": "Alexis",
+              "wins": 3,
+              "rivals": 4
+            },
+            {
               "player": "Eric",
-              "wins": 0,
-              "rivals": 4
-            },
-            {
-              "player": "Maverick",
-              "wins": 0,
-              "rivals": 4
-            },
-            {
-              "player": "Andrew",
               "wins": 0,
               "rivals": 4
             }
@@ -5741,10 +5741,10 @@
             "Conde",
             "Gael"
           ],
-          "target_repr": "{'Spartan', 'Alexander', 'Gael', 'Conde', 'Bruno'}",
+          "target_repr": "{'Bruno', 'Alexander', 'Conde', 'Spartan', 'Gael'}",
           "h2h_keys": [
-            "Gael",
             "Conde",
+            "Gael",
             "Alexander",
             "Bruno",
             "Spartan"
@@ -5801,7 +5801,7 @@
             {
               "position": 1,
               "player": "Conde",
-              "score": 30.76923076923077
+              "score": 30.769230769230774
             },
             {
               "position": 2,
@@ -5826,8 +5826,8 @@
           ],
           "dominance": [
             {
-              "player": "Spartan",
-              "wins": 0,
+              "player": "Bruno",
+              "wins": 1,
               "rivals": 4
             },
             {
@@ -5836,17 +5836,17 @@
               "rivals": 4
             },
             {
-              "player": "Gael",
-              "wins": 1,
-              "rivals": 4
-            },
-            {
               "player": "Conde",
               "wins": 2,
               "rivals": 4
             },
             {
-              "player": "Bruno",
+              "player": "Spartan",
+              "wins": 0,
+              "rivals": 4
+            },
+            {
+              "player": "Gael",
               "wins": 1,
               "rivals": 4
             }
@@ -5966,12 +5966,12 @@
                   "matches": 2
                 },
                 {
-                  "rival": "Gael",
+                  "rival": "Bruno",
                   "win_pct": 22.22222222222222,
                   "matches": 9
                 },
                 {
-                  "rival": "Bruno",
+                  "rival": "Gael",
                   "win_pct": 22.22222222222222,
                   "matches": 9
                 }
@@ -5993,21 +5993,6 @@
                   "stk_lose": 0
                 },
                 {
-                  "rival": "Gael",
-                  "W": 2,
-                  "D": 1,
-                  "L": 6,
-                  "matches": 9,
-                  "win_pct": 22.22222222222222,
-                  "draw_pct": 11.11111111111111,
-                  "loss_pct": 66.66666666666666,
-                  "seq": "DVDEDDDVD",
-                  "last5": "DDDVD",
-                  "last10": "DVDEDDDVD",
-                  "stk_win": 0,
-                  "stk_lose": 0
-                },
-                {
                   "rival": "Bruno",
                   "W": 2,
                   "D": 2,
@@ -6019,6 +6004,21 @@
                   "seq": "VDVEDDEDD",
                   "last5": "DDEDD",
                   "last10": "VDVEDDEDD",
+                  "stk_win": 0,
+                  "stk_lose": 0
+                },
+                {
+                  "rival": "Gael",
+                  "W": 2,
+                  "D": 1,
+                  "L": 6,
+                  "matches": 9,
+                  "win_pct": 22.22222222222222,
+                  "draw_pct": 11.11111111111111,
+                  "loss_pct": 66.66666666666666,
+                  "seq": "DVDEDDDVD",
+                  "last5": "DDDVD",
+                  "last10": "DVDEDDDVD",
                   "stk_win": 0,
                   "stk_lose": 0
                 }
