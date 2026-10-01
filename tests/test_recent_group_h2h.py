@@ -6,6 +6,19 @@ from web_tracker.generate_site import attach_recent_group_h2h, render_recent_gro
 
 
 class RecentGroupH2HTests(unittest.TestCase):
+    def test_highlights_zero_wins_using_historical_percentage(self):
+        rivals = [
+            {"rival": str(pct), "played": 3, "wins": wins, "draws": 1,
+             "losses": 2, "historical_win_pct": pct, "historical_played": 100,
+             "sequence": "DED"}
+            for pct, wins in [(36, 0), (35, 0), (30, 0), (29.99, 0), (40, 1)]
+        ]
+        html = render_recent_group_h2h({"recent_h2h": {
+            "start": "start", "end": "end", "players": [{"player": "A", "rivals": rivals}]
+        }})
+        self.assertEqual(html.count('<tr class="recent-h2h-green">'), 1)
+        self.assertEqual(html.count('<tr class="recent-h2h-blue">'), 2)
+
     def test_time_bounds_direction_league_and_empty_rivals(self):
         group = {"target": ["David", "Fox", "C", "D", "E"]}
         data = {"leagues": {"GT": {"groups": [group]}}}

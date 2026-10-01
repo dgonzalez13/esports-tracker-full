@@ -41,8 +41,10 @@ class CurrentStreaksRenderingTests(unittest.TestCase):
     def test_long_runs_empty_and_position(self):
         self.assertIn("No hay jugadores", render_long_current_runs({}))
         html = render_page({}, {}, [], payload())
-        self.assertLess(html.index("<h2>Current Streaks"), html.index("<h2>Rachas actuales"))
-        self.assertLess(html.index("<h2>Rachas actuales"), html.index("<h2>Coincident Matches"))
+        self.assertNotIn("<h2>Rachas actuales", html)
+        self.assertLess(html.index("<h2>Current Streaks"), html.index("<h2>Coincident Matches"))
+        self.assertIn('<details class="dashboard-section coincident-collapsed">', html)
+        self.assertNotIn('<details open class="dashboard-section coincident-collapsed">', html)
 
     def test_v2_is_the_only_current_streaks_block_and_has_the_final_name(self):
         html = render_page({}, {}, [], payload())

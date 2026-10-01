@@ -301,7 +301,6 @@ def render_page(data, current_streaks, coincident_pairs=None, current_streaks_v2
     {render_current_streaks_v2(current_streaks_v2 or {})}
     {render_streak_statistics(streak_statistics)}
     {render_upcoming_matches(schedule or {})}
-    {render_long_current_runs(current_streaks_v2 or {})}
     {render_coincident_matches(coincident_pairs if coincident_pairs is not None else [], current_streaks_v2 or {})}
     {render_group_dashboard(data, current_streaks)}
 </main>
@@ -738,6 +737,10 @@ summary {
     box-shadow: inset 5px 0 0 #b45309;
 }
 .streak-group-shaded { background: #eef4f8; }
+.recent-h2h-green td { background: #dcfce7; color: #14532d; }
+.recent-h2h-blue td { background: #dbeafe; color: #1e3a8a; }
+.coincident-collapsed > summary { cursor: pointer; }
+.coincident-collapsed > summary h2 { display: inline; }
 .upcoming-filters { display: flex; flex-wrap: wrap; gap: 8px 12px; font-size: 12px; }
 .upcoming-filters label { display: flex; align-items: center; gap: 5px; }
 .upcoming-filters select { font: inherit; padding: 5px 8px; max-width: 100%; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); }
@@ -1303,9 +1306,9 @@ def render_coincident_matches(pairs, current_streaks_v2=None):
     )
 
     pair_section = (
-        '<section class="dashboard-section">'
+        '<details class="dashboard-section coincident-collapsed">'
+        '<summary><h2>Coincident Matches — Last 8 Hours</h2></summary>'
         '<div class="section-head"><div>'
-        '<h2>Coincident Matches — Last 8 Hours</h2>'
         '<p class="section-subtitle">'
         'Only pairs above 40% combined with at least 6 coincident matches are shown.'
         '</p>'
@@ -1319,7 +1322,7 @@ def render_coincident_matches(pairs, current_streaks_v2=None):
         f'{metadata_badge("Minimum matches", ">= 6")} '
         '</div></div>'
         f'{content}'
-        '</section>'
+        '</details>'
     )
     custom = getattr(pairs, "custom_pairs", [])
     custom_section = (
@@ -1785,6 +1788,14 @@ def render_recent_group_h2h(group):
         return ""
     blocks = []
     for player in recent["players"]:
+        row_classes = []
+        for rival in player["rivals"]:
+            pct = rival["historical_win_pct"]
+            row_classes.append(
+                "recent-h2h-green" if rival["wins"] == 0 and pct > 35
+                else "recent-h2h-blue" if rival["wins"] == 0 and 30 <= pct <= 35
+                else ""
+            )
         rows = [
             [rival["rival"], rival["played"], rival["wins"], rival["draws"],
              rival["losses"], fmt_pct(rival["historical_win_pct"]) if rival["historical_played"] else "—",
@@ -1794,7 +1805,7 @@ def render_recent_group_h2h(group):
         blocks.append(
             '<details open><summary>' + text(player["player"]) + '</summary>'
             + render_table(["Rival", "Partidos (8h)", "V", "E", "D", "V% (total)", "Secuencia (8h)"],
-                           rows, numeric_columns={1, 2, 3, 4, 5})
+                           rows, numeric_columns={1, 2, 3, 4, 5}, row_classes=row_classes)
             + '</details>'
         )
     return (
