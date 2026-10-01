@@ -2,7 +2,7 @@ import unittest
 from datetime import datetime, timezone
 
 from tests.test_h2h_analysis import perspective
-from web_tracker.generate_site import attach_recent_group_h2h, render_recent_group_h2h, render_page
+from web_tracker.generate_site import attach_recent_group_h2h, render_recent_group_h2h, render_page, render_recent_group_h2h_dashboard
 
 
 class RecentGroupH2HTests(unittest.TestCase):
@@ -13,7 +13,25 @@ class RecentGroupH2HTests(unittest.TestCase):
         html = render_page(data, {}, [])
         self.assertLess(html.index('id="recent-group-h2h"'), html.index('<h2>Coincident Matches'))
         self.assertEqual(html.count('Próximo partido (Madrid)'), 2)
-        self.assertIn('GT · Grupo 1', html)
+        self.assertIn('No hay enfrentamientos destacados.', html)
+        self.assertGreater(html.index('Frente a frente · últimas 8 horas'), html.index('<h2>Group Analysis'))
+
+    def test_summary_filters_and_sorts_highlighted_rows_unknown_time_last(self):
+        def rival(name, pct, wins=0, stamp=None):
+            return {"rival": name, "wins": wins, "historical_win_pct": pct,
+                    "played": 3, "sequence": "DED", "next_match": stamp}
+        group = {"label": "Grupo 1", "recent_h2h": {"players": [{"player": "A", "rivals": [
+            rival("Unknown", 40), rival("Late", 36, stamp="2026-10-01T14:00:00Z"),
+            rival("Early", 30, stamp="2026-10-01T12:00:00Z"),
+            rival("HasWin", 40, wins=1), rival("LowPct", 29),
+        ]}]}}
+        html = render_recent_group_h2h_dashboard({"leagues": {"GT": {"groups": [group]}}})
+        self.assertLess(html.index('Early'), html.index('Late'))
+        self.assertLess(html.index('Late'), html.index('Unknown'))
+        self.assertNotIn('HasWin', html)
+        self.assertNotIn('LowPct', html)
+        self.assertEqual(html.count('<tr class="recent-h2h-green">'), 2)
+        self.assertEqual(html.count('<tr class="recent-h2h-blue">'), 1)
 
     def test_next_fixture_is_earliest_scheduled_pair_in_same_league(self):
         group = {"target": ["David", "Fox", "C"]}

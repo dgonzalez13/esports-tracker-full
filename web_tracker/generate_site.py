@@ -1528,6 +1528,7 @@ def render_group_card(league, league_payload, group):
         + "</div>"
         + '<div class="card-section">'
         + render_head_to_head(group)
+        + render_recent_group_h2h(group)
         + "</div>"
         + render_extra_details(group)
         + "</article>"
@@ -1789,22 +1790,49 @@ def attach_recent_group_h2h(data, records, reference_time, schedule=None):
 
 
 def render_recent_group_h2h_dashboard(data):
-    blocks = []
+    selected = []
     for league, payload in data.get("leagues", {}).items():
         for group in payload.get("groups", []):
-            if "recent_h2h" not in group:
-                continue
-            blocks.append(
-                '<article class="group-card">'
-                + '<h3>' + text(league) + ' · ' + text(group.get("label") or group.get("group_id", "")) + '</h3>'
-                + render_recent_group_h2h(group)
-                + '</article>'
-            )
+            for player in group.get("recent_h2h", {}).get("players", []):
+                for rival in player["rivals"]:
+                    color = recent_h2h_row_class(rival)
+                    if color:
+                        selected.append((league, group.get("label") or group.get("group_id", ""), player["player"], rival, color))
+    selected.sort(key=lambda item: (
+        datetime.fromisoformat(item[3]["next_match"]) if item[3].get("next_match")
+        else datetime.max.replace(tzinfo=timezone.utc), item[0], item[2], item[3]["rival"]
+    ))
+    rows = [
+        [league, label, player, rival["rival"], rival["played"],
+         fmt_pct(rival["historical_win_pct"]), rival["sequence"] or "Sin partidos", next_group_match_label(rival)]
+        for league, label, player, rival, color in selected
+    ]
     return (
         '<section class="dashboard-section" id="recent-group-h2h">'
-        '<div class="section-head"><h2>Enfrentamientos del grupo — últimas 8 horas</h2></div>'
-        + ''.join(blocks) + '</section>'
+        '<div class="section-head"><h2>Enfrentamientos destacados — últimas 8 horas</h2></div>'
+        '<p class="section-subtitle">Filas verdes y azules: sin victorias en las últimas 8 horas '
+        'y al menos un 30% de victorias histórico. Ordenadas por el próximo partido; sin horario al final.</p>'
+        + (render_table(["Liga", "Grupo", "Jugador", "Rival", "Partidos (8h)", "V% (total)",
+                         "Secuencia (8h)", "Próximo partido (Madrid)"], rows,
+                        numeric_columns={4, 5}, row_classes=[item[4] for item in selected])
+           if rows else '<p class="section-subtitle">No hay enfrentamientos destacados.</p>')
+        + '</section>'
     )
+
+
+def recent_h2h_row_class(rival):
+    pct = rival["historical_win_pct"]
+    if rival["wins"] == 0:
+        if pct > 35:
+            return "recent-h2h-green"
+        if 30 <= pct <= 35:
+            return "recent-h2h-blue"
+    return ""
+
+
+def next_group_match_label(rival):
+    return (datetime.fromisoformat(rival["next_match"]).astimezone(ZoneInfo("Europe/Madrid")).strftime("%d/%m %H:%M")
+            if rival.get("next_match") else "Sin programar")
 
 
 def render_recent_group_h2h(group):
@@ -1813,20 +1841,12 @@ def render_recent_group_h2h(group):
         return ""
     blocks = []
     for player in recent["players"]:
-        row_classes = []
-        for rival in player["rivals"]:
-            pct = rival["historical_win_pct"]
-            row_classes.append(
-                "recent-h2h-green" if rival["wins"] == 0 and pct > 35
-                else "recent-h2h-blue" if rival["wins"] == 0 and 30 <= pct <= 35
-                else ""
-            )
+        row_classes = [recent_h2h_row_class(rival) for rival in player["rivals"]]
         rows = [
             [rival["rival"], rival["played"], rival["wins"], rival["draws"],
              rival["losses"], fmt_pct(rival["historical_win_pct"]) if rival["historical_played"] else "—",
              rival["sequence"] or "Sin partidos",
-             datetime.fromisoformat(rival["next_match"]).astimezone(ZoneInfo("Europe/Madrid")).strftime("%d/%m %H:%M")
-             if rival.get("next_match") else "Sin programar"]
+             next_group_match_label(rival)]
             for rival in player["rivals"]
         ]
         blocks.append(
