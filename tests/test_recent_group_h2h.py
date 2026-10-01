@@ -6,6 +6,29 @@ from web_tracker.generate_site import attach_recent_group_h2h, render_recent_gro
 
 
 class RecentGroupH2HTests(unittest.TestCase):
+    def test_next_fixture_is_earliest_scheduled_pair_in_same_league(self):
+        group = {"target": ["David", "Fox", "C"]}
+        data = {"leagues": {"GT": {"groups": [group]}}}
+        def fixture(index, stamp, **overrides):
+            return dict(perspective(index, None, timestamp=stamp), fixture_status="scheduled", **overrides)
+        schedule = {"sources": {"GT": {"records": [
+            fixture(1, "2026-10-01T11:59:00Z"),
+            fixture(2, "2026-10-01T14:00:00Z"),
+            fixture(3, "2026-10-01T12:30:00Z"),
+            dict(fixture(4, "2026-10-01T12:01:00Z"), fixture_status="unknown"),
+            dict(fixture(5, "2026-10-01T12:02:00Z"), result="V", fixture_status="finished"),
+        ]}, "EADRIATIC": {"records": [
+            dict(fixture(6, "2026-10-01T12:05:00Z"), league="EADRIATIC")
+        ]}}}
+        attach_recent_group_h2h(data, [], datetime(2026, 10, 1, 12, tzinfo=timezone.utc), schedule)
+        players = group["recent_h2h"]["players"]
+        self.assertEqual(players[0]["rivals"][0]["next_match"], "2026-10-01T12:30:00+00:00")
+        self.assertEqual(players[1]["rivals"][0]["next_match"], players[0]["rivals"][0]["next_match"])
+        html = render_recent_group_h2h(group)
+        self.assertIn("01/10 14:30", html)
+        self.assertIn("Sin programar", html)
+        self.assertLess(html.index("Secuencia (8h)"), html.index("Próximo partido (Madrid)"))
+
     def test_highlights_zero_wins_using_historical_percentage(self):
         rivals = [
             {"rival": str(pct), "played": 3, "wins": wins, "draws": 1,

@@ -24,7 +24,7 @@ from streak_break_stats import build_streak_statistics
 from web_tracker.streak_statistics import render_streak_statistics
 from match_history import name_key
 from fixture_schedule import load_schedule
-from web_tracker.upcoming_matches import render_upcoming_matches
+from web_tracker.upcoming_matches import render_upcoming_matches, upcoming_fixtures
 from coincident_schedule import attach_schedules, fixture_label
 from selected_players import (
     bettable_player_keys, excluded_player_keys, is_operational_record,
@@ -1754,17 +1754,23 @@ def render_head_to_head(group):
     return "<h3>Head to Head</h3>" + "".join(blocks)
 
 
-def attach_recent_group_h2h(data, records, reference_time):
+def attach_recent_group_h2h(data, records, reference_time, schedule=None):
     """Use the same bounded eight-hour window as the operational dashboard."""
     records = list(records)
     start = reference_time - timedelta(hours=8)
     recent = filter_by_time(records, start=start, end=reference_time)
     history = filter_by_time(records, end=reference_time)
+    next_matches = {}
+    for fixture in upcoming_fixtures(schedule or {}, reference_time):
+        key = (fixture["league"], tuple(sorted((name_key(fixture["player"]), name_key(fixture["rival"])))))
+        next_matches.setdefault(key, fixture["timestamp"])
     def matchup(player, rival, league):
         row = calculate_h2h_stats(recent, player, rival, league=league)
         total = calculate_h2h_stats(history, player, rival, league=league)
         row["historical_win_pct"] = total["win_pct"]
         row["historical_played"] = total["played"]
+        kickoff = next_matches.get((league, tuple(sorted((name_key(player), name_key(rival))))))
+        row["next_match"] = kickoff.isoformat() if kickoff else None
         return row
 
     for league, payload in data.get("leagues", {}).items():
@@ -1799,12 +1805,14 @@ def render_recent_group_h2h(group):
         rows = [
             [rival["rival"], rival["played"], rival["wins"], rival["draws"],
              rival["losses"], fmt_pct(rival["historical_win_pct"]) if rival["historical_played"] else "—",
-             rival["sequence"] or "Sin partidos"]
+             rival["sequence"] or "Sin partidos",
+             datetime.fromisoformat(rival["next_match"]).astimezone(ZoneInfo("Europe/Madrid")).strftime("%d/%m %H:%M")
+             if rival.get("next_match") else "Sin programar"]
             for rival in player["rivals"]
         ]
         blocks.append(
             '<details open><summary>' + text(player["player"]) + '</summary>'
-            + render_table(["Rival", "Partidos (8h)", "V", "E", "D", "V% (total)", "Secuencia (8h)"],
+            + render_table(["Rival", "Partidos (8h)", "V", "E", "D", "V% (total)", "Secuencia (8h)", "Próximo partido (Madrid)"],
                            rows, numeric_columns={1, 2, 3, 4, 5}, row_classes=row_classes)
             + '</details>'
         )
@@ -1894,7 +1902,8 @@ def main():
     excluded_keys = excluded_player_keys(tracked_players)
     current_streaks = load_current_streaks(tracked_players, records)
     reference_time = datetime.now(timezone.utc)
-    attach_recent_group_h2h(group_analysis, records, reference_time)
+    schedule = load_schedule()
+    attach_recent_group_h2h(group_analysis, records, reference_time, schedule)
     snapshot = calculate_operational_snapshot(
         records, tracked_players, reference_time=reference_time,
         excluded_keys=excluded_keys,
@@ -1908,7 +1917,6 @@ def main():
         excluded_candidate_keys=coincident_config["excluded_keys"],
         custom_pairs=coincident_config["custom_pairs"],
     )
-    schedule = load_schedule()
     attach_schedules(coincident_pairs, records, schedule, reference_time, excluded_keys)
     html = render_page(
         group_analysis, current_streaks, coincident_pairs, current_streaks_v2, schedule,
