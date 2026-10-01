@@ -1753,8 +1753,17 @@ def render_head_to_head(group):
 
 def attach_recent_group_h2h(data, records, reference_time):
     """Use the same bounded eight-hour window as the operational dashboard."""
+    records = list(records)
     start = reference_time - timedelta(hours=8)
     recent = filter_by_time(records, start=start, end=reference_time)
+    history = filter_by_time(records, end=reference_time)
+    def matchup(player, rival, league):
+        row = calculate_h2h_stats(recent, player, rival, league=league)
+        total = calculate_h2h_stats(history, player, rival, league=league)
+        row["historical_win_pct"] = total["win_pct"]
+        row["historical_played"] = total["played"]
+        return row
+
     for league, payload in data.get("leagues", {}).items():
         for group in payload.get("groups", []):
             players = group.get("target", [])
@@ -1762,7 +1771,7 @@ def attach_recent_group_h2h(data, records, reference_time):
                 "start": start.isoformat(), "end": reference_time.isoformat(),
                 "players": [
                     {"player": player, "rivals": [
-                        calculate_h2h_stats(recent, player, rival, league=league)
+                        matchup(player, rival, league)
                         for rival in players if name_key(rival) != name_key(player)
                     ]}
                     for player in players
@@ -1778,13 +1787,13 @@ def render_recent_group_h2h(group):
     for player in recent["players"]:
         rows = [
             [rival["rival"], rival["played"], rival["wins"], rival["draws"],
-             rival["losses"], fmt_pct(rival["win_pct"]) if rival["played"] else "—",
+             rival["losses"], fmt_pct(rival["historical_win_pct"]) if rival["historical_played"] else "—",
              rival["sequence"] or "Sin partidos"]
             for rival in player["rivals"]
         ]
         blocks.append(
             '<details open><summary>' + text(player["player"]) + '</summary>'
-            + render_table(["Rival", "Partidos", "V", "E", "D", "V% (8h)", "Secuencia (8h)"],
+            + render_table(["Rival", "Partidos (8h)", "V", "E", "D", "V% (total)", "Secuencia (8h)"],
                            rows, numeric_columns={1, 2, 3, 4, 5})
             + '</details>'
         )
@@ -1792,7 +1801,7 @@ def render_recent_group_h2h(group):
         '<h3>Frente a frente · últimas 8 horas</h3>'
         '<p class="section-subtitle">V = victoria · E = empate · D = derrota. '
         'Secuencia de más antiguo a más reciente, desde la perspectiva del jugador. '
-        'V% corresponde solo a estos partidos.</p>'
+        'V% se calcula con todos los partidos históricos entre ambos jugadores.</p>'
         + metadata_badge("Desde", recent["start"])
         + metadata_badge("Hasta", recent["end"])
         + ''.join(blocks)

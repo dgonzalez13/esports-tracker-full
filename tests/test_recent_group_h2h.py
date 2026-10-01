@@ -26,11 +26,15 @@ class RecentGroupH2HTests(unittest.TestCase):
         self.assertEqual(row["sequence"], "DEV")
         self.assertEqual(row["played"], 3)
         self.assertEqual(row["win_pct"], 33.33)
+        self.assertEqual(row["historical_win_pct"], 50.0)
+        self.assertEqual(row["historical_played"], 4)
         self.assertEqual(players[1]["rivals"][0]["sequence"], "V")
         html = render_recent_group_h2h(group)
         self.assertIn("DEV", html)
         self.assertIn("Sin partidos", html)
-        self.assertIn("V% (8h)", html)
+        self.assertIn("V% (total)", html)
+        self.assertIn("50.00%", html)
+        self.assertNotIn("V% (8h)", html)
 
 
 if __name__ == "__main__":
