@@ -1,7 +1,7 @@
 import json
 from html import escape
 from pathlib import Path
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import sys
 from zoneinfo import ZoneInfo
 
@@ -18,7 +18,8 @@ from current_streaks_v2 import (
     DEFAULT_OPERATIONAL_WINDOW_HOURS, build_current_streaks_v2_payload,
     calculate_operational_snapshot,
 )
-from history_query import load_all_history
+from history_query import load_all_history, filter_by_time
+from h2h_analysis import calculate_h2h_stats
 from streak_break_stats import build_streak_statistics
 from web_tracker.streak_statistics import render_streak_statistics
 from match_history import name_key
@@ -1359,7 +1360,7 @@ def render_group_dashboard(data, current_streaks):
         '<div class="section-head">'
         "<div>"
         "<h2>Group Analysis</h2>"
-        '<p class="section-subtitle">All group statistics are read from group_analysis.json.</p>'
+        '<p class="section-subtitle">Historical group statistics and head-to-head results from the last 8 hours.</p>'
         "</div>"
         f'{metadata_badge("Generated", data.get("generated_at", "-"))}'
         "</div>"
@@ -1523,6 +1524,7 @@ def render_group_card(league, league_payload, group):
         + "</div>"
         + '<div class="card-section">'
         + render_head_to_head(group)
+        + render_recent_group_h2h(group)
         + "</div>"
         + render_extra_details(group)
         + "</article>"
@@ -1749,6 +1751,54 @@ def render_head_to_head(group):
     return "<h3>Head to Head</h3>" + "".join(blocks)
 
 
+def attach_recent_group_h2h(data, records, reference_time):
+    """Use the same bounded eight-hour window as the operational dashboard."""
+    start = reference_time - timedelta(hours=8)
+    recent = filter_by_time(records, start=start, end=reference_time)
+    for league, payload in data.get("leagues", {}).items():
+        for group in payload.get("groups", []):
+            players = group.get("target", [])
+            group["recent_h2h"] = {
+                "start": start.isoformat(), "end": reference_time.isoformat(),
+                "players": [
+                    {"player": player, "rivals": [
+                        calculate_h2h_stats(recent, player, rival, league=league)
+                        for rival in players if name_key(rival) != name_key(player)
+                    ]}
+                    for player in players
+                ],
+            }
+
+
+def render_recent_group_h2h(group):
+    recent = group.get("recent_h2h")
+    if recent is None:
+        return ""
+    blocks = []
+    for player in recent["players"]:
+        rows = [
+            [rival["rival"], rival["played"], rival["wins"], rival["draws"],
+             rival["losses"], fmt_pct(rival["win_pct"]) if rival["played"] else "—",
+             rival["sequence"] or "Sin partidos"]
+            for rival in player["rivals"]
+        ]
+        blocks.append(
+            '<details open><summary>' + text(player["player"]) + '</summary>'
+            + render_table(["Rival", "Partidos", "V", "E", "D", "V% (8h)", "Secuencia (8h)"],
+                           rows, numeric_columns={1, 2, 3, 4, 5})
+            + '</details>'
+        )
+    return (
+        '<h3>Frente a frente · últimas 8 horas</h3>'
+        '<p class="section-subtitle">V = victoria · E = empate · D = derrota. '
+        'Secuencia de más antiguo a más reciente, desde la perspectiva del jugador. '
+        'V% corresponde solo a estos partidos.</p>'
+        + metadata_badge("Desde", recent["start"])
+        + metadata_badge("Hasta", recent["end"])
+        + ''.join(blocks)
+    )
+
+
 def render_extra_details(group):
     return (
         '<div class="card-section">'
@@ -1824,6 +1874,7 @@ def main():
     excluded_keys = excluded_player_keys(tracked_players)
     current_streaks = load_current_streaks(tracked_players, records)
     reference_time = datetime.now(timezone.utc)
+    attach_recent_group_h2h(group_analysis, records, reference_time)
     snapshot = calculate_operational_snapshot(
         records, tracked_players, reference_time=reference_time,
         excluded_keys=excluded_keys,
