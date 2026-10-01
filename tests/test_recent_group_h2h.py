@@ -2,10 +2,19 @@ import unittest
 from datetime import datetime, timezone
 
 from tests.test_h2h_analysis import perspective
-from web_tracker.generate_site import attach_recent_group_h2h, render_recent_group_h2h
+from web_tracker.generate_site import attach_recent_group_h2h, render_recent_group_h2h, render_page
 
 
 class RecentGroupH2HTests(unittest.TestCase):
+    def test_standalone_block_above_coincident_matches_without_duplicate(self):
+        group = {"target": ["David", "Fox"], "label": "Grupo 1"}
+        data = {"leagues": {"GT": {"groups": [group]}}}
+        attach_recent_group_h2h(data, [], datetime(2026, 10, 1, 12, tzinfo=timezone.utc))
+        html = render_page(data, {}, [])
+        self.assertLess(html.index('id="recent-group-h2h"'), html.index('<h2>Coincident Matches'))
+        self.assertEqual(html.count('Próximo partido (Madrid)'), 2)
+        self.assertIn('GT · Grupo 1', html)
+
     def test_next_fixture_is_earliest_scheduled_pair_in_same_league(self):
         group = {"target": ["David", "Fox", "C"]}
         data = {"leagues": {"GT": {"groups": [group]}}}

@@ -301,6 +301,7 @@ def render_page(data, current_streaks, coincident_pairs=None, current_streaks_v2
     {render_current_streaks_v2(current_streaks_v2 or {})}
     {render_streak_statistics(streak_statistics)}
     {render_upcoming_matches(schedule or {})}
+    {render_recent_group_h2h_dashboard(data)}
     {render_coincident_matches(coincident_pairs if coincident_pairs is not None else [], current_streaks_v2 or {})}
     {render_group_dashboard(data, current_streaks)}
 </main>
@@ -1527,7 +1528,6 @@ def render_group_card(league, league_payload, group):
         + "</div>"
         + '<div class="card-section">'
         + render_head_to_head(group)
-        + render_recent_group_h2h(group)
         + "</div>"
         + render_extra_details(group)
         + "</article>"
@@ -1786,6 +1786,25 @@ def attach_recent_group_h2h(data, records, reference_time, schedule=None):
                     for player in players
                 ],
             }
+
+
+def render_recent_group_h2h_dashboard(data):
+    blocks = []
+    for league, payload in data.get("leagues", {}).items():
+        for group in payload.get("groups", []):
+            if "recent_h2h" not in group:
+                continue
+            blocks.append(
+                '<article class="group-card">'
+                + '<h3>' + text(league) + ' · ' + text(group.get("label") or group.get("group_id", "")) + '</h3>'
+                + render_recent_group_h2h(group)
+                + '</article>'
+            )
+    return (
+        '<section class="dashboard-section" id="recent-group-h2h">'
+        '<div class="section-head"><h2>Enfrentamientos del grupo — últimas 8 horas</h2></div>'
+        + ''.join(blocks) + '</section>'
+    )
 
 
 def render_recent_group_h2h(group):
