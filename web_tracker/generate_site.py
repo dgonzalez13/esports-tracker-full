@@ -740,6 +740,7 @@ summary {
 .streak-group-shaded { background: #eef4f8; }
 .recent-h2h-green td { background: #dcfce7; color: #14532d; }
 .recent-h2h-blue td { background: #dbeafe; color: #1e3a8a; }
+#recent-group-h2h tr[hidden] { display: none; }
 .coincident-collapsed > summary { cursor: pointer; }
 .coincident-collapsed > summary h2 { display: inline; }
 .upcoming-filters { display: flex; flex-wrap: wrap; gap: 8px 12px; font-size: 12px; }
@@ -1835,11 +1836,32 @@ def render_recent_group_h2h_dashboard(data):
         '<p class="section-subtitle">Filas verdes y azules: sin victorias en las últimas 8 horas '
         'y al menos un 30% de victorias histórico. Ordenadas por hora de comienzo; sin horario al final. '
         'Los partidos iniciados sin resultado confirmado siguen visibles; el calendario no confirma si continúan en juego.</p>'
+        '<div class="upcoming-filters">'
+        '<label><input type="checkbox" id="h2h-hide-zero"> Ocultar 0 partidos (8h)</label>'
+        '<label><input type="checkbox" id="h2h-hide-one"> Ocultar 1 partido (8h)</label>'
+        '</div>'
         + (render_table(["Liga", "Grupo", "Jugador", "Rival", "Partidos (8h)", "V% (total)",
                          "Secuencia (8h)", "Próximo partido (Madrid)"], rows,
                         numeric_columns={4, 5}, row_classes=[item[4] for item in selected])
            if rows else '<p class="section-subtitle">No hay enfrentamientos destacados.</p>')
-        + '</section>'
+        + '<p class="section-subtitle" id="h2h-filter-empty" hidden>No hay enfrentamientos que coincidan con estos filtros.</p>'
+        + '</section><script>'
+        '(() => {'
+        'const section = document.getElementById("recent-group-h2h");'
+        'const zero = section.querySelector("#h2h-hide-zero");'
+        'const one = section.querySelector("#h2h-hide-one");'
+        'const rows = [...section.querySelectorAll("tbody tr")];'
+        'function update() {'
+        'for (const row of rows) {'
+        'const count = Number(row.cells[4].textContent);'
+        'row.hidden = (zero.checked && count === 0) || (one.checked && count === 1);'
+        '}'
+        'section.querySelector("#h2h-filter-empty").hidden = !rows.length || rows.some(row => !row.hidden);'
+        '}'
+        'zero.addEventListener("change", update);'
+        'one.addEventListener("change", update);'
+        'update();'
+        '})();</script>'
     )
 
 
