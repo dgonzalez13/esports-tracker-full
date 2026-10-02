@@ -1765,13 +1765,35 @@ def attach_recent_group_h2h(data, records, reference_time, schedule=None):
     for fixture in upcoming_fixtures(schedule or {}, reference_time):
         key = (fixture["league"], tuple(sorted((name_key(fixture["player"]), name_key(fixture["rival"])))))
         next_matches.setdefault(key, fixture["timestamp"])
+    started_matches = {}
+    finished_ids = {(row.get("league"), row.get("match_id")) for row in records
+                    if row.get("result") in {"V", "E", "D"}}
+    sources = (schedule or {}).get("sources", {})
+    finished_ids.update((league, row.get("match_id")) for league, source in sources.items()
+                        for row in source.get("records", [])
+                        if row.get("result") in {"V", "E", "D"} or row.get("fixture_status") == "finished")
+    for league, source in sources.items():
+        for fixture in filter_by_time(source.get("records", []), start=start, end=reference_time):
+            if (fixture.get("result") or fixture.get("fixture_status") not in {"scheduled", "unknown"}
+                    or (league, fixture.get("match_id")) in finished_ids):
+                continue
+            if not fixture.get("player") or not fixture.get("rival"):
+                continue
+            stamp = datetime.fromisoformat(fixture["timestamp_utc"].replace("Z", "+00:00"))
+            if stamp.tzinfo is None:
+                stamp = stamp.replace(tzinfo=timezone.utc)
+            key = (league, tuple(sorted((name_key(fixture["player"]), name_key(fixture["rival"])))))
+            if key not in started_matches or stamp > started_matches[key]:
+                started_matches[key] = stamp
     def matchup(player, rival, league):
         row = calculate_h2h_stats(recent, player, rival, league=league)
         total = calculate_h2h_stats(history, player, rival, league=league)
         row["historical_win_pct"] = total["win_pct"]
         row["historical_played"] = total["played"]
-        kickoff = next_matches.get((league, tuple(sorted((name_key(player), name_key(rival))))))
+        key = (league, tuple(sorted((name_key(player), name_key(rival)))))
+        kickoff = started_matches.get(key) or next_matches.get(key)
         row["next_match"] = kickoff.isoformat() if kickoff else None
+        row["match_started"] = key in started_matches
         return row
 
     for league, payload in data.get("leagues", {}).items():
@@ -1811,7 +1833,8 @@ def render_recent_group_h2h_dashboard(data):
         '<section class="dashboard-section" id="recent-group-h2h">'
         '<div class="section-head"><h2>Enfrentamientos destacados — últimas 8 horas</h2></div>'
         '<p class="section-subtitle">Filas verdes y azules: sin victorias en las últimas 8 horas '
-        'y al menos un 30% de victorias histórico. Ordenadas por el próximo partido; sin horario al final.</p>'
+        'y al menos un 30% de victorias histórico. Ordenadas por hora de comienzo; sin horario al final. '
+        'Los partidos iniciados sin resultado confirmado siguen visibles; el calendario no confirma si continúan en juego.</p>'
         + (render_table(["Liga", "Grupo", "Jugador", "Rival", "Partidos (8h)", "V% (total)",
                          "Secuencia (8h)", "Próximo partido (Madrid)"], rows,
                         numeric_columns={4, 5}, row_classes=[item[4] for item in selected])
@@ -1831,8 +1854,10 @@ def recent_h2h_row_class(rival):
 
 
 def next_group_match_label(rival):
-    return (datetime.fromisoformat(rival["next_match"]).astimezone(ZoneInfo("Europe/Madrid")).strftime("%d/%m %H:%M")
-            if rival.get("next_match") else "Sin programar")
+    if not rival.get("next_match"):
+        return "Sin programar"
+    label = datetime.fromisoformat(rival["next_match"]).astimezone(ZoneInfo("Europe/Madrid")).strftime("%d/%m %H:%M")
+    return label + (" · Iniciado · resultado pendiente" if rival.get("match_started") else "")
 
 
 def render_recent_group_h2h(group):

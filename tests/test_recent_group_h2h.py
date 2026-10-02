@@ -39,7 +39,7 @@ class RecentGroupH2HTests(unittest.TestCase):
         def fixture(index, stamp, **overrides):
             return dict(perspective(index, None, timestamp=stamp), fixture_status="scheduled", **overrides)
         schedule = {"sources": {"GT": {"records": [
-            fixture(1, "2026-10-01T11:59:00Z"),
+            dict(fixture(1, "2026-10-01T11:59:00Z"), fixture_status="finished", result="D"),
             fixture(2, "2026-10-01T14:00:00Z"),
             fixture(3, "2026-10-01T12:30:00Z"),
             dict(fixture(4, "2026-10-01T12:01:00Z"), fixture_status="unknown"),
@@ -55,6 +55,24 @@ class RecentGroupH2HTests(unittest.TestCase):
         self.assertIn("01/10 14:30", html)
         self.assertIn("Sin programar", html)
         self.assertLess(html.index("Secuencia (8h)"), html.index("Próximo partido (Madrid)"))
+
+    def test_started_pending_fixture_overrides_future_and_finished_history_excludes_it(self):
+        reference = datetime(2026, 10, 1, 12, tzinfo=timezone.utc)
+        group = {"target": ["David", "Fox"]}
+        data = {"leagues": {"GT": {"groups": [group]}}}
+        pending = dict(perspective(1, None, timestamp="2026-10-01T11:55:00Z"), fixture_status="unknown")
+        future = dict(perspective(2, None, timestamp="2026-10-01T13:00:00Z"), fixture_status="scheduled")
+        schedule = {"sources": {"GT": {"records": [pending, future]}}}
+        attach_recent_group_h2h(data, [], reference, schedule)
+        row = group["recent_h2h"]["players"][0]["rivals"][0]
+        self.assertTrue(row["match_started"])
+        self.assertIn("11:55", row["next_match"])
+        self.assertIn("Iniciado · resultado pendiente", render_recent_group_h2h(group))
+        completed = dict(pending, result="D")
+        attach_recent_group_h2h(data, [completed], reference, schedule)
+        row = group["recent_h2h"]["players"][0]["rivals"][0]
+        self.assertFalse(row["match_started"])
+        self.assertIn("13:00", row["next_match"])
 
     def test_highlights_zero_wins_using_historical_percentage(self):
         rivals = [
