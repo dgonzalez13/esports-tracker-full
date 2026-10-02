@@ -1786,11 +1786,16 @@ def attach_recent_group_h2h(data, records, reference_time, schedule=None):
             key = (league, tuple(sorted((name_key(fixture["player"]), name_key(fixture["rival"])))))
             if key not in started_matches or stamp > started_matches[key]:
                 started_matches[key] = stamp
-    def matchup(player, rival, league):
+    def matchup(player, rival, league, historical_lookup):
         row = calculate_h2h_stats(recent, player, rival, league=league)
-        total = calculate_h2h_stats(history, player, rival, league=league)
-        row["historical_win_pct"] = total["win_pct"]
-        row["historical_played"] = total["played"]
+        historical = historical_lookup.get((name_key(player), name_key(rival)))
+        if historical is not None:
+            row["historical_win_pct"] = historical["win_pct"]
+            row["historical_played"] = historical["matches"]
+        else:
+            total = calculate_h2h_stats(history, player, rival, league=league)
+            row["historical_win_pct"] = total["win_pct"]
+            row["historical_played"] = total["played"]
         key = (league, tuple(sorted((name_key(player), name_key(rival)))))
         kickoff = started_matches.get(key) or next_matches.get(key)
         row["next_match"] = kickoff.isoformat() if kickoff else None
@@ -1800,11 +1805,15 @@ def attach_recent_group_h2h(data, records, reference_time, schedule=None):
     for league, payload in data.get("leagues", {}).items():
         for group in payload.get("groups", []):
             players = group.get("target", [])
+            historical_lookup = {
+                (name_key(player["player"]), name_key(rival["rival"])): rival
+                for player in group.get("h2h_matrix", []) for rival in player.get("rivals", [])
+            }
             group["recent_h2h"] = {
                 "start": start.isoformat(), "end": reference_time.isoformat(),
                 "players": [
                     {"player": player, "rivals": [
-                        matchup(player, rival, league)
+                        matchup(player, rival, league, historical_lookup)
                         for rival in players if name_key(rival) != name_key(player)
                     ]}
                     for player in players
@@ -1906,7 +1915,7 @@ def render_recent_group_h2h(group):
         '<h3>Frente a frente · últimas 8 horas</h3>'
         '<p class="section-subtitle">V = victoria · E = empate · D = derrota. '
         'Secuencia de más antiguo a más reciente, desde la perspectiva del jugador. '
-        'V% se calcula con todos los partidos históricos entre ambos jugadores.</p>'
+        'V% usa el mismo histórico acumulado entre ambos jugadores que Head to Head.</p>'
         + metadata_badge("Desde", recent["start"])
         + metadata_badge("Hasta", recent["end"])
         + ''.join(blocks)

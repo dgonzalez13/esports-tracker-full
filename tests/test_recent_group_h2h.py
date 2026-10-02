@@ -6,6 +6,25 @@ from web_tracker.generate_site import attach_recent_group_h2h, render_recent_gro
 
 
 class RecentGroupH2HTests(unittest.TestCase):
+    def test_total_percentage_uses_existing_historical_matrix_not_partial_jsonl(self):
+        group = {"target": ["Voodoo", "William"], "h2h_matrix": [
+            {"player": "Voodoo", "rivals": [{"rival": "William", "matches": 289,
+                                             "win_pct": 90 / 289 * 100}]}
+        ]}
+        data = {"leagues": {"GT": {"groups": [group]}}}
+        records = [perspective(1, "V", player="Voodoo", rival="William", timestamp="2026-09-30T12:00:00Z"),
+                   perspective(2, "D", player="Voodoo", rival="William", timestamp="2026-10-01T11:00:00Z")]
+        attach_recent_group_h2h(data, records, datetime(2026, 10, 1, 12, tzinfo=timezone.utc))
+        row = group["recent_h2h"]["players"][0]["rivals"][0]
+        self.assertEqual(row["historical_played"], 289)
+        self.assertEqual(row["historical_win_pct"], 90 / 289 * 100)
+        self.assertEqual(row["sequence"], "D")
+        self.assertEqual(row["played"], 1)
+        html = render_recent_group_h2h(group)
+        self.assertIn("31.14%", html)
+        self.assertIn('<tr class="recent-h2h-blue">', html)
+        self.assertNotIn('<tr class="recent-h2h-green">', html)
+
     def test_standalone_block_above_coincident_matches_without_duplicate(self):
         group = {"target": ["David", "Fox"], "label": "Grupo 1"}
         data = {"leagues": {"GT": {"groups": [group]}}}
