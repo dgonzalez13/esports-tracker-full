@@ -20,6 +20,7 @@ from current_streaks_v2 import (
 )
 from history_query import load_all_history, filter_by_time
 from h2h_analysis import calculate_h2h_stats
+from six_match_stats import calculate_six_match_stats
 from streak_break_stats import build_streak_statistics
 from web_tracker.streak_statistics import render_streak_statistics
 from match_history import name_key
@@ -1854,12 +1855,13 @@ def render_recent_group_h2h_dashboard(data):
                         numeric_columns={4, 5}, row_classes=[item[4] for item in selected])
            if rows else '<p class="section-subtitle">No hay enfrentamientos destacados.</p>')
         + '<p class="section-subtitle" id="h2h-filter-empty" hidden>No hay enfrentamientos que coincidan con estos filtros.</p>'
+        + render_six_match_stats(data.get("six_match_stats"))
         + '</section><script>'
         '(() => {'
         'const section = document.getElementById("recent-group-h2h");'
         'const zero = section.querySelector("#h2h-hide-zero");'
         'const one = section.querySelector("#h2h-hide-one");'
-        'const rows = [...section.querySelectorAll("tbody tr")];'
+        'const rows = [...section.querySelectorAll(":scope > .table-wrap tbody tr")];'
         'function update() {'
         'for (const row of rows) {'
         'const count = Number(row.cells[4].textContent);'
@@ -1871,6 +1873,35 @@ def render_recent_group_h2h_dashboard(data):
         'one.addEventListener("change", update);'
         'update();'
         '})();</script>'
+    )
+
+
+def render_six_match_stats(payload):
+    if payload is None:
+        return ""
+    rows = [
+        [row["league"], f'> {row["threshold"]}%', row["initial_without_win"],
+         6 - row["initial_without_win"], row["sample"], row["zero_wins"],
+         fmt_pct(row["zero_win_pct"]) if row["sample"] else "Sin muestra",
+         fmt_pct(row["remaining_win_pct"]) if row["sample"] else "Sin muestra"]
+        for row in payload["rows"]
+    ]
+    return (
+        '<details class="six-match-statistics"><summary>Frecuencias históricas · series de 6 partidos</summary>'
+        '<p class="section-subtitle">Porcentaje de A frente a B calculado antes de empezar cada serie, '
+        f'con al menos {payload["minimum_prior"]} enfrentamientos previos en el histórico detallado disponible. '
+        'Los umbrales son estrictos y se solapan. Cada dirección A→B se analiza por separado, '
+        'agrupando todas las parejas de cada liga.</p>'
+        '<p class="section-subtitle">Sesiones inferidas por pausas de más de 90 minutos entre partidos del jugador; '
+        'solo parejas con exactamente 6 encuentros y sesiones terminadas hace más de 90 minutos. '
+        'Sin identificador oficial de grupo, esta aproximación puede omitir o unir sesiones. '
+        'Se excluyen series incompletas y se usa solo el histórico detallado, que puede tener cobertura parcial. '
+        'Frecuencias observadas, no probabilidades garantizadas. Cada fila condiciona el resultado '
+        'a que los primeros N partidos no hayan sido victorias.</p>'
+        + render_table(["Liga", "V% previo", "Primeros sin ganar", "Restantes", "Series analizadas",
+                        "Series con 0 V en 6", "% sin ganar en 6", "% ≥1 V restante"],
+                       rows, numeric_columns={2, 3, 4, 5, 6, 7})
+        + '</details>'
     )
 
 
@@ -1997,6 +2028,7 @@ def main():
     excluded_keys = excluded_player_keys(tracked_players)
     current_streaks = load_current_streaks(tracked_players, records)
     reference_time = datetime.now(timezone.utc)
+    group_analysis["six_match_stats"] = calculate_six_match_stats(records, reference_time)
     schedule = load_schedule()
     attach_recent_group_h2h(group_analysis, records, reference_time, schedule)
     snapshot = calculate_operational_snapshot(
