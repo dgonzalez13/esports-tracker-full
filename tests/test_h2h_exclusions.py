@@ -2,13 +2,33 @@ import json
 import uuid
 import unittest
 from pathlib import Path
-from h2h_exclusions import PREFIX, load_h2h_exclusions, load_h2h_min_gap
+from h2h_exclusions import PREFIX, load_h2h_exclusions, load_h2h_min_gap, parse_exclusion
 from selected_players import load_tracked_players
 from update_tracked_players import rewrite_tracked_players
 from web_tracker.generate_site import render_recent_group_h2h_dashboard
 
 
 class ExclusionTests(unittest.TestCase):
+    def test_simple_format_blank_lines_and_target_group_cleanup(self):
+        path = Path(__file__).resolve().parent / ('.h2h-' + uuid.uuid4().hex + '.txt')
+        try:
+            lines = [f'{league}|{league}{i}' for league in ('EADRIATIC', 'GT') for i in range(10)]
+            directives = [PREFIX, PREFIX, PREFIX + 'GT|GT0|GT1', PREFIX + 'GT|GT5|GT6',
+                          PREFIX + 'EADRIATIC|EADRIATIC0|EADRIATIC1']
+            path.write_text('\n'.join(lines + directives) + '\n', encoding='utf-8')
+            self.assertIsNone(parse_exclusion(PREFIX))
+            self.assertEqual(len(load_h2h_exclusions(path)), 3)
+            self.assertEqual(len(load_tracked_players(path)), 20)
+            rewrite_tracked_players(path, {('GT', 1): tuple(f'New{i}' for i in range(5))})
+            updated = path.read_text(encoding='utf-8').splitlines()
+            self.assertEqual(sum(line.startswith(PREFIX) for line in updated), 5)
+            self.assertEqual(updated.count(PREFIX), 3)
+            self.assertEqual(load_h2h_exclusions(path), {('GT', 'gt5', 'gt6'), ('EADRIATIC', 'eadriatic0', 'eadriatic1')})
+            rewrite_tracked_players(path, {('GT', 2): tuple(f'GT{i}' for i in range(5, 10))})
+            self.assertEqual(path.read_text(encoding='utf-8').splitlines().count(PREFIX), 4)
+        finally:
+            path.unlink(missing_ok=True)
+
     def test_manual_format_without_member_list(self):
         path = Path(__file__).resolve().parent / ('.h2h-' + uuid.uuid4().hex + '.txt')
         try:

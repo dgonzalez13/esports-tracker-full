@@ -22,7 +22,18 @@ def load_h2h_min_gap(path):
 def parse_exclusion(line):
     if not line.strip().startswith(PREFIX):
         return None
-    value = json.loads(line.strip()[len(PREFIX):])
+    payload = line.strip()[len(PREFIX):].strip()
+    if not payload:
+        return None
+    if not payload.startswith('{'):
+        parts = [part.strip() for part in payload.split('|')]
+        if len(parts) != 3 or parts[0].upper() not in {'GT', 'EADRIATIC'} or not all(parts):
+            raise ValueError('use @H2H_EXCLUDE||LIGA|Jugador A|Jugador B')
+        if name_key(parts[1]) == name_key(parts[2]):
+            raise ValueError('H2H exclusion requires two different players')
+        return dict(league=parts[0].upper(), player=parts[1], rival=parts[2])
+    # Read existing JSON exclusions so users do not lose their previous choices.
+    value = json.loads(payload)
     if (value.get("league") not in {"GT", "EADRIATIC"} or type(value.get("group")) is not int
             or value["group"] < 1 or not value.get("player") or not value.get("rival")
             or ("members" in value and (not isinstance(value["members"], list) or not value["members"]))):
@@ -45,11 +56,13 @@ def load_h2h_exclusions(path):
         entry = parse_exclusion(line)
         if entry is None:
             continue
-        members = groups.get((entry["league"], entry["group"]), [])
-        keys = {name_key(p) for p in members if p}
         player, rival = name_key(entry["player"]), name_key(entry["rival"])
-        if player == rival or not {player, rival}.issubset(keys):
-            continue
-        if "members" not in entry or sorted(keys) == sorted(name_key(p) for p in entry["members"] if p):
-            excluded.add((entry["league"], name_key(entry["player"]), name_key(entry["rival"])))
+        for (league, index), members in groups.items():
+            if league != entry['league'] or ('group' in entry and index != entry['group']):
+                continue
+            keys = {name_key(p) for p in members if p}
+            if player == rival or not {player, rival}.issubset(keys):
+                continue
+            if "members" not in entry or sorted(keys) == sorted(name_key(p) for p in entry["members"] if p):
+                excluded.add((league, player, rival))
     return excluded

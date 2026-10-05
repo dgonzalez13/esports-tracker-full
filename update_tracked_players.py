@@ -16,7 +16,7 @@ from eadriatic_leagues import extract_player, fetch_eadriatic_html
 from gtleagues_api import BASE_URL as GT_FIXTURES_URL, HEADERS as GT_HEADERS
 from match_history import clean_name, name_key
 from selected_players import is_disabled_coincident_pair_line, load_tracked_players
-from h2h_exclusions import parse_exclusion
+from h2h_exclusions import parse_exclusion, PREFIX as H2H_EXCLUDE_PREFIX
 
 
 BASE = Path(__file__).resolve().parent
@@ -208,13 +208,20 @@ def rewrite_tracked_players(path: Path, replacements: dict[tuple[str, int], tupl
     original = path.read_text(encoding="utf-8")
     entries = load_tracked_players(path)
     excluded = {(row["league"], row["player_key"]) for row in entries if not row.get("bettable", True)}
+    updated_players = {(row['league'], row['player_key']) for row in entries
+                       if (row['league'], row['group_index'] + 1) in replacements and row.get('player_key')}
     existing: dict[tuple[str, int], list[str]] = {}
     trailing = []
     positions = {"EADRIATIC": 0, "GT": 0}
     for line in original.splitlines():
         stripped = line.strip()
         exclusion = parse_exclusion(stripped)
-        if exclusion and (exclusion["league"], exclusion["group"]) in replacements:
+        if exclusion:
+            cleared = ((exclusion['league'], exclusion.get('group')) in replacements
+                       or (exclusion['league'], name_key(exclusion['player'])) in updated_players
+                       or (exclusion['league'], name_key(exclusion['rival'])) in updated_players)
+            trailing.append(H2H_EXCLUDE_PREFIX if cleared else
+                            f"{H2H_EXCLUDE_PREFIX}{exclusion['league']}|{exclusion['player']}|{exclusion['rival']}")
             continue
         if stripped.startswith("@") or not stripped:
             trailing.append(line)
