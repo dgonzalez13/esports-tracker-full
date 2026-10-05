@@ -6,14 +6,27 @@
   const dialog = document.createElement('dialog');
   dialog.innerHTML = '<form method="dialog"><h3>Excluir pareja</h3><p class="pair-question"></p>' +
     '<p>Se guardará en tracked_players.txt. Solo se oculta esta dirección en la tabla destacada.</p>' +
-    '<label>Token de GitHub <input type="password" autocomplete="off" required></label>' +
-    '<p>Token limitado a esports-tracker-full, con Contents: Read and write. No se almacena.</p>' +
+    '<div class="pair-auth"><label>Token de GitHub <input type="password" autocomplete="off" required></label>' +
+    '<p>Se pide una vez por pestaña. Solo se conserva en memoria hasta recargar, cerrar o desconectar. '
+    + 'Token limitado al repositorio, con Contents: Read and write.</p></div>' +
     '<p class="pair-error" role="alert"></p><button type="button" class="pair-cancel">Cancelar</button> ' +
     '<button type="submit">Sí, excluir</button></form>';
   document.body.append(dialog);
   let active = null;
+  let sessionToken = '';
   const input = dialog.querySelector('input');
   const submit = dialog.querySelector('[type="submit"]');
+  const auth = dialog.querySelector('.pair-auth');
+  const disconnect = document.createElement('button');
+  disconnect.type = 'button'; disconnect.textContent = 'Desconectar GitHub'; disconnect.hidden = true;
+  section.querySelector('.upcoming-filters').append(disconnect);
+  function updateAuth() {
+    auth.hidden = !!sessionToken;
+    input.required = !sessionToken;
+    disconnect.hidden = !sessionToken;
+  }
+  disconnect.onclick = () => { sessionToken = ''; input.value = ''; updateAuth(); };
+  updateAuth();
   dialog.querySelector('.pair-cancel').onclick = () => dialog.close();
   dialog.addEventListener('close', () => { input.value = ''; active = null; });
   dialog.addEventListener('cancel', event => { if (submit.disabled) event.preventDefault(); });
@@ -27,7 +40,7 @@
       active = {row, entry: entries[index]};
       dialog.querySelector('.pair-question').textContent = `¿Seguro que quieres excluir ${active.entry.player} frente a ${active.entry.rival}?`;
       dialog.querySelector('.pair-error').textContent = '';
-      input.value = ''; dialog.showModal();
+      input.value = ''; updateAuth(); dialog.showModal();
     };
   });
   // Consult the current file even while Pages still serves the previous build.
@@ -51,9 +64,11 @@
     event.preventDefault();
     if (!active || submit.disabled) return;
     const target = active;
-    const token = input.value.trim(); input.value = '';
+    const token = sessionToken || input.value.trim(); input.value = '';
+    if (!token) return;
     submit.disabled = true;
     dialog.querySelector('.pair-cancel').disabled = true;
+    disconnect.disabled = true;
     const headers = {Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`,
                      'X-GitHub-Api-Version': '2026-03-10'};
     const url = 'https://api.github.com/repos/dgonzalez13/esports-tracker-full/contents/tracked_players.txt';
@@ -61,7 +76,10 @@
       let saved = false;
       for (let attempt = 0; attempt < 3 && !saved; attempt++) {
         const read = await fetch(url + '?ref=main', {headers, cache: 'no-store'});
-        if (!read.ok) throw new Error(`No se pudo leer el archivo (${read.status}). Comprueba el token y sus permisos.`);
+        if (!read.ok) {
+          if (read.status === 401 || read.status === 403) sessionToken = '';
+          throw new Error(`No se pudo leer el archivo (${read.status}). Comprueba el token y sus permisos.`);
+        }
         const file = await read.json();
         const content = new TextDecoder().decode(Uint8Array.from(atob(file.content.replace(/\s/g, '')), c => c.charCodeAt(0)));
         const members = content.split(/\r?\n/).map(line => line.trim())
@@ -78,10 +96,14 @@
           body: JSON.stringify({message: `Exclude highlighted H2H: ${target.entry.player} vs ${target.entry.rival}`,
                                 branch: 'main', sha: file.sha, content: encoded})});
         if (write.status === 409) continue;
-        if (!write.ok) throw new Error(`No se pudo guardar (${write.status}). La pareja sigue visible.`);
+        if (!write.ok) {
+          if (write.status === 401 || write.status === 403) sessionToken = '';
+          throw new Error(`No se pudo guardar (${write.status}). La pareja sigue visible.`);
+        }
         saved = true;
       }
       if (!saved) throw new Error('El archivo está cambiando. Vuelve a intentarlo.');
+      sessionToken = token;
       target.row.remove();
       dialog.close();
       section.querySelector('#h2h-hide-zero').dispatchEvent(new Event('change'));
@@ -90,6 +112,8 @@
     } finally {
       submit.disabled = false;
       dialog.querySelector('.pair-cancel').disabled = false;
+      disconnect.disabled = false;
+      updateAuth();
     }
   });
 })();

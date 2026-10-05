@@ -8,16 +8,17 @@ function element() {
   return {listeners: {}, value: '', disabled: false, textContent: '', isConnected: true,
     addEventListener(type, fn) { this.listeners[type] = fn; },
     dispatchEvent(event) { this.listeners[event.type]?.(event); },
-    setAttribute() {}, replaceChildren(child) { this.child = child; },
+    setAttribute() {}, append(child) { this.child = child; }, replaceChildren(child) { this.child = child; },
     remove() { this.isConnected = false; }};
 }
 async function run(failWrite = false) {
   const row = element(); row.cells = [element()];
-  const fields = Object.fromEntries(['input', '[type="submit"]', '.pair-cancel', '.pair-error', '.pair-question', 'form'].map(k => [k, element()]));
+  const fields = Object.fromEntries(['input', '[type="submit"]', '.pair-cancel', '.pair-error', '.pair-question', '.pair-auth', 'form'].map(k => [k, element()]));
   const dialog = element(); dialog.querySelector = selector => fields[selector];
   dialog.showModal = () => { dialog.open = true; };
   dialog.close = () => { dialog.open = false; dialog.listeners.close?.(); };
-  const zero = element(); const section = {querySelectorAll: () => [row], querySelector: () => zero};
+  const zero = element(); const filters = element();
+  const section = {querySelectorAll: () => [row], querySelector: selector => selector === '.upcoming-filters' ? filters : zero};
   let content = entry.members.map(p => `GT|${p}`).join('\n') + '\n';
   const writes = [];
   const context = {TextEncoder, TextDecoder, Uint8Array, Event, JSON,
@@ -50,6 +51,17 @@ async function run(failWrite = false) {
   else {
     const directive = content.split('\n').find(line => line.startsWith('@H2H_EXCLUDE||'));
     assert.deepEqual(JSON.parse(directive.slice('@H2H_EXCLUDE||'.length)), entry);
+    assert.equal(fields['.pair-auth'].hidden, true);
+    assert.equal(fields.input.required, false);
+    // Another exclusion in the same tab uses the existing token, no new paste.
+    content = entry.members.map(p => `GT|${p}`).join('\n') + '\n';
+    row.isConnected = true; row.cells[0].child.onclick();
+    assert.equal(fields.input.value, '');
+    await fields.form.listeners.submit({preventDefault() {}});
+    assert.equal(writes.length, 2);
+    filters.child.onclick();
+    assert.equal(fields['.pair-auth'].hidden, false);
+    assert.equal(fields.input.required, true);
   }
 }
 (async () => { await run(); await run(true); process.stdout.write('H2H exclusion UI checks passed\n'); })()
