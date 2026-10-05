@@ -31,6 +31,7 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20):
     horizons = defaultdict(lambda: [0, 0])
     gap_counts = defaultdict(lambda: [[0, 0] for _ in range(6)])
     gap_horizons = defaultdict(lambda: [0, 0])
+    conditional_horizons = defaultdict(lambda: [0, 0])
     complete = 0
     for (league, player), history in players.items():
         prior = defaultdict(list)
@@ -61,6 +62,11 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20):
                                 sample[1] += "V" in sequence[:horizon]
                             for k in range(6):
                                 if "V" not in sequence[:k]:
+                                    for horizon in (4, 5, 6):
+                                        if k < horizon:
+                                            sample = conditional_horizons[(league, threshold, band, k, horizon)]
+                                            sample[0] += 1
+                                            sample[1] += "V" in sequence[k:horizon]
                                     sample = counts[(league, threshold)][k]
                                     sample[0] += 1
                                     sample[1] += "V" not in sequence
@@ -69,6 +75,14 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20):
                                     sample[1] += "V" not in sequence
                 prior[rival].extend(matches)
     return {"minimum_prior": minimum_prior, "complete_series": complete,
+            "conditional_horizons": [
+                {"league": league, "threshold": threshold, "band": label,
+                 "initial_without_win": k, "horizon": horizon, "sample": sample,
+                 "win_pct": wins / sample * 100 if sample else None}
+                for league in sorted({key[0] for key in players}) for threshold in (35, 40)
+                for band, label in enumerate(GAP_LABELS) for horizon in (4, 5, 6) for k in range(horizon)
+                for sample, wins in [conditional_horizons[(league, threshold, band, k, horizon)]]
+            ],
             "gap_horizons": [
                 {"league": league, "threshold": threshold, "band": label, "horizon": horizon,
                  "sample": sample, "with_win": wins,

@@ -8,7 +8,7 @@ from web_tracker.generate_site import attach_recent_group_h2h, render_recent_gro
 class RecentGroupH2HTests(unittest.TestCase):
     def test_total_percentage_uses_existing_historical_matrix_not_partial_jsonl(self):
         group = {"target": ["Voodoo", "William"], "h2h_matrix": [
-            {"player": "Voodoo", "rivals": [{"rival": "William", "matches": 289,
+            {"player": "Voodoo", "rivals": [{"rival": "William", "matches": 289, "W": 90, "L": 154,
                                              "win_pct": 90 / 289 * 100}]}
         ]}
         data = {"leagues": {"GT": {"groups": [group]}}}
@@ -31,7 +31,7 @@ class RecentGroupH2HTests(unittest.TestCase):
         attach_recent_group_h2h(data, [], datetime(2026, 10, 1, 12, tzinfo=timezone.utc))
         html = render_page(data, {}, [])
         self.assertLess(html.index('id="recent-group-h2h"'), html.index('<h2>Coincident Matches'))
-        self.assertEqual(html.count('Próximo partido (Madrid)'), 2)
+        self.assertEqual(html.count('Próximo partido'), 2)
         self.assertIn('No hay enfrentamientos destacados.', html)
         self.assertGreater(html.index('Frente a frente · últimas 8 horas'), html.index('<h2>Group Analysis'))
 
@@ -73,7 +73,7 @@ class RecentGroupH2HTests(unittest.TestCase):
         html = render_recent_group_h2h(group)
         self.assertIn("01/10 14:30", html)
         self.assertIn("Sin programar", html)
-        self.assertLess(html.index("Secuencia (8h)"), html.index("Próximo partido (Madrid)"))
+        self.assertLess(html.index("Secuencia (8h)"), html.index("Próximo partido"))
 
     def test_started_pending_fixture_overrides_future_and_finished_history_excludes_it(self):
         reference = datetime(2026, 10, 1, 12, tzinfo=timezone.utc)
@@ -86,7 +86,7 @@ class RecentGroupH2HTests(unittest.TestCase):
         row = group["recent_h2h"]["players"][0]["rivals"][0]
         self.assertTrue(row["match_started"])
         self.assertIn("11:55", row["next_match"])
-        self.assertIn("Iniciado · resultado pendiente", render_recent_group_h2h(group))
+        self.assertIn("· Iniciado", render_recent_group_h2h(group))
         completed = dict(pending, result="D")
         attach_recent_group_h2h(data, [completed], reference, schedule)
         row = group["recent_h2h"]["players"][0]["rivals"][0]

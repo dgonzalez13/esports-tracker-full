@@ -2,10 +2,21 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from six_match_stats import calculate_six_match_stats, gap_band
 from tests.test_h2h_analysis import perspective
-from web_tracker.generate_site import render_six_match_stats, render_gap_match_stats
+from web_tracker.generate_site import render_six_match_stats, render_gap_match_stats, matchup_win_estimates
 
 
 class SixMatchTests(unittest.TestCase):
+    def test_row_estimates_use_prior_counts_and_conditioned_horizons(self):
+        payload = calculate_six_match_stats(self.history(sequence="DDDDVD"), datetime(2026, 9, 3, tzinfo=timezone.utc))
+        lookup = {(r["league"], r["threshold"], r["band"], r["initial_without_win"], r["horizon"]): r
+                  for r in payload["conditional_horizons"]}
+        rival = {"played": 2, "wins": 0, "losses": 2,
+                 "historical_played": 22, "historical_wins": 9, "historical_losses": 13}
+        self.assertEqual(matchup_win_estimates("GT", rival, lookup, 20),
+                         ["0.00% (n=1)", "100.00% (n=1)", "100.00% (n=1)"])
+        self.assertEqual(matchup_win_estimates("GT", dict(rival, played=6), lookup, 20), ["—"] * 3)
+        self.assertEqual(matchup_win_estimates("GT", dict(rival, wins=1), lookup, 20), ["—"] * 3)
+
     def test_gap_boundaries_and_balanced_pair_use_only_prior_results(self):
         self.assertEqual(gap_band(42, 40, 100), 1)
         self.assertEqual(gap_band(40, 45, 100), 1)

@@ -20,7 +20,7 @@ from current_streaks_v2 import (
 )
 from history_query import load_all_history, filter_by_time
 from h2h_analysis import calculate_h2h_stats
-from six_match_stats import calculate_six_match_stats
+from six_match_stats import calculate_six_match_stats, gap_band, GAP_LABELS
 from streak_break_stats import build_streak_statistics
 from web_tracker.streak_statistics import render_streak_statistics
 from match_history import name_key
@@ -1794,10 +1794,14 @@ def attach_recent_group_h2h(data, records, reference_time, schedule=None):
         if historical is not None:
             row["historical_win_pct"] = historical["win_pct"]
             row["historical_played"] = historical["matches"]
+            row["historical_wins"] = historical["W"]
+            row["historical_losses"] = historical["L"]
         else:
             total = calculate_h2h_stats(history, player, rival, league=league)
             row["historical_win_pct"] = total["win_pct"]
             row["historical_played"] = total["played"]
+            row["historical_wins"] = total["wins"]
+            row["historical_losses"] = total["losses"]
         key = (league, tuple(sorted((name_key(player), name_key(rival)))))
         kickoff = started_matches.get(key) or next_matches.get(key)
         row["next_match"] = kickoff.isoformat() if kickoff else None
@@ -1824,6 +1828,10 @@ def attach_recent_group_h2h(data, records, reference_time, schedule=None):
 
 
 def render_recent_group_h2h_dashboard(data):
+    probability_lookup = {
+        (r["league"], r["threshold"], r["band"], r["initial_without_win"], r["horizon"]): r
+        for r in data.get("six_match_stats", {}).get("conditional_horizons", [])
+    }
     selected = []
     for league, payload in data.get("leagues", {}).items():
         for group in payload.get("groups", []):
@@ -1837,23 +1845,29 @@ def render_recent_group_h2h_dashboard(data):
         else datetime.max.replace(tzinfo=timezone.utc), item[0], item[2], item[3]["rival"]
     ))
     rows = [
-        [league, label, player, rival["rival"], rival["played"],
+        [league, player, rival["rival"], rival["played"],
          fmt_pct(rival["historical_win_pct"]), rival["sequence"] or "Sin partidos", next_group_match_label(rival)]
+        + matchup_win_estimates(league, rival, probability_lookup,
+                                data.get("six_match_stats", {}).get("minimum_prior", 20))
         for league, label, player, rival, color in selected
     ]
     return (
         '<section class="dashboard-section" id="recent-group-h2h">'
         '<div class="section-head"><h2>Enfrentamientos destacados — últimas 8 horas</h2></div>'
         '<p class="section-subtitle">Filas verdes y azules: sin victorias en las últimas 8 horas '
-        'y al menos un 30% de victorias histórico. Ordenadas por hora de comienzo; sin horario al final. '
+        'y al menos un 30% de victorias histórico. Horario de Madrid. Ordenadas por hora de comienzo; sin horario al final. '
         'Los partidos iniciados sin resultado confirmado siguen visibles; el calendario no confirma si continúan en juego.</p>'
+        '<p class="section-subtitle">Estimaciones: ≥1 victoria desde ahora hasta completar 4, 5 o 6 partidos, '
+        'comparando liga, umbral previo de A y diferencia A−B al inicio del tramo sin ganar. '
+        'Se asume que los partidos de las últimas 8 horas corresponden al inicio de una misma serie. '
+        'n = series históricas comparables; sin muestra o fuera de los umbrales se muestra —.</p>'
         '<div class="upcoming-filters">'
         '<label><input type="checkbox" id="h2h-hide-zero"> Ocultar 0 partidos (8h)</label>'
         '<label><input type="checkbox" id="h2h-hide-one"> Ocultar 1 partido (8h)</label>'
         '</div>'
-        + (render_table(["Liga", "Grupo", "Jugador", "Rival", "Partidos (8h)", "V% (total)",
-                         "Secuencia (8h)", "Próximo partido (Madrid)"], rows,
-                        numeric_columns={4, 5}, row_classes=[item[4] for item in selected])
+        + (render_table(["Liga", "Jugador", "Rival", "Partidos (8h)", "V% (total)",
+                         "Secuencia (8h)", "Próximo partido", "≥1 V hasta 4", "≥1 V hasta 5", "≥1 V hasta 6"], rows,
+                        numeric_columns={3, 4, 7, 8, 9}, row_classes=[item[4] for item in selected])
            if rows else '<p class="section-subtitle">No hay enfrentamientos destacados.</p>')
         + '<p class="section-subtitle" id="h2h-filter-empty" hidden>No hay enfrentamientos que coincidan con estos filtros.</p>'
         + render_six_match_stats(data.get("six_match_stats"))
@@ -1865,7 +1879,7 @@ def render_recent_group_h2h_dashboard(data):
         'const rows = [...section.querySelectorAll(":scope > .table-wrap tbody tr")];'
         'function update() {'
         'for (const row of rows) {'
-        'const count = Number(row.cells[4].textContent);'
+        'const count = Number(row.cells[3].textContent);'
         'row.hidden = (zero.checked && count === 0) || (one.checked && count === 1);'
         '}'
         'section.querySelector("#h2h-filter-empty").hidden = !rows.length || rows.some(row => !row.hidden);'
@@ -1875,6 +1889,24 @@ def render_recent_group_h2h_dashboard(data):
         'update();'
         '})();</script>'
     )
+
+
+def matchup_win_estimates(league, rival, lookup, minimum_prior):
+    played = rival["played"]
+    prior = rival.get("historical_played", 0) - played
+    wins = rival.get("historical_wins", 0) - rival["wins"]
+    losses = rival.get("historical_losses", 0) - rival.get("losses", 0)
+    if prior < minimum_prior or wins < 0 or losses < 0 or rival["wins"]:
+        return ["—"] * 3
+    pct = wins / prior * 100
+    threshold = 40 if pct > 40 else 35 if pct > 35 else None
+    band = GAP_LABELS[gap_band(wins, losses, prior)]
+    values = []
+    for horizon in (4, 5, 6):
+        row = lookup.get((league, threshold, band, played, horizon))
+        values.append(f'{fmt_pct(row["win_pct"])} (n={row["sample"]})'
+                      if played < horizon and row and row["sample"] else "—")
+    return values
 
 
 def render_six_match_stats(payload):
@@ -1971,7 +2003,7 @@ def next_group_match_label(rival):
     if not rival.get("next_match"):
         return "Sin programar"
     label = datetime.fromisoformat(rival["next_match"]).astimezone(ZoneInfo("Europe/Madrid")).strftime("%d/%m %H:%M")
-    return label + (" · Iniciado · resultado pendiente" if rival.get("match_started") else "")
+    return label + (" · Iniciado" if rival.get("match_started") else "")
 
 
 def render_recent_group_h2h(group):
@@ -1990,7 +2022,7 @@ def render_recent_group_h2h(group):
         ]
         blocks.append(
             '<details open><summary>' + text(player["player"]) + '</summary>'
-            + render_table(["Rival", "Partidos (8h)", "V", "E", "D", "V% (total)", "Secuencia (8h)", "Próximo partido (Madrid)"],
+            + render_table(["Rival", "Partidos (8h)", "V", "E", "D", "V% (total)", "Secuencia (8h)", "Próximo partido"],
                            rows, numeric_columns={1, 2, 3, 4, 5}, row_classes=row_classes)
             + '</details>'
         )
