@@ -16,6 +16,7 @@ from eadriatic_leagues import extract_player, fetch_eadriatic_html
 from gtleagues_api import BASE_URL as GT_FIXTURES_URL, HEADERS as GT_HEADERS
 from match_history import clean_name, name_key
 from selected_players import is_disabled_coincident_pair_line, load_tracked_players
+from h2h_exclusions import parse_exclusion
 
 
 BASE = Path(__file__).resolve().parent
@@ -212,6 +213,9 @@ def rewrite_tracked_players(path: Path, replacements: dict[tuple[str, int], tupl
     positions = {"EADRIATIC": 0, "GT": 0}
     for line in original.splitlines():
         stripped = line.strip()
+        exclusion = parse_exclusion(stripped)
+        if exclusion and (exclusion["league"], exclusion["group"]) in replacements:
+            continue
         if stripped.startswith("@") or not stripped:
             trailing.append(line)
             continue

@@ -49,10 +49,14 @@ jobs:
           --eadriatic-group-2 "${{ inputs.eadriatic_group_2 }}"
           --gt-group-1 "${{ inputs.gt_group_1 }}"
           --gt-group-2 "${{ inputs.gt_group_2 }}"
-      - name: Commit tracked players
+      - name: Regenerate dashboard
+        run: |
+          python group_analysis.py ALL
+          python web_tracker/generate_site.py
+      - name: Commit tracked players and dashboard
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add tracked_players.txt
+          git add tracked_players.txt group_analysis.json docs/index.html
           git diff --cached --quiet || git commit -m "Update tracked players"
           git push
