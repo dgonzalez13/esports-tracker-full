@@ -6,6 +6,11 @@ from web_tracker.generate_site import attach_recent_group_h2h, render_recent_gro
 
 
 class RecentGroupH2HTests(unittest.TestCase):
+    def test_highlighting_requires_more_than_twenty_historical_matches(self):
+        row = {"wins": 0, "historical_win_pct": 45}
+        for total in (0, 1, 19, 20):
+            self.assertEqual(recent_h2h_row_class(dict(row, historical_played=total)), "")
+        self.assertEqual(recent_h2h_row_class(dict(row, historical_played=21)), "recent-h2h-green")
     def test_minimum_gap_strict_boundary_and_configurable_cutoff(self):
         row = {"wins": 0, "historical_win_pct": 42, "historical_played": 100,
                "historical_wins": 42, "historical_losses": 55}
@@ -47,7 +52,7 @@ class RecentGroupH2HTests(unittest.TestCase):
     def test_summary_filters_and_sorts_highlighted_rows_unknown_time_last(self):
         def rival(name, pct, wins=0, stamp=None):
             return {"rival": name, "wins": wins, "historical_win_pct": pct,
-                    "played": 3, "sequence": "DED", "next_match": stamp}
+                    "played": 3, "sequence": "DED", "next_match": stamp, "historical_played": 100}
         group = {"label": "Grupo 1", "recent_h2h": {"players": [{"player": "A", "rivals": [
             rival("Unknown", 40), rival("Late", 36, stamp="2026-10-01T14:00:00Z"),
             rival("Early", 40, stamp="2026-10-01T12:00:00Z"),

@@ -1857,7 +1857,7 @@ def render_recent_group_h2h_dashboard(data):
         '<section class="dashboard-section" id="recent-group-h2h">'
         '<div class="section-head"><h2>Enfrentamientos destacados — últimas 8 horas</h2></div>'
         '<p class="section-subtitle">Filas verdes: sin victorias en las últimas 8 horas '
-        'y más de un 35% de victorias histórico. '
+        'y más de un 35% de victorias histórico, con más de 20 enfrentamientos históricos entre ambos. '
         f'Diferencia histórica A−B ≥ {data.get("h2h_min_gap", -10):g} puntos. '
         'Horario de Madrid. Ordenadas por hora de comienzo; sin horario al final. '
         'Los partidos iniciados sin resultado confirmado siguen visibles; el calendario no confirma si continúan en juego.</p>'
@@ -1996,6 +1996,8 @@ def render_gap_match_stats(payload):
 def recent_h2h_row_class(rival, minimum_gap=-10):
     pct = rival["historical_win_pct"]
     total = rival.get("historical_played", 0)
+    if total <= 20:
+        return ""
     if total and "historical_wins" in rival and "historical_losses" in rival:
         if (rival["historical_wins"] - rival["historical_losses"]) * 100 < minimum_gap * total:
             return ""

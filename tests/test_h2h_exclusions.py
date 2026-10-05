@@ -60,7 +60,7 @@ class ExclusionTests(unittest.TestCase):
             path.unlink(missing_ok=True)
 
     def test_only_highlighted_direction_is_filtered(self):
-        rival = dict(rival='B', played=2, wins=0, historical_win_pct=42, sequence='DD')
+        rival = dict(rival='B', played=2, wins=0, historical_win_pct=42, historical_played=100, sequence='DD')
         data = {'h2h_exclusions': [('GT', 'a', 'b')], 'leagues': {'GT': {'groups': [
             {'recent_h2h': {'players': [{'player': 'A', 'rivals': [rival]}]}}
         ]}}}
