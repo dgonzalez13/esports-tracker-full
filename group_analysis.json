@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "analysis_scope": "historical TXT; h2h_alerts are operational JSONL-filtered",
-  "generated_at": "05/10/2026 02:09:37 CEST",
+  "generated_at": "05/10/2026 02:27:49 CEST",
   "league": "EADRIATIC",
   "files_count": 143,
   "data_from": "20260516",
@@ -404,10 +404,10 @@
         "Kai",
         "Odin"
       ],
-      "target_repr": "{'Odin', 'Kai', 'Leonardo', 'Noah', 'Andrew'}",
+      "target_repr": "{'Leonardo', 'Noah', 'Andrew', 'Odin', 'Kai'}",
       "h2h_keys": [
-        "Kai",
         "Leonardo",
+        "Kai",
         "Noah",
         "Andrew",
         "Odin"
@@ -522,16 +522,6 @@
       ],
       "dominance": [
         {
-          "player": "Odin",
-          "wins": 3,
-          "rivals": 4
-        },
-        {
-          "player": "Kai",
-          "wins": 0,
-          "rivals": 4
-        },
-        {
           "player": "Leonardo",
           "wins": 1,
           "rivals": 4
@@ -543,6 +533,16 @@
         },
         {
           "player": "Andrew",
+          "wins": 0,
+          "rivals": 4
+        },
+        {
+          "player": "Odin",
+          "wins": 3,
+          "rivals": 4
+        },
+        {
+          "player": "Kai",
           "wins": 0,
           "rivals": 4
         }
@@ -1511,12 +1511,12 @@
             "Bruno",
             "Delpiero"
           ],
-          "target_repr": "{'Bruno', 'Delpiero', 'Voodoo', 'Scorpion', 'Walnut'}",
+          "target_repr": "{'Walnut', 'Bruno', 'Scorpion', 'Voodoo', 'Delpiero'}",
           "h2h_keys": [
-            "Bruno",
             "Walnut",
-            "Voodoo",
+            "Bruno",
             "Scorpion",
+            "Voodoo",
             "Delpiero"
           ],
           "coincidencias_5": 2,
@@ -1629,12 +1629,17 @@
           ],
           "dominance": [
             {
+              "player": "Walnut",
+              "wins": 0,
+              "rivals": 4
+            },
+            {
               "player": "Bruno",
               "wins": 2,
               "rivals": 4
             },
             {
-              "player": "Delpiero",
+              "player": "Scorpion",
               "wins": 0,
               "rivals": 4
             },
@@ -1644,12 +1649,7 @@
               "rivals": 4
             },
             {
-              "player": "Scorpion",
-              "wins": 0,
-              "rivals": 4
-            },
-            {
-              "player": "Walnut",
+              "player": "Delpiero",
               "wins": 0,
               "rivals": 4
             }
@@ -1764,6 +1764,11 @@
               "weighted_score": 7700.0,
               "worst_matchups": [
                 {
+                  "rival": "Walnut",
+                  "win_pct": 16.666666666666664,
+                  "matches": 12
+                },
+                {
                   "rival": "Bruno",
                   "win_pct": 16.666666666666664,
                   "matches": 24
@@ -1772,14 +1777,24 @@
                   "rival": "Delpiero",
                   "win_pct": 16.666666666666664,
                   "matches": 24
-                },
-                {
-                  "rival": "Walnut",
-                  "win_pct": 16.666666666666664,
-                  "matches": 12
                 }
               ],
               "worst_matchup_details": [
+                {
+                  "rival": "Walnut",
+                  "W": 2,
+                  "D": 5,
+                  "L": 5,
+                  "matches": 12,
+                  "win_pct": 16.666666666666664,
+                  "draw_pct": 41.66666666666667,
+                  "loss_pct": 41.66666666666667,
+                  "seq": "EDVEDVEDDEDE",
+                  "last5": "DDEDE",
+                  "last10": "VEDVEDDEDE",
+                  "stk_win": 0,
+                  "stk_lose": 1
+                },
                 {
                   "rival": "Bruno",
                   "W": 4,
@@ -1809,21 +1824,6 @@
                   "last10": "DDDDEVDEED",
                   "stk_win": 0,
                   "stk_lose": 0
-                },
-                {
-                  "rival": "Walnut",
-                  "W": 2,
-                  "D": 5,
-                  "L": 5,
-                  "matches": 12,
-                  "win_pct": 16.666666666666664,
-                  "draw_pct": 41.66666666666667,
-                  "loss_pct": 41.66666666666667,
-                  "seq": "EDVEDVEDDEDE",
-                  "last5": "DDEDE",
-                  "last10": "VEDVEDDEDE",
-                  "stk_win": 0,
-                  "stk_lose": 1
                 }
               ]
             }
@@ -2313,7 +2313,7 @@
             "Habibi",
             "Baba"
           ],
-          "target_repr": "{'Baba', 'Arthur', 'Vendetta', 'Carlos', 'Habibi'}",
+          "target_repr": "{'Habibi', 'Arthur', 'Vendetta', 'Baba', 'Carlos'}",
           "h2h_keys": [
             "Baba",
             "Carlos",
@@ -2434,12 +2434,12 @@
             {
               "position": 5,
               "player": "Habibi",
-              "score": -80.3001411755728
+              "score": -80.30014117557282
             }
           ],
           "dominance": [
             {
-              "player": "Baba",
+              "player": "Habibi",
               "wins": 0,
               "rivals": 4
             },
@@ -2454,12 +2454,12 @@
               "rivals": 4
             },
             {
-              "player": "Carlos",
+              "player": "Baba",
               "wins": 0,
               "rivals": 4
             },
             {
-              "player": "Habibi",
+              "player": "Carlos",
               "wins": 0,
               "rivals": 4
             }
@@ -3519,10 +3519,10 @@
             "Kai",
             "Odin"
           ],
-          "target_repr": "{'Odin', 'Kai', 'Leonardo', 'Noah', 'Andrew'}",
+          "target_repr": "{'Leonardo', 'Noah', 'Andrew', 'Odin', 'Kai'}",
           "h2h_keys": [
-            "Kai",
             "Leonardo",
+            "Kai",
             "Noah",
             "Andrew",
             "Odin"
@@ -3637,16 +3637,6 @@
           ],
           "dominance": [
             {
-              "player": "Odin",
-              "wins": 3,
-              "rivals": 4
-            },
-            {
-              "player": "Kai",
-              "wins": 0,
-              "rivals": 4
-            },
-            {
               "player": "Leonardo",
               "wins": 1,
               "rivals": 4
@@ -3658,6 +3648,16 @@
             },
             {
               "player": "Andrew",
+              "wins": 0,
+              "rivals": 4
+            },
+            {
+              "player": "Odin",
+              "wins": 3,
+              "rivals": 4
+            },
+            {
+              "player": "Kai",
               "wins": 0,
               "rivals": 4
             }
