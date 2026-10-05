@@ -21,3 +21,19 @@ del grupo no cambien. Las exclusiones de grupos no actualizados se conservan.
 
 Las líneas antiguas con `members` siguen siendo compatibles. No hace falta ese
 campo en las nuevas exclusiones manuales. No se requieren tokens en la web.
+
+## Diferencia mínima de victorias
+
+Por defecto, no se resaltan ni se muestran en destacados los casos con diferencia
+histórica `V% de A − V% de B` menor que −10 puntos. Exactamente −10 sí se admite.
+Se usan los recuentos históricos completos, incluyendo empates en el denominador.
+
+Puedes cambiar el límite añadiendo esta línea (una sola) al archivo:
+
+```text
+@H2H_MIN_GAP||-5
+```
+
+−5 es más restrictivo: también elimina las diferencias entre −10 y −5. Para volver
+al límite inicial, cambia el valor a −10 o elimina la línea. El job conserva esta
+configuración global al actualizar los grupos. No afecta a las tablas estadísticas.

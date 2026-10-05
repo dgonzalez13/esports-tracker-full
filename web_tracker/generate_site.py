@@ -21,7 +21,7 @@ from current_streaks_v2 import (
 from history_query import load_all_history, filter_by_time
 from h2h_analysis import calculate_h2h_stats
 from six_match_stats import calculate_six_match_stats, gap_band, GAP_LABELS
-from h2h_exclusions import load_h2h_exclusions
+from h2h_exclusions import load_h2h_exclusions, load_h2h_min_gap
 from streak_break_stats import build_streak_statistics
 from web_tracker.streak_statistics import render_streak_statistics
 from match_history import name_key
@@ -1816,6 +1816,7 @@ def attach_recent_group_h2h(data, records, reference_time, schedule=None):
                 for player in group.get("h2h_matrix", []) for rival in player.get("rivals", [])
             }
             group["recent_h2h"] = {
+                "minimum_gap": data.get("h2h_min_gap", -10),
                 "start": start.isoformat(), "end": reference_time.isoformat(),
                 "players": [
                     {"player": player, "rivals": [
@@ -1838,7 +1839,7 @@ def render_recent_group_h2h_dashboard(data):
         for group in payload.get("groups", []):
             for player in group.get("recent_h2h", {}).get("players", []):
                 for rival in player["rivals"]:
-                    color = recent_h2h_row_class(rival)
+                    color = recent_h2h_row_class(rival, data.get("h2h_min_gap", -10))
                     if color and (league, name_key(player["player"]), name_key(rival["rival"])) not in excluded:
                         selected.append((league, group.get("label") or group.get("group_id", ""), player["player"], rival, color))
     selected.sort(key=lambda item: (
@@ -1856,7 +1857,9 @@ def render_recent_group_h2h_dashboard(data):
         '<section class="dashboard-section" id="recent-group-h2h">'
         '<div class="section-head"><h2>Enfrentamientos destacados — últimas 8 horas</h2></div>'
         '<p class="section-subtitle">Filas verdes: sin victorias en las últimas 8 horas '
-        'y más de un 35% de victorias histórico. Horario de Madrid. Ordenadas por hora de comienzo; sin horario al final. '
+        'y más de un 35% de victorias histórico. '
+        f'Diferencia histórica A−B ≥ {data.get("h2h_min_gap", -10):g} puntos. '
+        'Horario de Madrid. Ordenadas por hora de comienzo; sin horario al final. '
         'Los partidos iniciados sin resultado confirmado siguen visibles; el calendario no confirma si continúan en juego.</p>'
         '<p class="section-subtitle">Estimaciones: ≥1 victoria desde ahora hasta completar 4, 5 o 6 partidos, '
         'comparando liga, umbral previo de A y diferencia A−B al inicio del tramo sin ganar. '
@@ -1990,8 +1993,12 @@ def render_gap_match_stats(payload):
             + ''.join(blocks) + '</section>')
 
 
-def recent_h2h_row_class(rival):
+def recent_h2h_row_class(rival, minimum_gap=-10):
     pct = rival["historical_win_pct"]
+    total = rival.get("historical_played", 0)
+    if total and "historical_wins" in rival and "historical_losses" in rival:
+        if (rival["historical_wins"] - rival["historical_losses"]) * 100 < minimum_gap * total:
+            return ""
     if rival["wins"] == 0:
         if pct > 35:
             return "recent-h2h-green"
@@ -2011,7 +2018,7 @@ def render_recent_group_h2h(group):
         return ""
     blocks = []
     for player in recent["players"]:
-        row_classes = [recent_h2h_row_class(rival) for rival in player["rivals"]]
+        row_classes = [recent_h2h_row_class(rival, recent.get("minimum_gap", -10)) for rival in player["rivals"]]
         rows = [
             [rival["rival"], rival["played"], rival["wins"], rival["draws"],
              rival["losses"], fmt_pct(rival["historical_win_pct"]) if rival["historical_played"] else "—",
@@ -2106,6 +2113,7 @@ def write_html(html):
 def main():
     group_analysis = load_group_analysis()
     group_analysis["h2h_exclusions"] = sorted(load_h2h_exclusions(TRACKED_PLAYERS_FILE))
+    group_analysis["h2h_min_gap"] = load_h2h_min_gap(TRACKED_PLAYERS_FILE)
     tracked_players = load_tracked_players(TRACKED_PLAYERS_FILE)
     coincident_config = load_coincident_config(TRACKED_PLAYERS_FILE)
     records = load_all_history()

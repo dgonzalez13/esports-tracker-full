@@ -1,10 +1,22 @@
 """Persistent directional exclusions scoped to a tracked group."""
 import json
+import math
 from pathlib import Path
 from match_history import name_key
 from selected_players import load_tracked_players
 
 PREFIX = "@H2H_EXCLUDE||"
+MIN_GAP_PREFIX = "@H2H_MIN_GAP||"
+
+
+def load_h2h_min_gap(path):
+    cutoff = -10.0
+    for line in Path(path).read_text(encoding="utf-8").splitlines():
+        if line.strip().startswith(MIN_GAP_PREFIX):
+            cutoff = float(line.strip()[len(MIN_GAP_PREFIX):])
+            if not math.isfinite(cutoff) or not -100 <= cutoff <= 100:
+                raise ValueError("H2H_MIN_GAP must be between -100 and 100 points")
+    return cutoff
 
 
 def parse_exclusion(line):

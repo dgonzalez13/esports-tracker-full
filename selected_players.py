@@ -125,7 +125,7 @@ def parse_tracked_player_line(line: str) -> TrackedPlayerEntry | None:
     value = line.strip()
     if not value:
         return None
-    if value.startswith(("@COINCIDENT_", "@H2H_EXCLUDE||")) or is_disabled_coincident_pair_line(value):
+    if value.startswith(("@COINCIDENT_", "@H2H_EXCLUDE||", "@H2H_MIN_GAP||")) or is_disabled_coincident_pair_line(value):
         return None
     if "|" not in value:
         raise ValueError("tracked player line must use LIGA|Nombre format")

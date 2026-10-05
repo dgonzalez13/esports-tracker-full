@@ -2,10 +2,19 @@ import unittest
 from datetime import datetime, timezone
 
 from tests.test_h2h_analysis import perspective
-from web_tracker.generate_site import attach_recent_group_h2h, render_recent_group_h2h, render_page, render_recent_group_h2h_dashboard
+from web_tracker.generate_site import attach_recent_group_h2h, render_recent_group_h2h, render_page, render_recent_group_h2h_dashboard, recent_h2h_row_class
 
 
 class RecentGroupH2HTests(unittest.TestCase):
+    def test_minimum_gap_strict_boundary_and_configurable_cutoff(self):
+        row = {"wins": 0, "historical_win_pct": 42, "historical_played": 100,
+               "historical_wins": 42, "historical_losses": 55}
+        self.assertEqual(recent_h2h_row_class(row), "")
+        row["historical_losses"] = 52
+        self.assertEqual(recent_h2h_row_class(row), "recent-h2h-green")
+        self.assertEqual(recent_h2h_row_class(row, -5), "")
+        row["historical_losses"] = 47
+        self.assertEqual(recent_h2h_row_class(row, -5), "recent-h2h-green")
     def test_total_percentage_uses_existing_historical_matrix_not_partial_jsonl(self):
         group = {"target": ["Voodoo", "William"], "h2h_matrix": [
             {"player": "Voodoo", "rivals": [{"rival": "William", "matches": 289, "W": 90, "L": 154,
