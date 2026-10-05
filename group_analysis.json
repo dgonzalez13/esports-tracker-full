@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "analysis_scope": "historical TXT; h2h_alerts are operational JSONL-filtered",
-  "generated_at": "05/10/2026 06:34:08 CEST",
+  "generated_at": "05/10/2026 06:42:47 CEST",
   "league": "EADRIATIC",
   "files_count": 143,
   "data_from": "20260516",
@@ -540,7 +540,7 @@
         "Dominic",
         "Eduardo"
       ],
-      "target_repr": "{'Dexter', 'Dominic', 'Conde', 'Alexis', 'Eduardo'}",
+      "target_repr": "{'Dexter', 'Eduardo', 'Dominic', 'Conde', 'Alexis'}",
       "h2h_keys": [
         "Dexter",
         "Conde",
@@ -671,6 +671,11 @@
           "rivals": 4
         },
         {
+          "player": "Eduardo",
+          "wins": 3,
+          "rivals": 4
+        },
+        {
           "player": "Dominic",
           "wins": 0,
           "rivals": 4
@@ -682,11 +687,6 @@
         },
         {
           "player": "Alexis",
-          "wins": 3,
-          "rivals": 4
-        },
-        {
-          "player": "Eduardo",
           "wins": 3,
           "rivals": 4
         }
@@ -1350,12 +1350,12 @@
         "Felix",
         "William"
       ],
-      "target_repr": "{'William', 'Adriano', 'Gael', 'Felix', 'Iron'}",
+      "target_repr": "{'Gael', 'Iron', 'Adriano', 'Felix', 'William'}",
       "h2h_keys": [
         "Gael",
         "Felix",
-        "William",
         "Iron",
+        "William",
         "Adriano"
       ],
       "coincidencias_5": 1,
@@ -1420,12 +1420,12 @@
         {
           "position": 3,
           "player": "Iron",
-          "score": -81.13973846481765
+          "score": -81.13973846481764
         },
         {
           "position": 4,
           "player": "Felix",
-          "score": -81.48545388572285
+          "score": -81.48545388572283
         },
         {
           "position": 5,
@@ -1435,7 +1435,12 @@
       ],
       "dominance": [
         {
-          "player": "William",
+          "player": "Gael",
+          "wins": 2,
+          "rivals": 4
+        },
+        {
+          "player": "Iron",
           "wins": 0,
           "rivals": 4
         },
@@ -1445,17 +1450,12 @@
           "rivals": 4
         },
         {
-          "player": "Gael",
-          "wins": 2,
-          "rivals": 4
-        },
-        {
           "player": "Felix",
           "wins": 0,
           "rivals": 4
         },
         {
-          "player": "Iron",
+          "player": "William",
           "wins": 0,
           "rivals": 4
         }
@@ -2798,11 +2798,11 @@
             "Peter",
             "Alpha"
           ],
-          "target_repr": "{'Thug', 'Alpha', 'Troy', 'Lost', 'Peter'}",
+          "target_repr": "{'Lost', 'Troy', 'Alpha', 'Thug', 'Peter'}",
           "h2h_keys": [
-            "Thug",
-            "Alpha",
             "Troy",
+            "Alpha",
+            "Thug",
             "Peter",
             "Lost"
           ],
@@ -2916,13 +2916,8 @@
           ],
           "dominance": [
             {
-              "player": "Thug",
-              "wins": 3,
-              "rivals": 4
-            },
-            {
-              "player": "Alpha",
-              "wins": 4,
+              "player": "Lost",
+              "wins": 2,
               "rivals": 4
             },
             {
@@ -2931,8 +2926,13 @@
               "rivals": 4
             },
             {
-              "player": "Lost",
-              "wins": 2,
+              "player": "Alpha",
+              "wins": 4,
+              "rivals": 4
+            },
+            {
+              "player": "Thug",
+              "wins": 3,
               "rivals": 4
             },
             {
@@ -3051,49 +3051,34 @@
               "weighted_score": 0.0,
               "worst_matchups": [
                 {
-                  "rival": "Thug",
+                  "rival": "Lost",
+                  "win_pct": 0.0,
+                  "matches": 2
+                },
+                {
+                  "rival": "Troy",
                   "win_pct": 0.0,
                   "matches": 13
                 },
                 {
                   "rival": "Alpha",
-                  "win_pct": 0.0,
-                  "matches": 13
-                },
-                {
-                  "rival": "Troy",
                   "win_pct": 0.0,
                   "matches": 13
                 }
               ],
               "worst_matchup_details": [
                 {
-                  "rival": "Thug",
+                  "rival": "Lost",
                   "W": 0,
                   "D": 0,
-                  "L": 13,
-                  "matches": 13,
+                  "L": 2,
+                  "matches": 2,
                   "win_pct": 0.0,
                   "draw_pct": 0.0,
                   "loss_pct": 100.0,
-                  "seq": "DDDDDDDDDDDDD",
-                  "last5": "DDDDD",
-                  "last10": "DDDDDDDDDD",
-                  "stk_win": 0,
-                  "stk_lose": 0
-                },
-                {
-                  "rival": "Alpha",
-                  "W": 0,
-                  "D": 0,
-                  "L": 13,
-                  "matches": 13,
-                  "win_pct": 0.0,
-                  "draw_pct": 0.0,
-                  "loss_pct": 100.0,
-                  "seq": "DDDDDDDDDDDDD",
-                  "last5": "DDDDD",
-                  "last10": "DDDDDDDDDD",
+                  "seq": "DD",
+                  "last5": "DD",
+                  "last10": "DD",
                   "stk_win": 0,
                   "stk_lose": 0
                 },
@@ -3107,6 +3092,21 @@
                   "draw_pct": 7.6923076923076925,
                   "loss_pct": 92.3076923076923,
                   "seq": "EDDDDDDDDDDDD",
+                  "last5": "DDDDD",
+                  "last10": "DDDDDDDDDD",
+                  "stk_win": 0,
+                  "stk_lose": 0
+                },
+                {
+                  "rival": "Alpha",
+                  "W": 0,
+                  "D": 0,
+                  "L": 13,
+                  "matches": 13,
+                  "win_pct": 0.0,
+                  "draw_pct": 0.0,
+                  "loss_pct": 100.0,
+                  "seq": "DDDDDDDDDDDDD",
                   "last5": "DDDDD",
                   "last10": "DDDDDDDDDD",
                   "stk_win": 0,
@@ -3600,10 +3600,10 @@
             "Fox",
             "David"
           ],
-          "target_repr": "{'Banega', 'Dusan', 'Crysis', 'Fox', 'David'}",
+          "target_repr": "{'Crysis', 'Dusan', 'Fox', 'David', 'Banega'}",
           "h2h_keys": [
-            "Banega",
             "Crysis",
+            "Banega",
             "David",
             "Fox",
             "Dusan"
@@ -3665,7 +3665,7 @@
             {
               "position": 2,
               "player": "Fox",
-              "score": -52.316382727954576
+              "score": -52.31638272795457
             },
             {
               "position": 3,
@@ -3685,17 +3685,12 @@
           ],
           "dominance": [
             {
-              "player": "Banega",
-              "wins": 1,
-              "rivals": 4
-            },
-            {
-              "player": "Dusan",
+              "player": "Crysis",
               "wins": 0,
               "rivals": 4
             },
             {
-              "player": "Crysis",
+              "player": "Dusan",
               "wins": 0,
               "rivals": 4
             },
@@ -3706,6 +3701,11 @@
             },
             {
               "player": "David",
+              "wins": 1,
+              "rivals": 4
+            },
+            {
+              "player": "Banega",
               "wins": 1,
               "rivals": 4
             }
@@ -4901,7 +4901,7 @@
             "Dominic",
             "Eduardo"
           ],
-          "target_repr": "{'Dexter', 'Dominic', 'Conde', 'Alexis', 'Eduardo'}",
+          "target_repr": "{'Dexter', 'Eduardo', 'Dominic', 'Conde', 'Alexis'}",
           "h2h_keys": [
             "Dexter",
             "Conde",
@@ -5032,6 +5032,11 @@
               "rivals": 4
             },
             {
+              "player": "Eduardo",
+              "wins": 3,
+              "rivals": 4
+            },
+            {
               "player": "Dominic",
               "wins": 0,
               "rivals": 4
@@ -5043,11 +5048,6 @@
             },
             {
               "player": "Alexis",
-              "wins": 3,
-              "rivals": 4
-            },
-            {
-              "player": "Eduardo",
               "wins": 3,
               "rivals": 4
             }
@@ -5711,12 +5711,12 @@
             "Felix",
             "William"
           ],
-          "target_repr": "{'William', 'Adriano', 'Gael', 'Felix', 'Iron'}",
+          "target_repr": "{'Gael', 'Iron', 'Adriano', 'Felix', 'William'}",
           "h2h_keys": [
             "Gael",
             "Felix",
-            "William",
             "Iron",
+            "William",
             "Adriano"
           ],
           "coincidencias_5": 1,
@@ -5781,12 +5781,12 @@
             {
               "position": 3,
               "player": "Iron",
-              "score": -81.13973846481765
+              "score": -81.13973846481764
             },
             {
               "position": 4,
               "player": "Felix",
-              "score": -81.48545388572285
+              "score": -81.48545388572283
             },
             {
               "position": 5,
@@ -5796,7 +5796,12 @@
           ],
           "dominance": [
             {
-              "player": "William",
+              "player": "Gael",
+              "wins": 2,
+              "rivals": 4
+            },
+            {
+              "player": "Iron",
               "wins": 0,
               "rivals": 4
             },
@@ -5806,17 +5811,12 @@
               "rivals": 4
             },
             {
-              "player": "Gael",
-              "wins": 2,
-              "rivals": 4
-            },
-            {
               "player": "Felix",
               "wins": 0,
               "rivals": 4
             },
             {
-              "player": "Iron",
+              "player": "William",
               "wins": 0,
               "rivals": 4
             }
