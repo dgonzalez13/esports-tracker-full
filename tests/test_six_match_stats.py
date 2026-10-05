@@ -1,11 +1,33 @@
 import unittest
 from datetime import datetime, timedelta, timezone
-from six_match_stats import calculate_six_match_stats
+from six_match_stats import calculate_six_match_stats, gap_band
 from tests.test_h2h_analysis import perspective
-from web_tracker.generate_site import render_six_match_stats
+from web_tracker.generate_site import render_six_match_stats, render_gap_match_stats
 
 
 class SixMatchTests(unittest.TestCase):
+    def test_gap_boundaries_and_balanced_pair_use_only_prior_results(self):
+        self.assertEqual(gap_band(42, 40, 100), 1)
+        self.assertEqual(gap_band(40, 45, 100), 1)
+        self.assertEqual(gap_band(39, 45, 100), 0)
+        self.assertEqual(gap_band(45, 40, 100), 1)
+        self.assertEqual(gap_band(46, 40, 100), 2)
+        self.assertEqual(gap_band(55, 40, 100), 2)
+        self.assertEqual(gap_band(56, 40, 100), 3)
+        records = self.history(sequence="DDDDDV")
+        records[19]["result"] = "E"  # A:45%, B:50%, gap -5 pp before the series.
+        payload = calculate_six_match_stats(records, datetime(2026, 9, 3, tzinfo=timezone.utc))
+        samples = [r for r in payload["gap_horizons"] if r["threshold"] == 40 and r["horizon"] == 6]
+        self.assertEqual(sum(r["sample"] for r in samples), 1)
+        row = next(r for r in samples if r["sample"])
+        self.assertIn("Equilibrados", row["band"])
+        self.assertEqual(row["win_pct"], 100)
+        conditional = [r for r in payload["gap_rows"] if r["threshold"] == 40 and r["initial_without_win"] == 5]
+        self.assertEqual(sum(r["sample"] for r in conditional), 1)
+        html = render_gap_match_stats(payload)
+        self.assertIn('id="h2h-win-gap-statistics"', html)
+        self.assertIn("Sin muestra", html)
+
     def test_first_four_five_six_use_prefix_not_later_victories(self):
         reference = datetime(2026, 9, 3, tzinfo=timezone.utc)
         for sequence, expected in [("DDDDVD", [0, 100, 100]), ("DDDDDV", [0, 0, 100]),

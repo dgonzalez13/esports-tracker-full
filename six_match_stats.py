@@ -4,6 +4,15 @@ from datetime import timedelta
 
 from current_streaks_v2 import _record_time, split_player_sessions
 
+GAP_LABELS = ("A por detrás (< −5 pp)", "Equilibrados (−5 a +5 pp)",
+              "Ventaja de A (>5 a 15 pp)", "Ventaja amplia de A (>15 pp)")
+
+
+def gap_band(wins, losses, played):
+    # Compare counts before dividing, avoiding floating-point boundary drift.
+    difference = (wins - losses) * 100
+    return 0 if difference < -5 * played else 1 if difference <= 5 * played else 2 if difference <= 15 * played else 3
+
 
 def calculate_six_match_stats(records, reference_time, minimum_prior=20):
     players = defaultdict(list)
@@ -20,6 +29,8 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20):
         players[key[:2]].append(row)
     counts = defaultdict(lambda: [[0, 0] for _ in range(6)])
     horizons = defaultdict(lambda: [0, 0])
+    gap_counts = defaultdict(lambda: [[0, 0] for _ in range(6)])
+    gap_horizons = defaultdict(lambda: [0, 0])
     complete = 0
     for (league, player), history in players.items():
         prior = defaultdict(list)
@@ -33,7 +44,10 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20):
                 if len(matches) == 6 and closed:
                     complete += 1
                     if len(earlier) >= minimum_prior:
-                        pct = sum(r["result"] == "V" for r in earlier) / len(earlier) * 100
+                        wins = sum(r["result"] == "V" for r in earlier)
+                        losses = sum(r["result"] == "D" for r in earlier)
+                        pct = wins / len(earlier) * 100
+                        band = gap_band(wins, losses, len(earlier))
                         sequence = ''.join(r["result"] for r in matches)
                         for threshold in (35, 40):
                             if pct <= threshold:
@@ -42,13 +56,36 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20):
                                 sample = horizons[(league, threshold, horizon)]
                                 sample[0] += 1
                                 sample[1] += "V" in sequence[:horizon]
+                                sample = gap_horizons[(league, threshold, band, horizon)]
+                                sample[0] += 1
+                                sample[1] += "V" in sequence[:horizon]
                             for k in range(6):
                                 if "V" not in sequence[:k]:
                                     sample = counts[(league, threshold)][k]
                                     sample[0] += 1
                                     sample[1] += "V" not in sequence
+                                    sample = gap_counts[(league, threshold, band)][k]
+                                    sample[0] += 1
+                                    sample[1] += "V" not in sequence
                 prior[rival].extend(matches)
     return {"minimum_prior": minimum_prior, "complete_series": complete,
+            "gap_horizons": [
+                {"league": league, "threshold": threshold, "band": label, "horizon": horizon,
+                 "sample": sample, "with_win": wins,
+                 "win_pct": wins / sample * 100 if sample else None}
+                for league in sorted({key[0] for key in players}) for threshold in (35, 40)
+                for band, label in enumerate(GAP_LABELS) for horizon in (4, 5, 6)
+                for sample, wins in [gap_horizons[(league, threshold, band, horizon)]]
+            ],
+            "gap_rows": [
+                {"league": league, "threshold": threshold, "band": label, "initial_without_win": k,
+                 "sample": sample, "zero_wins": zero,
+                 "zero_win_pct": zero / sample * 100 if sample else None,
+                 "remaining_win_pct": (sample - zero) / sample * 100 if sample else None}
+                for league in sorted({key[0] for key in players}) for threshold in (35, 40)
+                for band, label in enumerate(GAP_LABELS)
+                for k, (sample, zero) in enumerate(gap_counts[(league, threshold, band)])
+            ],
             "horizons": [
                 {"league": league, "threshold": threshold, "horizon": horizon,
                  "sample": sample, "with_win": wins,

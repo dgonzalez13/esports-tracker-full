@@ -303,6 +303,7 @@ def render_page(data, current_streaks, coincident_pairs=None, current_streaks_v2
     {render_streak_statistics(streak_statistics)}
     {render_upcoming_matches(schedule or {})}
     {render_recent_group_h2h_dashboard(data)}
+    {render_gap_match_stats(data.get("six_match_stats"))}
     {render_coincident_matches(coincident_pairs if coincident_pairs is not None else [], current_streaks_v2 or {})}
     {render_group_dashboard(data, current_streaks)}
 </main>
@@ -1915,6 +1916,45 @@ def render_six_match_stats(payload):
                        rows, numeric_columns={2, 3, 4, 5, 6, 7})
         + '</details>'
     )
+
+
+def render_gap_match_stats(payload):
+    if payload is None:
+        return ""
+    bands = list(dict.fromkeys(row["band"] for row in payload.get("gap_rows", [])))
+    blocks = []
+    for band in bands:
+        horizons = [
+            [r["league"], f'> {r["threshold"]}%', r["horizon"], r["sample"], r["with_win"],
+             fmt_pct(r["win_pct"]) if r["sample"] else "Sin muestra"]
+            for r in payload["gap_horizons"] if r["band"] == band
+        ]
+        conditioned = [
+            [r["league"], f'> {r["threshold"]}%', r["initial_without_win"], 6-r["initial_without_win"],
+             r["sample"], r["zero_wins"], fmt_pct(r["zero_win_pct"]) if r["sample"] else "Sin muestra",
+             fmt_pct(r["remaining_win_pct"]) if r["sample"] else "Sin muestra"]
+            for r in payload["gap_rows"] if r["band"] == band
+        ]
+        blocks.append('<details><summary>' + text(band) + '</summary>'
+                      + '<h3>Al menos una victoria en los primeros 4, 5 o 6 partidos</h3>'
+                      + render_table(["Liga", "V% previo A", "Primeros partidos", "Series", "Series con ≥1 V", "% ≥1 V"],
+                                     horizons, numeric_columns={2, 3, 4, 5})
+                      + '<h3>Condicionado al inicio sin victorias</h3>'
+                      + render_table(["Liga", "V% previo A", "Primeros sin ganar", "Restantes", "Series",
+                                      "Series con 0 V", "% sin ganar en 6", "% ≥1 V restante"],
+                                     conditioned, numeric_columns={2, 3, 4, 5, 6, 7})
+                      + '</details>')
+    return ('<section class="dashboard-section" id="h2h-win-gap-statistics">'
+            '<h2>Frecuencias según la diferencia de victorias entre A y B</h2>'
+            '<p class="section-subtitle">Diferencia = V% de A − V% de B en sus enfrentamientos anteriores '
+            'al comienzo de la serie. Las derrotas de A son las victorias de B; los empates cuentan en el total. '
+            'Ejemplo: A 42%, B 40% → +2 puntos porcentuales, equilibrados. '
+            f'Se exige un mínimo de {payload["minimum_prior"]} partidos previos. '
+            'Se usan las mismas series completas de seis encuentros y sesiones inferidas con pausas de más '
+            'de 90 minutos. Histórico detallado disponible, con cobertura parcial. '
+            'Los umbrales >35% y >40% se solapan. Cada dirección se analiza por separado; '
+            'muestras pequeñas pueden producir frecuencias poco estables.</p>'
+            + ''.join(blocks) + '</section>')
 
 
 def recent_h2h_row_class(rival):
