@@ -1879,6 +1879,12 @@ def render_recent_group_h2h_dashboard(data):
 def render_six_match_stats(payload):
     if payload is None:
         return ""
+    horizon_rows = [
+        [row["league"], f'> {row["threshold"]}%', row["horizon"], row["sample"], row["with_win"],
+         fmt_pct(row["win_pct"]) if row["sample"] else "Sin muestra",
+         fmt_pct(row["without_win_pct"]) if row["sample"] else "Sin muestra"]
+        for row in payload.get("horizons", [])
+    ]
     rows = [
         [row["league"], f'> {row["threshold"]}%', row["initial_without_win"],
          6 - row["initial_without_win"], row["sample"], row["zero_wins"],
@@ -1898,6 +1904,12 @@ def render_six_match_stats(payload):
         'Se excluyen series incompletas y se usa solo el histórico detallado, que puede tener cobertura parcial. '
         'Frecuencias observadas, no probabilidades garantizadas. Cada fila condiciona el resultado '
         'a que los primeros N partidos no hayan sido victorias.</p>'
+        + '<h3>Al menos una victoria en los primeros 4, 5 o 6 partidos</h3>'
+        + '<p class="section-subtitle">Sin condicionar a una secuencia inicial. Se comparan los primeros '
+        '4, 5 y 6 encuentros de las mismas series completas de seis partidos.</p>'
+        + render_table(["Liga", "V% previo", "Primeros partidos", "Series analizadas", "Series con ≥1 V",
+                        "% ≥1 victoria", "% sin victorias"], horizon_rows, numeric_columns={2, 3, 4, 5, 6})
+        + '<h3>Resultado condicionado a los primeros partidos sin ganar</h3>'
         + render_table(["Liga", "V% previo", "Primeros sin ganar", "Restantes", "Series analizadas",
                         "Series con 0 V en 6", "% sin ganar en 6", "% ≥1 V restante"],
                        rows, numeric_columns={2, 3, 4, 5, 6, 7})

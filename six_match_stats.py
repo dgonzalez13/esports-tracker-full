@@ -19,6 +19,7 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20):
         seen.add(key)
         players[key[:2]].append(row)
     counts = defaultdict(lambda: [[0, 0] for _ in range(6)])
+    horizons = defaultdict(lambda: [0, 0])
     complete = 0
     for (league, player), history in players.items():
         prior = defaultdict(list)
@@ -37,6 +38,10 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20):
                         for threshold in (35, 40):
                             if pct <= threshold:
                                 continue
+                            for horizon in (4, 5, 6):
+                                sample = horizons[(league, threshold, horizon)]
+                                sample[0] += 1
+                                sample[1] += "V" in sequence[:horizon]
                             for k in range(6):
                                 if "V" not in sequence[:k]:
                                     sample = counts[(league, threshold)][k]
@@ -44,6 +49,15 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20):
                                     sample[1] += "V" not in sequence
                 prior[rival].extend(matches)
     return {"minimum_prior": minimum_prior, "complete_series": complete,
+            "horizons": [
+                {"league": league, "threshold": threshold, "horizon": horizon,
+                 "sample": sample, "with_win": wins,
+                 "win_pct": wins / sample * 100 if sample else None,
+                 "without_win_pct": (sample - wins) / sample * 100 if sample else None}
+                for league in sorted({key[0] for key in players})
+                for threshold in (35, 40) for horizon in (4, 5, 6)
+                for sample, wins in [horizons[(league, threshold, horizon)]]
+            ],
             "rows": [
                 {"league": league, "threshold": threshold, "initial_without_win": k,
                  "sample": sample, "zero_wins": zero,

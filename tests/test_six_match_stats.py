@@ -6,6 +6,17 @@ from web_tracker.generate_site import render_six_match_stats
 
 
 class SixMatchTests(unittest.TestCase):
+    def test_first_four_five_six_use_prefix_not_later_victories(self):
+        reference = datetime(2026, 9, 3, tzinfo=timezone.utc)
+        for sequence, expected in [("DDDDVD", [0, 100, 100]), ("DDDDDV", [0, 0, 100]),
+                                   ("DDDVDD", [100, 100, 100])]:
+            result = calculate_six_match_stats(self.history(sequence=sequence), reference)
+            rows = [r for r in result["horizons"] if r["threshold"] == 40]
+            self.assertEqual([r["win_pct"] for r in rows], expected)
+            self.assertTrue(all(r["sample"] == 1 for r in rows))
+            self.assertEqual([r["without_win_pct"] for r in rows], [100 - v for v in expected])
+            self.assertIn("primeros 4, 5 o 6 partidos", render_six_match_stats(result))
+
     def history(self, wins=9, sequence="DEDEDD"):
         start = datetime(2026, 9, 1, tzinfo=timezone.utc)
         records = [perspective(i, "V" if i < wins else "D",
