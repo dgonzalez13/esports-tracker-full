@@ -9,6 +9,16 @@ from web_tracker.generate_site import render_recent_group_h2h_dashboard
 
 
 class ExclusionTests(unittest.TestCase):
+    def test_manual_format_without_member_list(self):
+        path = Path(__file__).resolve().parent / ('.h2h-' + uuid.uuid4().hex + '.txt')
+        try:
+            directive = dict(league='GT', group=1, player='A', rival='B')
+            path.write_text('GT|A\nGT|B\nGT|C\nGT|D\nGT|E\n' + PREFIX + json.dumps(directive) + '\n', encoding='utf-8')
+            self.assertEqual(load_h2h_exclusions(path), {('GT', 'a', 'b')})
+            self.assertEqual(len(load_tracked_players(path)), 5)
+        finally:
+            path.unlink(missing_ok=True)
+
     def test_direction_persistence_and_group_update_cleanup(self):
         path = Path(__file__).resolve().parent / ('.h2h-' + uuid.uuid4().hex + '.txt')
         try:

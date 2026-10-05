@@ -22,7 +22,7 @@ class RecentGroupH2HTests(unittest.TestCase):
         self.assertEqual(row["played"], 1)
         html = render_recent_group_h2h(group)
         self.assertIn("31.14%", html)
-        self.assertIn('<tr class="recent-h2h-blue">', html)
+        self.assertNotIn('<tr class="recent-h2h-blue">', html)
         self.assertNotIn('<tr class="recent-h2h-green">', html)
 
     def test_standalone_block_above_coincident_matches_without_duplicate(self):
@@ -41,7 +41,8 @@ class RecentGroupH2HTests(unittest.TestCase):
                     "played": 3, "sequence": "DED", "next_match": stamp}
         group = {"label": "Grupo 1", "recent_h2h": {"players": [{"player": "A", "rivals": [
             rival("Unknown", 40), rival("Late", 36, stamp="2026-10-01T14:00:00Z"),
-            rival("Early", 30, stamp="2026-10-01T12:00:00Z"),
+            rival("Early", 40, stamp="2026-10-01T12:00:00Z"),
+            rival("FormerBlue", 35, stamp="2026-10-01T11:00:00Z"),
             rival("HasWin", 40, wins=1), rival("LowPct", 29),
         ]}]}}
         html = render_recent_group_h2h_dashboard({"leagues": {"GT": {"groups": [group]}}})
@@ -49,8 +50,9 @@ class RecentGroupH2HTests(unittest.TestCase):
         self.assertLess(html.index('Late'), html.index('Unknown'))
         self.assertNotIn('HasWin', html)
         self.assertNotIn('LowPct', html)
-        self.assertEqual(html.count('<tr class="recent-h2h-green">'), 2)
-        self.assertEqual(html.count('<tr class="recent-h2h-blue">'), 1)
+        self.assertNotIn('FormerBlue', html)
+        self.assertEqual(html.count('<tr class="recent-h2h-green">'), 3)
+        self.assertEqual(html.count('<tr class="recent-h2h-blue">'), 0)
 
     def test_next_fixture_is_earliest_scheduled_pair_in_same_league(self):
         group = {"target": ["David", "Fox", "C"]}
@@ -104,7 +106,7 @@ class RecentGroupH2HTests(unittest.TestCase):
             "start": "start", "end": "end", "players": [{"player": "A", "rivals": rivals}]
         }})
         self.assertEqual(html.count('<tr class="recent-h2h-green">'), 1)
-        self.assertEqual(html.count('<tr class="recent-h2h-blue">'), 2)
+        self.assertEqual(html.count('<tr class="recent-h2h-blue">'), 0)
 
     def test_time_bounds_direction_league_and_empty_rivals(self):
         group = {"target": ["David", "Fox", "C", "D", "E"]}

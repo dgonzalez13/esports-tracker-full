@@ -21,7 +21,7 @@ from current_streaks_v2 import (
 from history_query import load_all_history, filter_by_time
 from h2h_analysis import calculate_h2h_stats
 from six_match_stats import calculate_six_match_stats, gap_band, GAP_LABELS
-from h2h_exclusions import load_h2h_exclusions, group_metadata
+from h2h_exclusions import load_h2h_exclusions
 from streak_break_stats import build_streak_statistics
 from web_tracker.streak_statistics import render_streak_statistics
 from match_history import name_key
@@ -742,11 +742,7 @@ summary {
 }
 .streak-group-shaded { background: #eef4f8; }
 .recent-h2h-green td { background: #dcfce7; color: #14532d; }
-.recent-h2h-blue td { background: #dbeafe; color: #1e3a8a; }
 #recent-group-h2h tr[hidden] { display: none; }
-.exclude-h2h { padding: 2px 7px; cursor: pointer; border: 1px solid #cbd5e1; border-radius: 4px; }
-dialog { max-width: 480px; border: 1px solid #cbd5e1; border-radius: 8px; }
-dialog input { display: block; width: 95%; margin: 8px 0; }
 .coincident-collapsed > summary { cursor: pointer; }
 .coincident-collapsed > summary h2 { display: inline; }
 .upcoming-filters { display: flex; flex-wrap: wrap; gap: 8px 12px; font-size: 12px; }
@@ -1853,20 +1849,14 @@ def render_recent_group_h2h_dashboard(data):
         [league, player, rival["rival"], rival["played"],
          fmt_pct(rival["historical_win_pct"]), rival["sequence"] or "Sin partidos", next_group_match_label(rival)]
         + matchup_win_estimates(league, rival, probability_lookup,
-                                data.get("six_match_stats", {}).get("minimum_prior", 20)) + [""]
+                                data.get("six_match_stats", {}).get("minimum_prior", 20))
         for league, label, player, rival, color in selected
     ]
-    directives = []
-    for league, label, player, rival, color in selected:
-        metadata = next((g for g in data.get("h2h_groups", [])
-                         if g["league"] == league and player in g["members"] and rival["rival"] in g["members"]), None)
-        directives.append(dict(metadata or {"league": league, "group": 1, "members": [player, rival["rival"]]},
-                               player=player, rival=rival["rival"]))
     return (
         '<section class="dashboard-section" id="recent-group-h2h">'
         '<div class="section-head"><h2>Enfrentamientos destacados — últimas 8 horas</h2></div>'
-        '<p class="section-subtitle">Filas verdes y azules: sin victorias en las últimas 8 horas '
-        'y al menos un 30% de victorias histórico. Horario de Madrid. Ordenadas por hora de comienzo; sin horario al final. '
+        '<p class="section-subtitle">Filas verdes: sin victorias en las últimas 8 horas '
+        'y más de un 35% de victorias histórico. Horario de Madrid. Ordenadas por hora de comienzo; sin horario al final. '
         'Los partidos iniciados sin resultado confirmado siguen visibles; el calendario no confirma si continúan en juego.</p>'
         '<p class="section-subtitle">Estimaciones: ≥1 victoria desde ahora hasta completar 4, 5 o 6 partidos, '
         'comparando liga, umbral previo de A y diferencia A−B al inicio del tramo sin ganar. '
@@ -1877,7 +1867,7 @@ def render_recent_group_h2h_dashboard(data):
         '<label><input type="checkbox" id="h2h-hide-one"> Ocultar 1 partido (8h)</label>'
         '</div>'
         + (render_table(["Liga", "Jugador", "Rival", "Partidos (8h)", "V% (total)",
-                         "Secuencia (8h)", "Próximo partido", "≥1 V hasta 4", "≥1 V hasta 5", "≥1 V hasta 6", ""], rows,
+                         "Secuencia (8h)", "Próximo partido", "≥1 V hasta 4", "≥1 V hasta 5", "≥1 V hasta 6"], rows,
                         numeric_columns={3, 4, 7, 8, 9}, row_classes=[item[4] for item in selected])
            if rows else '<p class="section-subtitle">No hay enfrentamientos destacados.</p>')
         + '<p class="section-subtitle" id="h2h-filter-empty" hidden>No hay enfrentamientos que coincidan con estos filtros.</p>'
@@ -1899,9 +1889,6 @@ def render_recent_group_h2h_dashboard(data):
         'one.addEventListener("change", update);'
         'update();'
         '})();</script>'
-        + '<script type="application/json" id="h2h-exclusion-entries">'
-        + json.dumps(directives, ensure_ascii=False).replace('<', '\\u003c') + '</script><script>'
-        + (BASE / "web_tracker" / "h2h_exclusions.js").read_text(encoding="utf-8") + '</script>'
     )
 
 
@@ -2008,8 +1995,6 @@ def recent_h2h_row_class(rival):
     if rival["wins"] == 0:
         if pct > 35:
             return "recent-h2h-green"
-        if 30 <= pct <= 35:
-            return "recent-h2h-blue"
     return ""
 
 
@@ -2121,8 +2106,6 @@ def write_html(html):
 def main():
     group_analysis = load_group_analysis()
     group_analysis["h2h_exclusions"] = sorted(load_h2h_exclusions(TRACKED_PLAYERS_FILE))
-    group_analysis["h2h_groups"] = [dict(league=league, group=index, members=members)
-                                  for (league, index), members in group_metadata(TRACKED_PLAYERS_FILE).items()]
     tracked_players = load_tracked_players(TRACKED_PLAYERS_FILE)
     coincident_config = load_coincident_config(TRACKED_PLAYERS_FILE)
     records = load_all_history()

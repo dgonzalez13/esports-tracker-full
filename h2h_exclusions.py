@@ -13,7 +13,7 @@ def parse_exclusion(line):
     value = json.loads(line.strip()[len(PREFIX):])
     if (value.get("league") not in {"GT", "EADRIATIC"} or type(value.get("group")) is not int
             or value["group"] < 1 or not value.get("player") or not value.get("rival")
-            or not isinstance(value.get("members"), list) or not value["members"]):
+            or ("members" in value and (not isinstance(value["members"], list) or not value["members"]))):
         raise ValueError("invalid H2H exclusion")
     return value
 
@@ -34,6 +34,10 @@ def load_h2h_exclusions(path):
         if entry is None:
             continue
         members = groups.get((entry["league"], entry["group"]), [])
-        if sorted(name_key(p) for p in members if p) == sorted(name_key(p) for p in entry["members"] if p):
+        keys = {name_key(p) for p in members if p}
+        player, rival = name_key(entry["player"]), name_key(entry["rival"])
+        if player == rival or not {player, rival}.issubset(keys):
+            continue
+        if "members" not in entry or sorted(keys) == sorted(name_key(p) for p in entry["members"] if p):
             excluded.add((entry["league"], name_key(entry["player"]), name_key(entry["rival"])))
     return excluded
