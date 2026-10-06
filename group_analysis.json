@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "analysis_scope": "historical TXT; h2h_alerts are operational JSONL-filtered",
-  "generated_at": "06/10/2026 11:08:14 CEST",
+  "generated_at": "06/10/2026 11:12:01 CEST",
   "league": "EADRIATIC",
   "files_count": 144,
   "data_from": "20260516",
@@ -677,7 +677,7 @@
         "Oliver",
         "Alexander"
       ],
-      "target_repr": "{'Oliver', 'Flash', 'Leonardo', 'Alexander', 'Noah'}",
+      "target_repr": "{'Noah', 'Leonardo', 'Oliver', 'Alexander', 'Flash'}",
       "h2h_keys": [
         "Oliver",
         "Flash",
@@ -798,18 +798,13 @@
         {
           "position": 5,
           "player": "Alexander",
-          "score": -109.75367712209817
+          "score": -109.75367712209818
         }
       ],
       "dominance": [
         {
-          "player": "Oliver",
-          "wins": 0,
-          "rivals": 4
-        },
-        {
-          "player": "Flash",
-          "wins": 3,
+          "player": "Noah",
+          "wins": 2,
           "rivals": 4
         },
         {
@@ -818,13 +813,18 @@
           "rivals": 4
         },
         {
+          "player": "Oliver",
+          "wins": 0,
+          "rivals": 4
+        },
+        {
           "player": "Alexander",
           "wins": 0,
           "rivals": 4
         },
         {
-          "player": "Noah",
-          "wins": 2,
+          "player": "Flash",
+          "wins": 3,
           "rivals": 4
         }
       ],
@@ -1487,10 +1487,10 @@
         "VanGogh",
         "Beckham"
       ],
-      "target_repr": "{'Spartan', 'VanGogh', 'Donatello', 'Beckham', 'Cezar'}",
+      "target_repr": "{'Spartan', 'Donatello', 'Cezar', 'Beckham', 'VanGogh'}",
       "h2h_keys": [
-        "VanGogh",
         "Beckham",
+        "VanGogh",
         "Donatello",
         "Cezar",
         "Spartan"
@@ -1610,13 +1610,13 @@
           "rivals": 4
         },
         {
-          "player": "VanGogh",
-          "wins": 0,
+          "player": "Donatello",
+          "wins": 4,
           "rivals": 4
         },
         {
-          "player": "Donatello",
-          "wins": 4,
+          "player": "Cezar",
+          "wins": 1,
           "rivals": 4
         },
         {
@@ -1625,8 +1625,8 @@
           "rivals": 4
         },
         {
-          "player": "Cezar",
-          "wins": 1,
+          "player": "VanGogh",
+          "wins": 0,
           "rivals": 4
         }
       ],
@@ -2901,12 +2901,12 @@
             "Peter",
             "Alpha"
           ],
-          "target_repr": "{'Thug', 'Troy', 'Alpha', 'Lost', 'Peter'}",
+          "target_repr": "{'Lost', 'Peter', 'Thug', 'Alpha', 'Troy'}",
           "h2h_keys": [
-            "Thug",
-            "Troy",
-            "Alpha",
             "Peter",
+            "Thug",
+            "Alpha",
+            "Troy",
             "Lost"
           ],
           "coincidencias_5": 1,
@@ -3017,7 +3017,7 @@
             {
               "position": 4,
               "player": "Troy",
-              "score": -50.009765170890475
+              "score": -50.00976517089049
             },
             {
               "position": 5,
@@ -3027,13 +3027,18 @@
           ],
           "dominance": [
             {
-              "player": "Thug",
-              "wins": 3,
+              "player": "Lost",
+              "wins": 1,
               "rivals": 4
             },
             {
-              "player": "Troy",
-              "wins": 1,
+              "player": "Peter",
+              "wins": 0,
+              "rivals": 4
+            },
+            {
+              "player": "Thug",
+              "wins": 3,
               "rivals": 4
             },
             {
@@ -3042,13 +3047,8 @@
               "rivals": 4
             },
             {
-              "player": "Lost",
+              "player": "Troy",
               "wins": 1,
-              "rivals": 4
-            },
-            {
-              "player": "Peter",
-              "wins": 0,
               "rivals": 4
             }
           ],
@@ -3162,14 +3162,14 @@
               "weighted_score": 0.0,
               "worst_matchups": [
                 {
+                  "rival": "Lost",
+                  "win_pct": 0.0,
+                  "matches": 6
+                },
+                {
                   "rival": "Thug",
                   "win_pct": 0.0,
                   "matches": 18
-                },
-                {
-                  "rival": "Troy",
-                  "win_pct": 0.0,
-                  "matches": 17
                 },
                 {
                   "rival": "Alpha",
@@ -3178,6 +3178,21 @@
                 }
               ],
               "worst_matchup_details": [
+                {
+                  "rival": "Lost",
+                  "W": 0,
+                  "D": 0,
+                  "L": 6,
+                  "matches": 6,
+                  "win_pct": 0.0,
+                  "draw_pct": 0.0,
+                  "loss_pct": 100.0,
+                  "seq": "DDDDDD",
+                  "last5": "DDDDD",
+                  "last10": "DDDDDD",
+                  "stk_win": 0,
+                  "stk_lose": 0
+                },
                 {
                   "rival": "Thug",
                   "W": 0,
@@ -3190,21 +3205,6 @@
                   "seq": "DDDDDDDDDDDDDDDDDD",
                   "last5": "DDDDD",
                   "last10": "DDDDDDDDDD",
-                  "stk_win": 0,
-                  "stk_lose": 0
-                },
-                {
-                  "rival": "Troy",
-                  "W": 0,
-                  "D": 2,
-                  "L": 15,
-                  "matches": 17,
-                  "win_pct": 0.0,
-                  "draw_pct": 11.76470588235294,
-                  "loss_pct": 88.23529411764706,
-                  "seq": "EDDDDDDDDDDDDDDED",
-                  "last5": "DDDED",
-                  "last10": "DDDDDDDDED",
                   "stk_win": 0,
                   "stk_lose": 0
                 },
@@ -3711,7 +3711,7 @@
             "Fox",
             "David"
           ],
-          "target_repr": "{'David', 'Fox', 'Dusan', 'Crysis', 'Banega'}",
+          "target_repr": "{'Dusan', 'Fox', 'David', 'Crysis', 'Banega'}",
           "h2h_keys": [
             "Crysis",
             "Banega",
@@ -3837,8 +3837,8 @@
           ],
           "dominance": [
             {
-              "player": "David",
-              "wins": 1,
+              "player": "Dusan",
+              "wins": 0,
               "rivals": 4
             },
             {
@@ -3847,8 +3847,8 @@
               "rivals": 4
             },
             {
-              "player": "Dusan",
-              "wins": 0,
+              "player": "David",
+              "wins": 1,
               "rivals": 4
             },
             {
@@ -5190,7 +5190,7 @@
             "Oliver",
             "Alexander"
           ],
-          "target_repr": "{'Oliver', 'Flash', 'Leonardo', 'Alexander', 'Noah'}",
+          "target_repr": "{'Noah', 'Leonardo', 'Oliver', 'Alexander', 'Flash'}",
           "h2h_keys": [
             "Oliver",
             "Flash",
@@ -5311,18 +5311,13 @@
             {
               "position": 5,
               "player": "Alexander",
-              "score": -109.75367712209817
+              "score": -109.75367712209818
             }
           ],
           "dominance": [
             {
-              "player": "Oliver",
-              "wins": 0,
-              "rivals": 4
-            },
-            {
-              "player": "Flash",
-              "wins": 3,
+              "player": "Noah",
+              "wins": 2,
               "rivals": 4
             },
             {
@@ -5331,13 +5326,18 @@
               "rivals": 4
             },
             {
+              "player": "Oliver",
+              "wins": 0,
+              "rivals": 4
+            },
+            {
               "player": "Alexander",
               "wins": 0,
               "rivals": 4
             },
             {
-              "player": "Noah",
-              "wins": 2,
+              "player": "Flash",
+              "wins": 3,
               "rivals": 4
             }
           ],
@@ -6000,10 +6000,10 @@
             "VanGogh",
             "Beckham"
           ],
-          "target_repr": "{'Spartan', 'VanGogh', 'Donatello', 'Beckham', 'Cezar'}",
+          "target_repr": "{'Spartan', 'Donatello', 'Cezar', 'Beckham', 'VanGogh'}",
           "h2h_keys": [
-            "VanGogh",
             "Beckham",
+            "VanGogh",
             "Donatello",
             "Cezar",
             "Spartan"
@@ -6123,13 +6123,13 @@
               "rivals": 4
             },
             {
-              "player": "VanGogh",
-              "wins": 0,
+              "player": "Donatello",
+              "wins": 4,
               "rivals": 4
             },
             {
-              "player": "Donatello",
-              "wins": 4,
+              "player": "Cezar",
+              "wins": 1,
               "rivals": 4
             },
             {
@@ -6138,8 +6138,8 @@
               "rivals": 4
             },
             {
-              "player": "Cezar",
-              "wins": 1,
+              "player": "VanGogh",
+              "wins": 0,
               "rivals": 4
             }
           ],
