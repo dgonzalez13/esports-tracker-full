@@ -26,7 +26,7 @@ class RepeatWinTests(unittest.TestCase):
         self.assertNotIn('<td>A</td>', render_active_repeat_matches(data))
 
     def test_active_pairs_require_one_win_in_first_two_and_incomplete_series(self):
-        for sequence, included in [('V', True), ('DV', True), ('VDDD', True), ('EVDDD', True),
+        for sequence, included in [('V', False), ('VD', True), ('DV', True), ('VDDD', True), ('EVDDD', True),
                                    ('VV', False), ('DDV', False), ('VDDDDD', False), ('DD', False)]:
             rival = dict(rival='B', sequence=sequence, historical_played=30+len(sequence), historical_wins=15+sequence.count('V'))
             data = {'leagues': {'GT': {'groups': [{'recent_h2h': {'players': [{'player': 'A', 'rivals': [rival]}]}}]}}}

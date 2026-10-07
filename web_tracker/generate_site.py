@@ -2013,7 +2013,7 @@ def render_active_repeat_matches(data):
                     if (league, a, b) in excluded or ('bettable_keys' in data and ((league, a) not in bettable or (league, b) not in bettable)):
                         continue
                     sequence = rival.get('sequence', '')
-                    if not 1 <= len(sequence) < 6 or sequence.count('V') != 1 or sequence.index('V') not in (0, 1):
+                    if not 2 <= len(sequence) < 6 or sequence.count('V') != 1 or sequence.index('V') not in (0, 1):
                         continue
                     played = len(sequence)
                     prior = rival.get('historical_played', 0) - played
@@ -2033,7 +2033,7 @@ def render_active_repeat_matches(data):
     selected.sort(key=lambda r: (datetime.fromisoformat(r[0]) if r[0] else datetime.max.replace(tzinfo=timezone.utc), r[1][:3]))
     return ('<section class="dashboard-section" id="active-repeat-matches">'
             '<h2>Repetir victoria · parejas de los grupos actuales</h2>'
-            '<p class="section-subtitle">Una única victoria, en el primer o segundo encuentro, y menos de seis '
+            '<p class="section-subtitle">Una única victoria, en el primer o segundo encuentro, y entre dos y cinco '
             'partidos disputados. Se asume que la secuencia de las últimas 8 horas es el inicio de la serie. '
             'V% previo descuenta del histórico los partidos de esa secuencia. Las muestras comparables tienen '
             'el mismo rango previo, liga, posición de la victoria y número de partidos disputados, '
