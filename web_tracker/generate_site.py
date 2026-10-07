@@ -22,6 +22,7 @@ from history_query import load_all_history, filter_by_time
 from h2h_analysis import calculate_h2h_stats
 from six_match_stats import calculate_six_match_stats, gap_band, GAP_LABELS
 from h2h_exclusions import load_h2h_exclusions, load_h2h_min_gap
+from team_analysis import calculate_team_stats
 from streak_break_stats import build_streak_statistics
 from web_tracker.streak_statistics import render_streak_statistics
 from match_history import name_key
@@ -305,6 +306,7 @@ def render_page(data, current_streaks, coincident_pairs=None, current_streaks_v2
     {render_upcoming_matches(schedule or {})}
     {render_recent_group_h2h_dashboard(data)}
     {render_gap_match_stats(data.get("six_match_stats"))}
+    {render_team_statistics(data.get("team_stats", []))}
     {render_coincident_matches(coincident_pairs if coincident_pairs is not None else [], current_streaks_v2 or {})}
     {render_group_dashboard(data, current_streaks)}
 </main>
@@ -743,6 +745,7 @@ summary {
 .streak-group-shaded { background: #eef4f8; }
 .recent-h2h-green td { background: #dcfce7; color: #14532d; }
 #recent-group-h2h tr[hidden] { display: none; }
+#team-statistics tr[hidden] { display: none; }
 .coincident-collapsed > summary { cursor: pointer; }
 .coincident-collapsed > summary h2 { display: inline; }
 .upcoming-filters { display: flex; flex-wrap: wrap; gap: 8px 12px; font-size: 12px; }
@@ -1993,6 +1996,34 @@ def render_gap_match_stats(payload):
             + ''.join(blocks) + '</section>')
 
 
+def render_team_statistics(stats):
+    rows = [[r['league'], r['player'], r['player_team'], r['rival'], r['rival_team'],
+             r['played'], r['wins'], r['draws'], r['losses'], fmt_pct(r['wins_pct']),
+             fmt_pct(r['draws_pct']), fmt_pct(r['losses_pct'])] for r in stats]
+    return (
+        '<section class="dashboard-section" id="team-statistics"><details>'
+        '<summary><h2>Estadísticas por jugadores y equipos</h2></summary>'
+        '<p class="section-subtitle">V/E/D desde la perspectiva del primer jugador. '
+        'Solo partidos finalizados con los equipos de ambos jugadores registrados; '
+        'los partidos antiguos sin equipos no se incluyen. Cada combinación y su dirección se cuentan por separado. '
+        'Ordenados por número de encuentros. Una muestra pequeña puede dar porcentajes poco estables.</p>'
+        '<label>Buscar jugador, rival, equipo o liga <input type="search" id="team-stats-search"></label>'
+        + (render_table(['Liga', 'Jugador A', 'Equipo A', 'Jugador B', 'Equipo B', 'Partidos', 'V', 'E', 'D', 'V%', 'E%', 'D%'],
+                        rows, numeric_columns={5, 6, 7, 8, 9, 10, 11}) if rows else
+           '<p class="section-subtitle">Todavía no hay partidos con ambos equipos registrados.</p>')
+        + '<p id="team-stats-empty" hidden>No hay combinaciones para esta búsqueda.</p>'
+        '</details></section><script>(() => {'
+        'const section = document.getElementById("team-statistics");'
+        'const rows = [...section.querySelectorAll("tbody tr")];'
+        'section.querySelector("input").addEventListener("input", event => {'
+        'const terms = event.target.value.trim().toLocaleLowerCase().split(/\\s+/).filter(Boolean);'
+        'for (const row of rows) { const value = row.textContent.toLocaleLowerCase();'
+        'row.hidden = !terms.every(term => value.includes(term)); }'
+        'section.querySelector("#team-stats-empty").hidden = !rows.length || rows.some(row => !row.hidden);'
+        '});})();</script>'
+    )
+
+
 def recent_h2h_row_class(rival, minimum_gap=-10):
     pct = rival["historical_win_pct"]
     total = rival.get("historical_played", 0)
@@ -2122,6 +2153,7 @@ def main():
     excluded_keys = excluded_player_keys(tracked_players)
     current_streaks = load_current_streaks(tracked_players, records)
     reference_time = datetime.now(timezone.utc)
+    group_analysis['team_stats'] = calculate_team_stats(records, reference_time)
     group_analysis["six_match_stats"] = calculate_six_match_stats(records, reference_time)
     schedule = load_schedule()
     attach_recent_group_h2h(group_analysis, records, reference_time, schedule)

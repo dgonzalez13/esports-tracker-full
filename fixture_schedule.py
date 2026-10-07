@@ -9,6 +9,7 @@ import requests
 from eadriatic_leagues import fetch_eadriatic_html, parse_history_records
 from gtleagues_api import BASE_URL, HEADERS, build_history_records, format_date, parse_gt_timestamp
 from match_history import clean_name, name_key
+from team_analysis import gt_team
 
 SCHEDULE_PATH = Path(__file__).resolve().parent / "fixture_schedule.json"
 
@@ -32,11 +33,15 @@ def parse_gt_fixtures(matches):
                 continue
         except (KeyError, TypeError, ValueError, StopIteration):
             continue
-        for player, rival in (players, players[::-1]):
+        participants = {p['side']: p for p in match['participants'] if p.get('side') in {'home', 'away'}}
+        teams = [gt_team(participants[side]) for side in ('home', 'away')]
+        for index, (player, rival) in enumerate((players, players[::-1])):
             records.append({
                 "league": "GT", "match_id": f"gt:{native_id}",
                 "player": player, "player_key": name_key(player),
                 "rival": rival, "rival_key": name_key(rival),
+                "player_team": teams[index][0], "rival_team": teams[1-index][0],
+                "player_team_id": teams[index][1], "rival_team_id": teams[1-index][1],
                 "timestamp_utc": stamp, "result": None,
                 "fixture_status": "scheduled" if match.get("status") == 0 else "unknown",
             })
@@ -80,7 +85,8 @@ def refresh_schedule(path=SCHEDULE_PATH, reference=None):
     for league, collect in collectors.items():
         try:
             fields = ("league", "match_id", "player", "player_key", "rival", "rival_key",
-                      "timestamp_utc", "result", "fixture_status")
+                      "timestamp_utc", "result", "fixture_status", "player_team", "rival_team",
+                      "player_team_id", "rival_team_id")
             sources[league] = {"updated_at": stamp, "records": [
                 {key: row.get(key) for key in fields} for row in collect()]}
             print(f'{league}: {len(sources[league]["records"])} calendar perspectives')

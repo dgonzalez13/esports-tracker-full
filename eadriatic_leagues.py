@@ -375,6 +375,12 @@ def parse_history_records(html, source_file, collected_at=None, *, include_sched
             common["collected_at"] = collected_at
 
         pair = []
+        teams = {
+            side: clean_name(value) if value else None
+            for side, value in (
+                ('home', cols[0].get_text(' ', strip=True).rsplit('(', 1)[0].strip()),
+                ('away', cols[2].get_text(' ', strip=True).rsplit('(', 1)[0].strip()))
+        }
         for player, rival, home_away, result in (
             (home_player, away_player, "home", home_result),
             (away_player, home_player, "away", away_result),
@@ -388,6 +394,8 @@ def parse_history_records(html, source_file, collected_at=None, *, include_sched
                 "rival_key": name_key(rival),
                 "result": result,
                 "home_away": home_away,
+                "player_team": teams[home_away],
+                "rival_team": teams['away' if home_away == 'home' else 'home'],
             })
 
         if score_match:

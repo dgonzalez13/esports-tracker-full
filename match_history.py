@@ -83,6 +83,9 @@ def validate_perspective_pair(records):
         raise MatchHistoryError("perspective results are not symmetric with the score")
     if home.get("player_key") != away.get("rival_key") or away.get("player_key") != home.get("rival_key"):
         raise MatchHistoryError("perspective players and rivals are not symmetric")
+    for player_field, rival_field in (("player_team", "rival_team"), ("player_team_id", "rival_team_id")):
+        if home.get(player_field) != away.get(rival_field) or away.get(player_field) != home.get(rival_field):
+            raise MatchHistoryError("perspective teams are not symmetric")
 
 
 def _parse_aware_timestamp(value, field, require_z=False):

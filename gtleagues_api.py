@@ -6,6 +6,7 @@ import os
 import sys
 from pathlib import Path
 import re
+from team_analysis import gt_team
 
 from match_history import (
     SCHEMA_VERSION,
@@ -155,6 +156,7 @@ def build_history_records(matches, source_file):
             "data_quality": "inferred" if inferred else "complete",
         }
         pair = []
+        teams = {'home': gt_team(home), 'away': gt_team(away)}
         for player, rival, home_away, result in (
             (home_player, away_player, "home", home_result),
             (away_player, home_player, "away", away_result),
@@ -168,6 +170,10 @@ def build_history_records(matches, source_file):
                 "rival_key": name_key(rival),
                 "result": result,
                 "home_away": home_away,
+                "player_team": teams[home_away][0],
+                "rival_team": teams['away' if home_away == 'home' else 'home'][0],
+                "player_team_id": teams[home_away][1],
+                "rival_team_id": teams['away' if home_away == 'home' else 'home'][1],
             })
         validate_perspective_pair(pair)
         records.extend(pair)
