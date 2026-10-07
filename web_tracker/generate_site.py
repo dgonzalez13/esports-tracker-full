@@ -20,7 +20,7 @@ from current_streaks_v2 import (
 )
 from history_query import load_all_history, filter_by_time
 from h2h_analysis import calculate_h2h_stats
-from six_match_stats import calculate_six_match_stats, gap_band, GAP_LABELS
+from six_match_stats import calculate_six_match_stats, gap_band, GAP_LABELS, REPEAT_BANDS
 from h2h_exclusions import load_h2h_exclusions, load_h2h_min_gap
 from team_analysis import calculate_team_stats
 from streak_break_stats import build_streak_statistics
@@ -305,6 +305,7 @@ def render_page(data, current_streaks, coincident_pairs=None, current_streaks_v2
     {render_streak_statistics(streak_statistics)}
     {render_upcoming_matches(schedule or {})}
     {render_recent_group_h2h_dashboard(data)}
+    {render_active_repeat_matches(data)}
     {render_gap_match_stats(data.get("six_match_stats"))}
     {render_repeat_win_stats(data.get("six_match_stats"))}
     {render_team_statistics(data.get("team_stats", []))}
@@ -1997,6 +1998,55 @@ def render_gap_match_stats(payload):
             + ''.join(blocks) + '</section>')
 
 
+def render_active_repeat_matches(data):
+    stats = data.get('six_match_stats', {})
+    lookup = {(r['league'], r['band'], r['win_position'], r['played']): r
+              for r in stats.get('active_repeat_rows', [])}
+    excluded = {tuple(r) for r in data.get('h2h_exclusions', [])}
+    bettable = {tuple(r) for r in data.get('bettable_keys', [])}
+    selected = []
+    for league, payload in data.get('leagues', {}).items():
+        for group in payload.get('groups', []):
+            for player in group.get('recent_h2h', {}).get('players', []):
+                for rival in player['rivals']:
+                    a, b = name_key(player['player']), name_key(rival['rival'])
+                    if (league, a, b) in excluded or ('bettable_keys' in data and ((league, a) not in bettable or (league, b) not in bettable)):
+                        continue
+                    sequence = rival.get('sequence', '')
+                    if not 1 <= len(sequence) < 6 or sequence.count('V') != 1 or sequence.index('V') not in (0, 1):
+                        continue
+                    played = len(sequence)
+                    prior = rival.get('historical_played', 0) - played
+                    wins = rival.get('historical_wins', 0) - 1
+                    if prior < stats.get('minimum_prior', 20) or wins < 0:
+                        continue
+                    pct = wins / prior * 100
+                    if pct < 30:
+                        continue
+                    band = REPEAT_BANDS[0 if pct > 40 else 1 if pct >= 35 else 2]
+                    position = sequence.index('V') + 1
+                    sample = lookup.get((league, band, position, played))
+                    values = [fmt_pct(sample[field]) if sample and sample['sample'] and sample[field] is not None else '—'
+                              for field in ('next_win_pct', 'repeat_by_4_pct', 'repeat_by_5_pct', 'repeat_by_6_pct')]
+                    selected.append((rival.get('next_match'), [league, player['player'], rival['rival'], fmt_pct(pct),
+                        band, sequence, position, next_group_match_label(rival), sample['sample'] if sample else 0, *values]))
+    selected.sort(key=lambda r: (datetime.fromisoformat(r[0]) if r[0] else datetime.max.replace(tzinfo=timezone.utc), r[1][:3]))
+    return ('<section class="dashboard-section" id="active-repeat-matches">'
+            '<h2>Repetir victoria · parejas de los grupos actuales</h2>'
+            '<p class="section-subtitle">Una única victoria, en el primer o segundo encuentro, y menos de seis '
+            'partidos disputados. Se asume que la secuencia de las últimas 8 horas es el inicio de la serie. '
+            'V% previo descuenta del histórico los partidos de esa secuencia. Las muestras comparables tienen '
+            'el mismo rango previo, liga, posición de la victoria y número de partidos disputados, '
+            'sin ninguna segunda victoria hasta ese momento. Los porcentajes corresponden a partidos posteriores '
+            'al último disputado. — indica horizonte agotado o sin muestra. Horario de Madrid.</p>'
+            + (render_table(['Liga', 'Jugador A', 'Rival B', 'V% previo', 'Rango', 'Secuencia (8h)', 'V en partido',
+                            'Próximo partido', 'Series comparables', '% V siguiente', '% otra V hasta 4',
+                            '% otra V hasta 5', '% otra V hasta 6'], [r[1] for r in selected],
+                           numeric_columns={3, 6, 8, 9, 10, 11, 12}) if selected else
+               '<p class="section-subtitle">No hay parejas actuales con una única victoria inicial que cumplan los criterios.</p>')
+            + '</section>')
+
+
 def render_repeat_win_stats(payload):
     if payload is None:
         return ""
@@ -2177,6 +2227,7 @@ def main():
     group_analysis["h2h_exclusions"] = sorted(load_h2h_exclusions(TRACKED_PLAYERS_FILE))
     group_analysis["h2h_min_gap"] = load_h2h_min_gap(TRACKED_PLAYERS_FILE)
     tracked_players = load_tracked_players(TRACKED_PLAYERS_FILE)
+    group_analysis['bettable_keys'] = sorted(bettable_player_keys(tracked_players))
     coincident_config = load_coincident_config(TRACKED_PLAYERS_FILE)
     records = load_all_history()
     excluded_keys = excluded_player_keys(tracked_players)

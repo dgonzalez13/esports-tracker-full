@@ -36,6 +36,7 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20):
     gap_horizons = defaultdict(lambda: [0, 0])
     conditional_horizons = defaultdict(lambda: [0, 0])
     repeat_counts = defaultdict(lambda: [0, 0, 0, 0, 0])
+    active_repeat = defaultdict(lambda: [0, 0, 0, 0, 0])
     complete = 0
     for (league, player), history in players.items():
         prior = defaultdict(list)
@@ -56,6 +57,15 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20):
                         sequence = ''.join(r["result"] for r in matches)
                         repeat_band = 0 if pct > 40 else 1 if pct >= 35 else 2 if pct >= 30 else None
                         if repeat_band is not None:
+                            for played in range(1, 6):
+                                prefix = sequence[:played]
+                                if prefix.count('V') == 1 and prefix.index('V') in (0, 1):
+                                    position = prefix.index('V') + 1
+                                    sample = active_repeat[(league, repeat_band, position, played)]
+                                    sample[0] += 1
+                                    sample[1] += sequence[played] == 'V'
+                                    for index, horizon in enumerate((4, 5, 6), 2):
+                                        sample[index] += 'V' in sequence[played:horizon]
                             for condition, position, eligible in (
                                 (0, 1, sequence[0] == 'V'),
                                 (1, 2, sequence[1] == 'V'),
@@ -92,6 +102,16 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20):
                                     sample[1] += "V" not in sequence
                 prior[rival].extend(matches)
     return {"minimum_prior": minimum_prior, "complete_series": complete,
+            "active_repeat_rows": [
+                {"league": league, "band": label, "win_position": position, "played": played,
+                 "sample": counts[0], "next_win_pct": counts[1] / counts[0] * 100 if counts[0] else None,
+                 "repeat_by_4_pct": counts[2] / counts[0] * 100 if counts[0] and played < 4 else None,
+                 "repeat_by_5_pct": counts[3] / counts[0] * 100 if counts[0] and played < 5 else None,
+                 "repeat_by_6_pct": counts[4] / counts[0] * 100 if counts[0] else None}
+                for league in sorted({key[0] for key in players}) for band, label in enumerate(REPEAT_BANDS)
+                for position in (1, 2) for played in range(position, 6)
+                for counts in [active_repeat[(league, band, position, played)]]
+            ],
             "repeat_rows": [
                 {"league": league, "band": label, "condition": label_condition,
                  "sample": counts[0], "next_win_pct": counts[1] / counts[0] * 100 if counts[0] else None,
