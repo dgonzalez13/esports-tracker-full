@@ -306,6 +306,7 @@ def render_page(data, current_streaks, coincident_pairs=None, current_streaks_v2
     {render_upcoming_matches(schedule or {})}
     {render_recent_group_h2h_dashboard(data)}
     {render_gap_match_stats(data.get("six_match_stats"))}
+    {render_repeat_win_stats(data.get("six_match_stats"))}
     {render_team_statistics(data.get("team_stats", []))}
     {render_coincident_matches(coincident_pairs if coincident_pairs is not None else [], current_streaks_v2 or {})}
     {render_group_dashboard(data, current_streaks)}
@@ -1994,6 +1995,34 @@ def render_gap_match_stats(payload):
             'Los umbrales >35% y >40% se solapan. Cada dirección se analiza por separado; '
             'muestras pequeñas pueden producir frecuencias poco estables.</p>'
             + ''.join(blocks) + '</section>')
+
+
+def render_repeat_win_stats(payload):
+    if payload is None:
+        return ""
+    rows = [
+        [r['league'], r['band'], r['condition'], r['sample'], r['repeat_by_6'],
+         *[fmt_pct(r[field]) if r['sample'] else 'Sin muestra'
+           for field in ('next_win_pct', 'repeat_by_4_pct', 'repeat_by_5_pct', 'repeat_by_6_pct')]]
+        for r in payload.get('repeat_rows', [])
+    ]
+    return ('<section class="dashboard-section" id="repeat-win-statistics"><details>'
+            '<summary><h2>Repetir victoria tras ganar el primer o segundo partido</h2></summary>'
+            '<p class="section-subtitle">Porcentaje histórico de A frente a B antes de empezar la serie. '
+            'Rangos sin solapamiento: >40%, 35–40% incluidos y 30–&lt;35%. '
+            '«Victoria en el segundo» admite haber ganado también el primero; '
+            '«Primera victoria en el segundo» exige empate o derrota en el primero.</p>'
+            '<p class="section-subtitle">Se mide una nueva victoria después del partido indicado: '
+            'en el encuentro inmediatamente siguiente o antes de completar 4, 5 y 6 encuentros. '
+            'Las victorias iniciales no cuentan como repetición. Las condiciones pueden solaparse. '
+            f'Mínimo de {payload["minimum_prior"]} enfrentamientos previos. '
+            'Solo series completas de seis en sesiones inferidas por pausas de más de 90 minutos, '
+            'cerradas hace más de 90 minutos, con el histórico detallado disponible. '
+            'Frecuencias observadas por liga, no garantías; muestras pequeñas pueden ser poco estables.</p>'
+            + render_table(['Liga', 'V% previo A', 'Condición', 'Series', 'Series con otra V hasta 6',
+                            '% V siguiente', '% otra V hasta 4', '% otra V hasta 5', '% otra V hasta 6'],
+                           rows, numeric_columns={3, 4, 5, 6, 7, 8})
+            + '</details></section>')
 
 
 def render_team_statistics(stats):

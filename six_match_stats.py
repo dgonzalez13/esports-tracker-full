@@ -6,6 +6,9 @@ from current_streaks_v2 import _record_time, split_player_sessions
 
 GAP_LABELS = ("A por detrás (< −5 pp)", "Equilibrados (−5 a +5 pp)",
               "Ventaja de A (>5 a 15 pp)", "Ventaja amplia de A (>15 pp)")
+REPEAT_BANDS = (">40%", "35–40% (incluidos)", "30–<35%")
+REPEAT_CONDITIONS = ("Victoria en el primer partido", "Victoria en el segundo partido",
+                     "Primera victoria en el segundo partido")
 
 
 def gap_band(wins, losses, played):
@@ -32,6 +35,7 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20):
     gap_counts = defaultdict(lambda: [[0, 0] for _ in range(6)])
     gap_horizons = defaultdict(lambda: [0, 0])
     conditional_horizons = defaultdict(lambda: [0, 0])
+    repeat_counts = defaultdict(lambda: [0, 0, 0, 0, 0])
     complete = 0
     for (league, player), history in players.items():
         prior = defaultdict(list)
@@ -50,6 +54,19 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20):
                         pct = wins / len(earlier) * 100
                         band = gap_band(wins, losses, len(earlier))
                         sequence = ''.join(r["result"] for r in matches)
+                        repeat_band = 0 if pct > 40 else 1 if pct >= 35 else 2 if pct >= 30 else None
+                        if repeat_band is not None:
+                            for condition, position, eligible in (
+                                (0, 1, sequence[0] == 'V'),
+                                (1, 2, sequence[1] == 'V'),
+                                (2, 2, sequence[0] != 'V' and sequence[1] == 'V'),
+                            ):
+                                if eligible:
+                                    sample = repeat_counts[(league, repeat_band, condition)]
+                                    sample[0] += 1
+                                    sample[1] += sequence[position] == 'V'
+                                    for index, horizon in enumerate((4, 5, 6), 2):
+                                        sample[index] += 'V' in sequence[position:horizon]
                         for threshold in (35, 40):
                             if pct <= threshold:
                                 continue
@@ -75,6 +92,18 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20):
                                     sample[1] += "V" not in sequence
                 prior[rival].extend(matches)
     return {"minimum_prior": minimum_prior, "complete_series": complete,
+            "repeat_rows": [
+                {"league": league, "band": label, "condition": label_condition,
+                 "sample": counts[0], "next_win_pct": counts[1] / counts[0] * 100 if counts[0] else None,
+                 "repeat_by_4_pct": counts[2] / counts[0] * 100 if counts[0] else None,
+                 "repeat_by_5_pct": counts[3] / counts[0] * 100 if counts[0] else None,
+                 "repeat_by_6_pct": counts[4] / counts[0] * 100 if counts[0] else None,
+                 "repeat_by_6": counts[4]}
+                for league in sorted({key[0] for key in players})
+                for band, label in enumerate(REPEAT_BANDS)
+                for condition, label_condition in enumerate(REPEAT_CONDITIONS)
+                for counts in [repeat_counts[(league, band, condition)]]
+            ],
             "conditional_horizons": [
                 {"league": league, "threshold": threshold, "band": label,
                  "initial_without_win": k, "horizon": horizon, "sample": sample,
