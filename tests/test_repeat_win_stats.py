@@ -2,10 +2,30 @@ import unittest
 from datetime import datetime, timezone
 from tests import test_six_match_stats
 from six_match_stats import calculate_six_match_stats
-from web_tracker.generate_site import render_repeat_win_stats, render_active_repeat_matches
+from web_tracker.generate_site import (render_repeat_win_stats, render_active_repeat_matches,
+                                       new_statistics_records, matchup_gap)
 
 
 class RepeatWinTests(unittest.TestCase):
+    def test_starred_player_matches_removed_in_both_directions_before_statistics(self):
+        records = test_six_match_stats.SixMatchTests().history(wins=9, sequence='VDDDVD')
+        for player in ('david', 'fox'):
+            filtered = new_statistics_records(records, {('GT', player)})
+            self.assertFalse(filtered)
+        payload = calculate_six_match_stats(filtered, datetime(2026, 9, 3, tzinfo=timezone.utc))
+        self.assertFalse(any(row['sample'] for row in payload['repeat_rows']))
+
+    def test_current_pair_exclusion_and_gap_use_matching_time_basis(self):
+        rival = dict(rival='B', sequence='VD', played=2, historical_played=22,
+                     historical_wins=10, historical_losses=9)
+        data = {'leagues': {'GT': {'groups': [{'recent_h2h': {'players': [
+            {'player': 'A', 'rivals': [rival]}]}}]}}}
+        self.assertEqual(matchup_gap(rival), '+4.55')
+        self.assertIn('<td class="num">+5.00</td>', render_active_repeat_matches(data))
+        for key in [('GT', 'a'), ('GT', 'b')]:
+            data['excluded_player_keys'] = [key]
+            self.assertNotIn('<td>A</td>', render_active_repeat_matches(data))
+
     def test_active_condition_accounts_for_matches_since_single_win(self):
         payload = self.stats('VDDDVD')
         row = next(r for r in payload['active_repeat_rows'] if r['band'] == '>40%' and r['played'] == 3 and r['win_position'] == 1)

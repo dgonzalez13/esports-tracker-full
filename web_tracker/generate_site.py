@@ -1844,6 +1844,8 @@ def render_recent_group_h2h_dashboard(data):
         for group in payload.get("groups", []):
             for player in group.get("recent_h2h", {}).get("players", []):
                 for rival in player["rivals"]:
+                    if not new_table_pair_allowed(data, league, player["player"], rival["rival"]):
+                        continue
                     color = recent_h2h_row_class(rival, data.get("h2h_min_gap", -10))
                     if color and (league, name_key(player["player"]), name_key(rival["rival"])) not in excluded:
                         selected.append((league, group.get("label") or group.get("group_id", ""), player["player"], rival, color))
@@ -1853,7 +1855,7 @@ def render_recent_group_h2h_dashboard(data):
     ))
     rows = [
         [league, player, rival["rival"], rival["played"],
-         fmt_pct(rival["historical_win_pct"]), rival["sequence"] or "Sin partidos", next_group_match_label(rival)]
+         fmt_pct(rival["historical_win_pct"]), matchup_gap(rival), rival["sequence"] or "Sin partidos", next_group_match_label(rival)]
         + matchup_win_estimates(league, rival, probability_lookup,
                                 data.get("six_match_stats", {}).get("minimum_prior", 20))
         for league, label, player, rival, color in selected
@@ -1875,8 +1877,8 @@ def render_recent_group_h2h_dashboard(data):
         '<label><input type="checkbox" id="h2h-hide-one"> Ocultar 1 partido (8h)</label>'
         '</div>'
         + (render_table(["Liga", "Jugador", "Rival", "Partidos (8h)", "V% (total)",
-                         "Secuencia (8h)", "Próximo partido", "≥1 V hasta 4", "≥1 V hasta 5", "≥1 V hasta 6"], rows,
-                        numeric_columns={3, 4, 7, 8, 9}, row_classes=[item[4] for item in selected])
+                         "Diferencia A−B (pp)", "Secuencia (8h)", "Próximo partido", "≥1 V hasta 4", "≥1 V hasta 5", "≥1 V hasta 6"], rows,
+                        numeric_columns={3, 4, 5, 8, 9, 10}, row_classes=[item[4] for item in selected])
            if rows else '<p class="section-subtitle">No hay enfrentamientos destacados.</p>')
         + '<p class="section-subtitle" id="h2h-filter-empty" hidden>No hay enfrentamientos que coincidan con estos filtros.</p>'
         + render_six_match_stats(data.get("six_match_stats"))
@@ -1998,6 +2000,22 @@ def render_gap_match_stats(payload):
             + ''.join(blocks) + '</section>')
 
 
+def new_table_pair_allowed(data, league, player, rival):
+    excluded = {tuple(key) for key in data.get('excluded_player_keys', [])}
+    return (league, name_key(player)) not in excluded and (league, name_key(rival)) not in excluded
+
+
+def matchup_gap(rival):
+    total = rival.get('historical_played', 0)
+    if not total or 'historical_losses' not in rival:
+        return '—'
+    return f'{(rival["historical_wins"] - rival["historical_losses"]) * 100 / total:+.2f}'
+
+
+def new_statistics_records(records, excluded_keys):
+    return [record for record in records if is_operational_record(record, excluded_keys)]
+
+
 def render_active_repeat_matches(data):
     stats = data.get('six_match_stats', {})
     lookup = {(r['league'], r['band'], r['win_position'], r['played']): r
@@ -2009,6 +2027,8 @@ def render_active_repeat_matches(data):
         for group in payload.get('groups', []):
             for player in group.get('recent_h2h', {}).get('players', []):
                 for rival in player['rivals']:
+                    if not new_table_pair_allowed(data, league, player['player'], rival['rival']):
+                        continue
                     a, b = name_key(player['player']), name_key(rival['rival'])
                     if (league, a, b) in excluded or ('bettable_keys' in data and ((league, a) not in bettable or (league, b) not in bettable)):
                         continue
@@ -2021,6 +2041,9 @@ def render_active_repeat_matches(data):
                     if prior < stats.get('minimum_prior', 20) or wins < 0:
                         continue
                     pct = wins / prior * 100
+                    losses = rival.get('historical_losses')
+                    prior_gap = (f'{(wins - (losses - sequence.count("D"))) * 100 / prior:+.2f}'
+                                 if losses is not None else '—')
                     if pct < 30:
                         continue
                     band = REPEAT_BANDS[0 if pct > 40 else 1 if pct >= 35 else 2]
@@ -2029,7 +2052,7 @@ def render_active_repeat_matches(data):
                     values = [fmt_pct(sample[field]) if sample and sample['sample'] and sample[field] is not None else '—'
                               for field in ('next_win_pct', 'repeat_by_4_pct', 'repeat_by_5_pct', 'repeat_by_6_pct')]
                     selected.append((rival.get('next_match'), [league, player['player'], rival['rival'], fmt_pct(pct),
-                        band, sequence, position, next_group_match_label(rival), sample['sample'] if sample else 0, *values]))
+                        prior_gap, band, sequence, position, next_group_match_label(rival), sample['sample'] if sample else 0, *values]))
     selected.sort(key=lambda r: (datetime.fromisoformat(r[0]) if r[0] else datetime.max.replace(tzinfo=timezone.utc), r[1][:3]))
     return ('<section class="dashboard-section" id="active-repeat-matches">'
             '<h2>Repetir victoria · parejas de los grupos actuales</h2>'
@@ -2039,10 +2062,10 @@ def render_active_repeat_matches(data):
             'el mismo rango previo, liga, posición de la victoria y número de partidos disputados, '
             'sin ninguna segunda victoria hasta ese momento. Los porcentajes corresponden a partidos posteriores '
             'al último disputado. — indica horizonte agotado o sin muestra. Horario de Madrid.</p>'
-            + (render_table(['Liga', 'Jugador A', 'Rival B', 'V% previo', 'Rango', 'Secuencia (8h)', 'V en partido',
+            + (render_table(['Liga', 'Jugador A', 'Rival B', 'V% previo', 'Diferencia previa A−B (pp)', 'Rango', 'Secuencia (8h)', 'V en partido',
                             'Próximo partido', 'Series comparables', '% V siguiente', '% otra V hasta 4',
                             '% otra V hasta 5', '% otra V hasta 6'], [r[1] for r in selected],
-                           numeric_columns={3, 6, 8, 9, 10, 11, 12}) if selected else
+                           numeric_columns={3, 4, 7, 9, 10, 11, 12, 13}) if selected else
                '<p class="section-subtitle">No hay parejas actuales con una única victoria inicial que cumplan los criterios.</p>')
             + '</section>')
 
@@ -2078,7 +2101,7 @@ def render_repeat_win_stats(payload):
 def render_team_statistics(stats):
     rows = [[r['league'], r['player'], r['player_team'], r['rival'], r['rival_team'],
              r['played'], r['wins'], r['draws'], r['losses'], fmt_pct(r['wins_pct']),
-             fmt_pct(r['draws_pct']), fmt_pct(r['losses_pct'])] for r in stats]
+             f'{r["wins_pct"] - r["losses_pct"]:+.2f}', fmt_pct(r['draws_pct']), fmt_pct(r['losses_pct'])] for r in stats]
     return (
         '<section class="dashboard-section" id="team-statistics"><details>'
         '<summary><h2>Estadísticas por jugadores y equipos</h2></summary>'
@@ -2087,8 +2110,8 @@ def render_team_statistics(stats):
         'los partidos antiguos sin equipos no se incluyen. Cada combinación y su dirección se cuentan por separado. '
         'Ordenados por número de encuentros. Una muestra pequeña puede dar porcentajes poco estables.</p>'
         '<label>Buscar jugador, rival, equipo o liga <input type="search" id="team-stats-search"></label>'
-        + (render_table(['Liga', 'Jugador A', 'Equipo A', 'Jugador B', 'Equipo B', 'Partidos', 'V', 'E', 'D', 'V%', 'E%', 'D%'],
-                        rows, numeric_columns={5, 6, 7, 8, 9, 10, 11}) if rows else
+        + (render_table(['Liga', 'Jugador A', 'Equipo A', 'Jugador B', 'Equipo B', 'Partidos', 'V', 'E', 'D', 'V%', 'Diferencia A−B (pp)', 'E%', 'D%'],
+                        rows, numeric_columns={5, 6, 7, 8, 9, 10, 11, 12}) if rows else
            '<p class="section-subtitle">Todavía no hay partidos con ambos equipos registrados.</p>')
         + '<p id="team-stats-empty" hidden>No hay combinaciones para esta búsqueda.</p>'
         '</details></section><script>(() => {'
@@ -2231,10 +2254,12 @@ def main():
     coincident_config = load_coincident_config(TRACKED_PLAYERS_FILE)
     records = load_all_history()
     excluded_keys = excluded_player_keys(tracked_players)
+    group_analysis['excluded_player_keys'] = sorted(excluded_keys)
+    statistics_records = new_statistics_records(records, excluded_keys)
     current_streaks = load_current_streaks(tracked_players, records)
     reference_time = datetime.now(timezone.utc)
-    group_analysis['team_stats'] = calculate_team_stats(records, reference_time)
-    group_analysis["six_match_stats"] = calculate_six_match_stats(records, reference_time)
+    group_analysis['team_stats'] = calculate_team_stats(statistics_records, reference_time)
+    group_analysis["six_match_stats"] = calculate_six_match_stats(statistics_records, reference_time)
     schedule = load_schedule()
     attach_recent_group_h2h(group_analysis, records, reference_time, schedule)
     snapshot = calculate_operational_snapshot(
