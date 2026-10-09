@@ -1872,13 +1872,27 @@ def render_recent_group_h2h_dashboard(data):
         'comparando liga, umbral previo de A y diferencia A−B al inicio del tramo sin ganar. '
         'Se asume que los partidos de las últimas 8 horas corresponden al inicio de una misma serie. '
         'n = series históricas comparables; sin muestra o fuera de los umbrales se muestra —.</p>'
+        + render_gap_filters()
         + (render_table(["Liga", "Jugador", "Rival", "V%",
                          "Dif.", "Sec", "Próximo partido", "≥1 V hasta 4", "≥1 V hasta 5", "≥1 V hasta 6"], rows,
                         numeric_columns={3, 4, 7, 8, 9}, row_classes=[item[4] for item in selected])
            if rows else '<p class="section-subtitle">No hay enfrentamientos destacados.</p>')
         + render_six_match_stats(data.get("six_match_stats"))
-        + '</section>'
+        + '</section>' + render_gap_filter_script('recent-group-h2h')
     )
+
+
+def render_gap_filters():
+    return ('<div class="upcoming-filters" data-gap-filters><span>Dif.:</span>'
+            + ''.join(f'<label><input type="checkbox" value="{threshold}"> ≥{threshold}</label>'
+                      for threshold in (0, 5, 10))
+            + '</div><p class="section-subtitle" data-gap-empty hidden>'
+            'No hay enfrentamientos que coincidan con este filtro.</p>')
+
+
+def render_gap_filter_script(section_id):
+    script = (BASE / 'web_tracker' / 'h2h_gap_filters.js').read_text(encoding='utf-8')
+    return '<script>' + script + f'\ninitH2HGapFilters({json.dumps(section_id)});</script>'
 
 
 def matchup_win_estimates(league, rival, lookup, minimum_prior):
@@ -2041,12 +2055,13 @@ def render_active_repeat_matches(data):
             'el mismo rango previo, liga, posición de la victoria y número de partidos disputados, '
             'sin ninguna segunda victoria hasta ese momento. Los porcentajes corresponden a partidos posteriores '
             'al último disputado. — indica horizonte agotado o sin muestra. Horario de Madrid.</p>'
+            + render_gap_filters()
             + (render_table(['Liga', 'Jugador A', 'Rival B', 'V% previo', 'Diferencia previa A−B (pp)', 'Rango', 'Secuencia (8h)', 'V en partido',
                             'Próximo partido', 'Series comparables', '% V siguiente', '% otra V hasta 4',
                             '% otra V hasta 5', '% otra V hasta 6'], [r[1] for r in selected],
                            numeric_columns={3, 4, 7, 9, 10, 11, 12, 13}) if selected else
                '<p class="section-subtitle">No hay parejas actuales con una única victoria inicial que cumplan los criterios.</p>')
-            + '</section>')
+            + '</section>' + render_gap_filter_script('active-repeat-matches'))
 
 
 def render_repeat_win_stats(payload):
