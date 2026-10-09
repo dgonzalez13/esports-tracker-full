@@ -2056,7 +2056,7 @@ def render_active_repeat_matches(data):
             'sin ninguna segunda victoria hasta ese momento. Los porcentajes corresponden a partidos posteriores '
             'al último disputado. — indica horizonte agotado o sin muestra. Horario de Madrid.</p>'
             + render_gap_filters()
-            + (render_table(['Liga', 'Jugador A', 'Rival B', 'V% previo', 'Diferencia previa A−B (pp)', 'Rango', 'Secuencia (8h)', 'V en partido',
+            + (render_table(['Liga', 'Jugador A', 'Rival B', 'V%', 'Dif.', 'Rango', 'Sec', 'V en partido',
                             'Próximo partido', 'Series comparables', '% V siguiente', '% otra V hasta 4',
                             '% otra V hasta 5', '% otra V hasta 6'], [r[1] for r in selected],
                            numeric_columns={3, 4, 7, 9, 10, 11, 12, 13}) if selected else
