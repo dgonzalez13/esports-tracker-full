@@ -1854,7 +1854,7 @@ def render_recent_group_h2h_dashboard(data):
         else datetime.max.replace(tzinfo=timezone.utc), item[0], item[2], item[3]["rival"]
     ))
     rows = [
-        [league, player, rival["rival"], rival["played"],
+        [league, player, rival["rival"],
          fmt_pct(rival["historical_win_pct"]), matchup_gap(rival), rival["sequence"] or "Sin partidos", next_group_match_label(rival)]
         + matchup_win_estimates(league, rival, probability_lookup,
                                 data.get("six_match_stats", {}).get("minimum_prior", 20))
@@ -1872,33 +1872,12 @@ def render_recent_group_h2h_dashboard(data):
         'comparando liga, umbral previo de A y diferencia A−B al inicio del tramo sin ganar. '
         'Se asume que los partidos de las últimas 8 horas corresponden al inicio de una misma serie. '
         'n = series históricas comparables; sin muestra o fuera de los umbrales se muestra —.</p>'
-        '<div class="upcoming-filters">'
-        '<label><input type="checkbox" id="h2h-hide-zero"> Ocultar 0 partidos (8h)</label>'
-        '<label><input type="checkbox" id="h2h-hide-one"> Ocultar 1 partido (8h)</label>'
-        '</div>'
-        + (render_table(["Liga", "Jugador", "Rival", "Partidos (8h)", "V% (total)",
-                         "Diferencia A−B (pp)", "Secuencia (8h)", "Próximo partido", "≥1 V hasta 4", "≥1 V hasta 5", "≥1 V hasta 6"], rows,
-                        numeric_columns={3, 4, 5, 8, 9, 10}, row_classes=[item[4] for item in selected])
+        + (render_table(["Liga", "Jugador", "Rival", "V%",
+                         "Dif.", "Sec", "Próximo partido", "≥1 V hasta 4", "≥1 V hasta 5", "≥1 V hasta 6"], rows,
+                        numeric_columns={3, 4, 7, 8, 9}, row_classes=[item[4] for item in selected])
            if rows else '<p class="section-subtitle">No hay enfrentamientos destacados.</p>')
-        + '<p class="section-subtitle" id="h2h-filter-empty" hidden>No hay enfrentamientos que coincidan con estos filtros.</p>'
         + render_six_match_stats(data.get("six_match_stats"))
-        + '</section><script>'
-        '(() => {'
-        'const section = document.getElementById("recent-group-h2h");'
-        'const zero = section.querySelector("#h2h-hide-zero");'
-        'const one = section.querySelector("#h2h-hide-one");'
-        'const rows = [...section.querySelectorAll(":scope > .table-wrap tbody tr")];'
-        'function update() {'
-        'for (const row of rows) {'
-        'const count = Number(row.cells[3].textContent);'
-        'row.hidden = (zero.checked && count === 0) || (one.checked && count === 1);'
-        '}'
-        'section.querySelector("#h2h-filter-empty").hidden = !rows.length || rows.some(row => row.isConnected && !row.hidden);'
-        '}'
-        'zero.addEventListener("change", update);'
-        'one.addEventListener("change", update);'
-        'update();'
-        '})();</script>'
+        + '</section>'
     )
 
 
