@@ -26,6 +26,7 @@ from team_analysis import calculate_team_stats
 from streak_break_stats import build_streak_statistics
 from web_tracker.streak_statistics import render_streak_statistics
 from match_history import name_key
+from current_streaks_v2 import _record_time
 from fixture_schedule import load_schedule
 from web_tracker.upcoming_matches import render_upcoming_matches, upcoming_fixtures
 from coincident_schedule import attach_schedules, fixture_label
@@ -753,6 +754,16 @@ summary {
 .upcoming-filters { display: flex; flex-wrap: wrap; gap: 8px 12px; font-size: 12px; }
 .upcoming-filters label { display: flex; align-items: center; gap: 5px; }
 .upcoming-filters select { font: inherit; padding: 5px 8px; max-width: 100%; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); }
+#recent-group-h2h > .table-wrap table, #active-repeat-matches > .table-wrap table {
+    width: 100%; min-width: 0; table-layout: fixed; font-size: 12px;
+}
+#recent-group-h2h > .table-wrap th, #recent-group-h2h > .table-wrap td,
+#active-repeat-matches > .table-wrap th, #active-repeat-matches > .table-wrap td {
+    padding: 6px 4px; white-space: normal; overflow-wrap: anywhere;
+}
+#recent-group-h2h > .table-wrap abbr, #active-repeat-matches > .table-wrap abbr {
+    text-decoration: none; cursor: help;
+}
 #upcoming-status { margin: 6px 0; font-size: 12px; }
 .coincident-pair.upcoming-panel > summary { justify-content: flex-start; }
 .upcoming-panel > summary h2 { margin: 0; font-size: 16px; color: inherit; }
@@ -1763,12 +1774,41 @@ def render_head_to_head(group):
     return "<h3>Head to Head</h3>" + "".join(blocks)
 
 
+def build_last20_lookup(records, reference_time, exclusive=False):
+    pairs, seen = {}, set()
+    for row in records:
+        stamp = _record_time(row)
+        if (stamp is None or stamp > reference_time or (exclusive and stamp == reference_time)
+                or row.get('result') not in {'V', 'E', 'D'}):
+            continue
+        key = (row['league'], row['player_key'], row['rival_key'])
+        identity = (*key, row.get('match_id') or stamp)
+        if identity in seen:
+            continue
+        seen.add(identity)
+        pairs.setdefault(key, []).append((stamp, str(row.get('match_id', '')), row['result']))
+    result = {}
+    for key, matches in pairs.items():
+        window = sorted(matches)[-20:]
+        wins = sum(row[2] == 'V' for row in window)
+        losses = sum(row[2] == 'D' for row in window)
+        result[key] = {'available': len(window), 'win_pct': wins * 5 if len(window) == 20 else None,
+                       'gap': (wins - losses) * 5 if len(window) == 20 else None}
+    return result
+
+
+def last20_cells(stats):
+    return [fmt_pct(stats['win_pct']), f'{stats["gap"]:+.2f}'] if stats.get('available') == 20 else ['—', '—']
+
+
 def attach_recent_group_h2h(data, records, reference_time, schedule=None):
     """Use the same bounded eight-hour window as the operational dashboard."""
     records = list(records)
     start = reference_time - timedelta(hours=8)
     recent = filter_by_time(records, start=start, end=reference_time)
     history = filter_by_time(records, end=reference_time)
+    last20 = build_last20_lookup(history, reference_time)
+    prior20 = build_last20_lookup(history, start, exclusive=True)
     next_matches = {}
     for fixture in upcoming_fixtures(schedule or {}, reference_time):
         key = (fixture["league"], tuple(sorted((name_key(fixture["player"]), name_key(fixture["rival"])))))
@@ -1795,6 +1835,9 @@ def attach_recent_group_h2h(data, records, reference_time, schedule=None):
                 started_matches[key] = stamp
     def matchup(player, rival, league, historical_lookup):
         row = calculate_h2h_stats(recent, player, rival, league=league)
+        identity = (league, name_key(player), name_key(rival))
+        row['last20'] = last20.get(identity, {})
+        row['prior20'] = prior20.get(identity, {})
         historical = historical_lookup.get((name_key(player), name_key(rival)))
         if historical is not None:
             row["historical_win_pct"] = historical["win_pct"]
@@ -1855,7 +1898,8 @@ def render_recent_group_h2h_dashboard(data):
     ))
     rows = [
         [league, player, rival["rival"],
-         fmt_pct(rival["historical_win_pct"]), matchup_gap(rival), rival["sequence"] or "Sin partidos", next_group_match_label(rival)]
+         fmt_pct(rival["historical_win_pct"]), matchup_gap(rival),
+         *last20_cells(rival.get('last20', {})), rival["sequence"] or "Sin partidos", next_group_match_label(rival)]
         + matchup_win_estimates(league, rival, probability_lookup,
                                 data.get("six_match_stats", {}).get("minimum_prior", 20))
         for league, label, player, rival, color in selected
@@ -1872,10 +1916,15 @@ def render_recent_group_h2h_dashboard(data):
         'comparando liga, umbral previo de A y diferencia A−B al inicio del tramo sin ganar. '
         'Se asume que los partidos de las últimas 8 horas corresponden al inicio de una misma serie. '
         'n = series históricas comparables; sin muestra o fuera de los umbrales se muestra —.</p>'
+        '<p class="section-subtitle">V%20 y Dif.20: últimos 20 enfrentamientos finalizados entre ambos; '
+        '— si faltan partidos con resultado registrado. Dif. se expresa en puntos porcentuales.</p>'
         + render_gap_filters()
         + (render_table(["Liga", "Jugador", "Rival", "V%",
-                         "Dif.", "Sec", "Próximo partido", "≥1 V hasta 4", "≥1 V hasta 5", "≥1 V hasta 6"], rows,
-                        numeric_columns={3, 4, 7, 8, 9}, row_classes=[item[4] for item in selected])
+                         "Dif.", "V%20", "Dif.20", "Sec", "Próx.", "V≤4", "V≤5", "V≤6"], rows,
+                        numeric_columns={3, 4, 5, 6, 9, 10, 11}, row_classes=[item[4] for item in selected],
+                        header_titles={5: 'V% de los últimos 20 enfrentamientos', 6: 'Diferencia A−B en los últimos 20 enfrentamientos (pp)',
+                                       8: 'Próximo partido (Madrid)', 9: '≥1 victoria hasta completar 4 partidos',
+                                       10: '≥1 victoria hasta completar 5 partidos', 11: '≥1 victoria hasta completar 6 partidos'})
            if rows else '<p class="section-subtitle">No hay enfrentamientos destacados.</p>')
         + render_six_match_stats(data.get("six_match_stats"))
         + '</section>' + render_gap_filter_script('recent-group-h2h')
@@ -2013,6 +2062,8 @@ def render_active_repeat_matches(data):
     stats = data.get('six_match_stats', {})
     lookup = {(r['league'], r['band'], r['win_position'], r['played']): r
               for r in stats.get('active_repeat_rows', [])}
+    gap_lookup = {(r['league'], r['band'], r['gap_threshold'], r['win_position'], r['played']): r
+                  for r in stats.get('active_repeat_gap_rows', [])}
     excluded = {tuple(r) for r in data.get('h2h_exclusions', [])}
     bettable = {tuple(r) for r in data.get('bettable_keys', [])}
     selected = []
@@ -2042,11 +2093,23 @@ def render_active_repeat_matches(data):
                     band = REPEAT_BANDS[0 if pct > 40 else 1 if pct >= 35 else 2]
                     position = sequence.index('V') + 1
                     sample = lookup.get((league, band, position, played))
+                    gap = ((wins - (losses - sequence.count('D'))) * 100 / prior
+                           if losses is not None else None)
+                    threshold = next((value for value in (10, 5, 0) if gap is not None and gap > value), None)
+                    gap_sample = gap_lookup.get((league, band, threshold, position, played))
+                    gap_values = [fmt_pct(gap_sample[field]) if gap_sample and gap_sample['sample'] and gap_sample[field] is not None else '—'
+                                  for field in ('next_win_pct', 'repeat_by_4_pct', 'repeat_by_5_pct', 'repeat_by_6_pct')]
                     values = [fmt_pct(sample[field]) if sample and sample['sample'] and sample[field] is not None else '—'
                               for field in ('next_win_pct', 'repeat_by_4_pct', 'repeat_by_5_pct', 'repeat_by_6_pct')]
                     selected.append((rival.get('next_match'), [league, player['player'], rival['rival'], fmt_pct(pct),
-                        prior_gap, band, sequence, position, next_group_match_label(rival), sample['sample'] if sample else 0, *values]))
+                        prior_gap, *last20_cells(rival.get('prior20', {})),
+                        {'>40%': '>40', '35–40% (incluidos)': '35–40', '30–<35%': '30–<35'}[band],
+                        sequence, position, next_group_match_label(rival), sample['sample'] if sample else 0, *values],
+                        [f'{">" + str(threshold) if threshold is not None else "—"}',
+                         gap_sample['sample'] if gap_sample else 0, *gap_values]))
     selected.sort(key=lambda r: (datetime.fromisoformat(r[0]) if r[0] else datetime.max.replace(tzinfo=timezone.utc), r[1][:3]))
+    variants = {(index, column): value for index, row in enumerate(selected)
+                for column, value in zip((7, 11, 12, 13, 14, 15), row[2])}
     return ('<section class="dashboard-section" id="active-repeat-matches">'
             '<h2>Repetir victoria · parejas de los grupos actuales</h2>'
             '<p class="section-subtitle">Una única victoria, en el primer o segundo encuentro, y entre dos y cinco '
@@ -2055,13 +2118,24 @@ def render_active_repeat_matches(data):
             'el mismo rango previo, liga, posición de la victoria y número de partidos disputados, '
             'sin ninguna segunda victoria hasta ese momento. Los porcentajes corresponden a partidos posteriores '
             'al último disputado. — indica horizonte agotado o sin muestra. Horario de Madrid.</p>'
+            '<p class="section-subtitle">V%20 y Dif.20 usan los últimos 20 enfrentamientos anteriores a la secuencia (— si faltan registros). '
+            'Muestra V% + Dif.: añade al rango de V% la mayor diferencia aplicable: >10, >5 o >0 pp. '
+            'Son umbrales acumulativos, estrictos y medidos antes de la serie; para Dif.≤0 no hay muestra agrupada. '
+            'Rng muestra el rango de V% o el umbral de Dif. según la muestra seleccionada; n indica series comparables.</p>'
+            '<label class="upcoming-filters">Agrupar muestra: <select data-repeat-grouping>'
+            '<option value="original">V%</option><option value="alternative">V% + Dif.</option></select></label>'
             + render_gap_filters()
-            + (render_table(['Liga', 'Jugador A', 'Rival B', 'V%', 'Dif.', 'Rango', 'Sec', 'V en partido',
-                            'Próximo partido', 'Series comparables', '% V siguiente', '% otra V hasta 4',
-                            '% otra V hasta 5', '% otra V hasta 6'], [r[1] for r in selected],
-                           numeric_columns={3, 4, 7, 9, 10, 11, 12, 13}) if selected else
+            + (render_table(['Liga', 'Jugador A', 'Rival B', 'V%', 'Dif.', 'V%20', 'Dif.20', 'Rng', 'Sec', 'V1',
+                            'Próx.', 'n', 'V sig.', 'V≤4', 'V≤5', 'V≤6'], [r[1] for r in selected],
+                           numeric_columns={3, 4, 5, 6, 9, 11, 12, 13, 14, 15}, cell_variants=variants,
+                           header_titles={5: 'V% de los 20 enfrentamientos previos a la secuencia',
+                               6: 'Diferencia A−B de los 20 enfrentamientos previos (pp)', 7: 'Rango de la muestra seleccionada',
+                               9: 'Partido de la primera victoria', 10: 'Próximo partido (Madrid)', 11: 'Series comparables',
+                               12: '% de victoria en el siguiente partido', 13: '% de otra victoria hasta completar 4 partidos',
+                               14: '% de otra victoria hasta completar 5 partidos', 15: '% de otra victoria hasta completar 6 partidos'}) if selected else
                '<p class="section-subtitle">No hay parejas actuales con una única victoria inicial que cumplan los criterios.</p>')
-            + '</section>' + render_gap_filter_script('active-repeat-matches'))
+            + '</section>' + render_gap_filter_script('active-repeat-matches')
+            + '<script>' + (BASE / 'web_tracker' / 'h2h_repeat_samples.js').read_text(encoding='utf-8') + '</script>')
 
 
 def render_repeat_win_stats(payload):
@@ -2185,7 +2259,7 @@ def render_extra_details(group):
     )
 
 
-def render_table(headers, rows, numeric_columns=None, seq_columns=None, row_classes=None, cell_notes=None, header_titles=None):
+def render_table(headers, rows, numeric_columns=None, seq_columns=None, row_classes=None, cell_notes=None, header_titles=None, cell_variants=None):
     numeric_columns = numeric_columns or set()
     seq_columns = seq_columns or set()
 
@@ -2216,7 +2290,10 @@ def render_table(headers, rows, numeric_columns=None, seq_columns=None, row_clas
                     f'<details class="player-result"><summary>{content}'
                     f'<span class="player-result-note">{text(note)}</span></summary></details>'
                 )
-            cells.append(f"<td{class_attr}>{content}</td>")
+            variant = (cell_variants or {}).get((row_index, index))
+            variant_attr = (f' data-original="{text(value)}" data-alternative="{text(variant)}"'
+                            if variant is not None else '')
+            cells.append(f"<td{class_attr}{variant_attr}>{content}</td>")
 
         row_class = row_classes[row_index] if row_classes and row_index < len(row_classes) else ""
         class_attr = f' class="{text(row_class)}"' if row_class else ""
