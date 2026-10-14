@@ -313,6 +313,7 @@ def render_page(data, current_streaks, coincident_pairs=None, current_streaks_v2
     {render_coincident_matches(coincident_pairs if coincident_pairs is not None else [], current_streaks_v2 or {})}
     {render_group_dashboard(data, current_streaks)}
 </main>
+<script>{(BASE / 'web_tracker' / 'player_name_alignment.js').read_text(encoding='utf-8')}</script>
 </body>
 </html>
 """
@@ -594,6 +595,9 @@ th {
 .num {
     text-align: center;
     font-variant-numeric: tabular-nums;
+}
+table th.player-name, table td.player-name {
+    text-align: left;
 }
 
 .seq {
