@@ -3,10 +3,31 @@ from datetime import datetime, timedelta, timezone
 
 from tests import test_six_match_stats
 from six_match_stats import calculate_six_match_stats
-from web_tracker.generate_site import build_last20_lookup, last20_cells, render_active_repeat_matches
+from web_tracker.generate_site import (build_last20_lookup, last20_cells, render_active_repeat_matches,
+                                       render_six_match_stats)
 
 
 class Last20Tests(unittest.TestCase):
+    def test_first_horizons_group_jointly_by_prior_win_percentage_and_gap(self):
+        reference = datetime(2026, 9, 3, tzinfo=timezone.utc)
+        for wins, draw, thresholds in [(10, False, []), (10, True, [0]),
+                                        (11, False, [0, 5]), (12, False, [0, 5, 10])]:
+            records = test_six_match_stats.SixMatchTests().history(wins=wins, sequence='DDDDVD')
+            if draw:
+                records[19]['result'] = 'E'
+            stats = calculate_six_match_stats(records + records, reference)
+            for threshold in (35, 40):
+                rows = [r for r in stats['win_gap_horizons'] if r['threshold'] == threshold and r['sample']]
+                self.assertEqual(sorted({r['gap_threshold'] for r in rows}), thresholds)
+                for gap in thresholds:
+                    group = [r for r in rows if r['gap_threshold'] == gap]
+                    self.assertEqual([r['sample'] for r in group], [1, 1, 1])
+                    self.assertEqual([r['win_pct'] for r in group], [0, 100, 100])
+            html = render_six_match_stats(stats)
+            self.assertIn('<th>Dif.</th>', html)
+            self.assertNotIn('Resultado condicionado a los primeros partidos sin ganar', html)
+            self.assertEqual(html.count('<table>'), 1)
+
     def test_last20_chronological_deduplicated_final_results_only(self):
         reference = datetime(2026, 9, 3, tzinfo=timezone.utc)
         records = test_six_match_stats.SixMatchTests().history(wins=9, sequence='VDDDVD')

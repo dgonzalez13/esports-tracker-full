@@ -34,6 +34,7 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20):
     horizons = defaultdict(lambda: [0, 0])
     gap_counts = defaultdict(lambda: [[0, 0] for _ in range(6)])
     gap_horizons = defaultdict(lambda: [0, 0])
+    win_gap_horizons = defaultdict(lambda: [0, 0])
     conditional_horizons = defaultdict(lambda: [0, 0])
     repeat_counts = defaultdict(lambda: [0, 0, 0, 0, 0])
     active_repeat = defaultdict(lambda: [0, 0, 0, 0, 0])
@@ -96,6 +97,11 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20):
                                 sample = gap_horizons[(league, threshold, band, horizon)]
                                 sample[0] += 1
                                 sample[1] += "V" in sequence[:horizon]
+                                for gap_threshold in (0, 5, 10):
+                                    if (wins - losses) * 100 > gap_threshold * len(earlier):
+                                        sample = win_gap_horizons[(league, threshold, gap_threshold, horizon)]
+                                        sample[0] += 1
+                                        sample[1] += "V" in sequence[:horizon]
                             for k in range(6):
                                 if "V" not in sequence[:k]:
                                     for horizon in (4, 5, 6):
@@ -111,6 +117,15 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20):
                                     sample[1] += "V" not in sequence
                 prior[rival].extend(matches)
     return {"minimum_prior": minimum_prior, "complete_series": complete,
+            "win_gap_horizons": [
+                {"league": league, "threshold": threshold, "gap_threshold": gap_threshold,
+                 "horizon": horizon, "sample": sample, "with_win": wins,
+                 "win_pct": wins / sample * 100 if sample else None,
+                 "without_win_pct": (sample - wins) / sample * 100 if sample else None}
+                for league in sorted({key[0] for key in players}) for threshold in (35, 40)
+                for gap_threshold in (0, 5, 10) for horizon in (4, 5, 6)
+                for sample, wins in [win_gap_horizons[(league, threshold, gap_threshold, horizon)]]
+            ],
             "active_repeat_gap_rows": [
                 {"league": league, "band": REPEAT_BANDS[band], "gap_threshold": threshold,
                  "win_position": position, "played": played, "sample": counts[0],
