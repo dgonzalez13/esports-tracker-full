@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "analysis_scope": "historical TXT; h2h_alerts are operational JSONL-filtered",
-  "generated_at": "18/10/2026 01:24:47 CEST",
+  "generated_at": "18/10/2026 01:46:37 CEST",
   "league": "EADRIATIC",
   "files_count": 155,
   "data_from": "20260516",
@@ -552,13 +552,13 @@
         "Andrew",
         "Dominic"
       ],
-      "target_repr": "{'Andrew', 'Dominic', 'Sebastian', 'Alexis', 'Dexter'}",
+      "target_repr": "{'Alexis', 'Andrew', 'Dexter', 'Sebastian', 'Dominic'}",
       "h2h_keys": [
-        "Sebastian",
         "Dexter",
+        "Sebastian",
         "Andrew",
-        "Dominic",
-        "Alexis"
+        "Alexis",
+        "Dominic"
       ],
       "coincidencias_5": 2,
       "coincidencias_4": 2,
@@ -663,12 +663,12 @@
         {
           "position": 3,
           "player": "Dominic",
-          "score": -43.880286130191635
+          "score": -43.88028613019164
         },
         {
           "position": 4,
           "player": "Dexter",
-          "score": -63.08989995320748
+          "score": -63.089899953207485
         },
         {
           "position": 5,
@@ -678,13 +678,18 @@
       ],
       "dominance": [
         {
+          "player": "Alexis",
+          "wins": 4,
+          "rivals": 4
+        },
+        {
           "player": "Andrew",
           "wins": 1,
           "rivals": 4
         },
         {
-          "player": "Dominic",
-          "wins": 1,
+          "player": "Dexter",
+          "wins": 0,
           "rivals": 4
         },
         {
@@ -693,13 +698,8 @@
           "rivals": 4
         },
         {
-          "player": "Alexis",
-          "wins": 4,
-          "rivals": 4
-        },
-        {
-          "player": "Dexter",
-          "wins": 0,
+          "player": "Dominic",
+          "wins": 1,
           "rivals": 4
         }
       ],
@@ -1362,7 +1362,7 @@
         "William",
         "Felix"
       ],
-      "target_repr": "{'Felix', 'William', 'Kaizen', 'Jason', 'Iron'}",
+      "target_repr": "{'Felix', 'William', 'Jason', 'Kaizen', 'Iron'}",
       "h2h_keys": [
         "William",
         "Iron",
@@ -1498,13 +1498,13 @@
           "rivals": 4
         },
         {
-          "player": "Kaizen",
-          "wins": 1,
+          "player": "Jason",
+          "wins": 0,
           "rivals": 4
         },
         {
-          "player": "Jason",
-          "wins": 0,
+          "player": "Kaizen",
+          "wins": 1,
           "rivals": 4
         },
         {
@@ -2829,10 +2829,10 @@
             "Slap",
             "Eddie"
           ],
-          "target_repr": "{'Eddie', 'Monk', 'Slap', 'Troy', 'Thunder'}",
+          "target_repr": "{'Thunder', 'Eddie', 'Monk', 'Troy', 'Slap'}",
           "h2h_keys": [
-            "Troy",
             "Thunder",
+            "Troy",
             "Eddie",
             "Monk",
             "Slap"
@@ -2914,6 +2914,11 @@
           ],
           "dominance": [
             {
+              "player": "Thunder",
+              "wins": 3,
+              "rivals": 4
+            },
+            {
               "player": "Eddie",
               "wins": 1,
               "rivals": 4
@@ -2924,18 +2929,13 @@
               "rivals": 4
             },
             {
-              "player": "Slap",
-              "wins": 0,
-              "rivals": 4
-            },
-            {
               "player": "Troy",
               "wins": 2,
               "rivals": 4
             },
             {
-              "player": "Thunder",
-              "wins": 3,
+              "player": "Slap",
+              "wins": 0,
               "rivals": 4
             }
           ],
@@ -3049,6 +3049,11 @@
               "weighted_score": 0.0,
               "worst_matchups": [
                 {
+                  "rival": "Thunder",
+                  "win_pct": 0.0,
+                  "matches": 2
+                },
+                {
                   "rival": "Eddie",
                   "win_pct": 0.0,
                   "matches": 3
@@ -3057,14 +3062,24 @@
                   "rival": "Monk",
                   "win_pct": 0.0,
                   "matches": 2
-                },
-                {
-                  "rival": "Troy",
-                  "win_pct": 0.0,
-                  "matches": 3
                 }
               ],
               "worst_matchup_details": [
+                {
+                  "rival": "Thunder",
+                  "W": 0,
+                  "D": 0,
+                  "L": 2,
+                  "matches": 2,
+                  "win_pct": 0.0,
+                  "draw_pct": 0.0,
+                  "loss_pct": 100.0,
+                  "seq": "DD",
+                  "last5": "DD",
+                  "last10": "DD",
+                  "stk_win": 0,
+                  "stk_lose": 0
+                },
                 {
                   "rival": "Eddie",
                   "W": 0,
@@ -3092,21 +3107,6 @@
                   "seq": "ED",
                   "last5": "ED",
                   "last10": "ED",
-                  "stk_win": 0,
-                  "stk_lose": 0
-                },
-                {
-                  "rival": "Troy",
-                  "W": 0,
-                  "D": 0,
-                  "L": 3,
-                  "matches": 3,
-                  "win_pct": 0.0,
-                  "draw_pct": 0.0,
-                  "loss_pct": 100.0,
-                  "seq": "DDD",
-                  "last5": "DDD",
-                  "last10": "DDD",
                   "stk_win": 0,
                   "stk_lose": 0
                 }
@@ -3598,7 +3598,7 @@
             "David",
             "Crysis"
           ],
-          "target_repr": "{'Dusan', 'Tifosi', 'Crysis', 'David', 'Banega'}",
+          "target_repr": "{'Crysis', 'Banega', 'Tifosi', 'Dusan', 'David'}",
           "h2h_keys": [
             "Crysis",
             "Banega",
@@ -3716,7 +3716,12 @@
           ],
           "dominance": [
             {
-              "player": "Dusan",
+              "player": "Crysis",
+              "wins": 0,
+              "rivals": 4
+            },
+            {
+              "player": "Banega",
               "wins": 0,
               "rivals": 4
             },
@@ -3726,18 +3731,13 @@
               "rivals": 4
             },
             {
-              "player": "Crysis",
+              "player": "Dusan",
               "wins": 0,
               "rivals": 4
             },
             {
               "player": "David",
               "wins": 1,
-              "rivals": 4
-            },
-            {
-              "player": "Banega",
-              "wins": 0,
               "rivals": 4
             }
           ],
@@ -4944,13 +4944,13 @@
             "Andrew",
             "Dominic"
           ],
-          "target_repr": "{'Andrew', 'Dominic', 'Sebastian', 'Alexis', 'Dexter'}",
+          "target_repr": "{'Alexis', 'Andrew', 'Dexter', 'Sebastian', 'Dominic'}",
           "h2h_keys": [
-            "Sebastian",
             "Dexter",
+            "Sebastian",
             "Andrew",
-            "Dominic",
-            "Alexis"
+            "Alexis",
+            "Dominic"
           ],
           "coincidencias_5": 2,
           "coincidencias_4": 2,
@@ -5055,12 +5055,12 @@
             {
               "position": 3,
               "player": "Dominic",
-              "score": -43.880286130191635
+              "score": -43.88028613019164
             },
             {
               "position": 4,
               "player": "Dexter",
-              "score": -63.08989995320748
+              "score": -63.089899953207485
             },
             {
               "position": 5,
@@ -5070,13 +5070,18 @@
           ],
           "dominance": [
             {
+              "player": "Alexis",
+              "wins": 4,
+              "rivals": 4
+            },
+            {
               "player": "Andrew",
               "wins": 1,
               "rivals": 4
             },
             {
-              "player": "Dominic",
-              "wins": 1,
+              "player": "Dexter",
+              "wins": 0,
               "rivals": 4
             },
             {
@@ -5085,13 +5090,8 @@
               "rivals": 4
             },
             {
-              "player": "Alexis",
-              "wins": 4,
-              "rivals": 4
-            },
-            {
-              "player": "Dexter",
-              "wins": 0,
+              "player": "Dominic",
+              "wins": 1,
               "rivals": 4
             }
           ],
@@ -5754,7 +5754,7 @@
             "William",
             "Felix"
           ],
-          "target_repr": "{'Felix', 'William', 'Kaizen', 'Jason', 'Iron'}",
+          "target_repr": "{'Felix', 'William', 'Jason', 'Kaizen', 'Iron'}",
           "h2h_keys": [
             "William",
             "Iron",
@@ -5890,13 +5890,13 @@
               "rivals": 4
             },
             {
-              "player": "Kaizen",
-              "wins": 1,
+              "player": "Jason",
+              "wins": 0,
               "rivals": 4
             },
             {
-              "player": "Jason",
-              "wins": 0,
+              "player": "Kaizen",
+              "wins": 1,
               "rivals": 4
             },
             {
