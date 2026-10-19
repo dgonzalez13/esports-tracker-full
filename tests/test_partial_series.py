@@ -13,8 +13,8 @@ class PartialSeriesTests(unittest.TestCase):
     def history(self, sequence):
         return test_six_match_stats.SixMatchTests().history(sequence=sequence)
 
-    def test_each_conditional_horizon_requires_enough_results(self):
-        for sequence, samples in [('DDDV', [1, 0, 0]), ('DDDDV', [1, 1, 0]),
+    def test_early_win_settles_all_later_horizons(self):
+        for sequence, samples in [('DDDV', [1, 1, 1]), ('DDDDV', [1, 1, 1]),
                                   ('DDDDDV', [1, 1, 1])]:
             payload = calculate_six_match_stats(self.history(sequence), self.reference)
             for k in (0, 1, 2, 3):
@@ -25,6 +25,21 @@ class PartialSeriesTests(unittest.TestCase):
                 expected = [((100 if 'V' in sequence[k:h] else 0)
                              if samples[i] else None) for i, h in enumerate((4, 5, 6))]
                 self.assertEqual([r['win_pct'] for r in rows], expected)
+
+    def test_single_early_win_counts_but_short_no_win_stays_unknown(self):
+        for sequence, count in [('V', 1), ('DV', 1), ('DDV', 1), ('D', 0), ('DD', 0)]:
+            payload = calculate_six_match_stats(self.history(sequence), self.reference)
+            rows = [r for r in payload['conditional_horizons'] if r['threshold'] == 40
+                    and r['initial_without_win'] == 0 and r['band'].startswith('A por')]
+            self.assertEqual([r['sample'] for r in rows], [count] * 3)
+            self.assertEqual([r['win_pct'] for r in rows], [100 if count else None] * 3)
+
+    def test_repeat_requires_a_new_win_after_current_prefix(self):
+        for sequence, count in [('VD', 0), ('VV', 1), ('VDV', 1)]:
+            payload = calculate_six_match_stats(self.history(sequence), self.reference)
+            row = next(r for r in payload['active_repeat_rows'] if r['band'] == '>40%'
+                       and r['played'] == 1 and r['win_position'] == 1)
+            self.assertEqual([row[f'repeat_by_{h}_sample'] for h in (4, 5, 6)], [count] * 3)
 
     def test_partial_session_without_win_is_not_a_six_match_failure(self):
         payload = calculate_six_match_stats(self.history('DDDD'), self.reference)
@@ -38,9 +53,9 @@ class PartialSeriesTests(unittest.TestCase):
         row = next(r for r in payload['active_repeat_rows']
                    if r['band'] == '>40%' and r['played'] == 2 and r['win_position'] == 1)
         self.assertEqual(row['repeat_by_4_sample'], 1)
-        self.assertEqual(row['repeat_by_5_sample'], 0)
+        self.assertEqual(row['repeat_by_5_sample'], 1)
         self.assertEqual(pair_repeat_cell(row, 'repeat_by_4_pct'), '100.00% (n=1)')
-        self.assertEqual(pair_repeat_cell(row, 'repeat_by_5_pct'), '\u2014')
+        self.assertEqual(pair_repeat_cell(row, 'repeat_by_5_pct'), '100.00% (n=1)')
 
     def test_mixed_lengths_use_independent_denominators(self):
         for first, second, key in [('DDDV', 'DDDDDV', 'conditional_horizons'),
@@ -56,12 +71,12 @@ class PartialSeriesTests(unittest.TestCase):
                 rows = [r for r in payload[key] if r['threshold'] == 40
                         and r['initial_without_win'] == 0 and r['band'].startswith('A por')]
                 self.assertEqual([(r['sample'], r['win_pct']) for r in rows],
-                                 [(2, 50), (1, 0), (1, 100)])
+                                 [(2, 50), (2, 50), (2, 100)])
             else:
                 row = next(r for r in payload[key] if r['band'] == '>40%'
                            and r['played'] == 2 and r['win_position'] == 1)
                 self.assertEqual([pair_repeat_cell(row, f'repeat_by_{h}_pct') for h in (4, 5, 6)],
-                                 ['50.00% (n=2)', '0.00% (n=1)', '100.00% (n=1)'])
+                                 ['50.00% (n=2)', '50.00% (n=2)', '100.00% (n=2)'])
 
     def test_open_or_overlong_sessions_are_not_used(self):
         for sequence, reference in [('DDDD', datetime(2026, 9, 2, 0, 20, tzinfo=timezone.utc)),

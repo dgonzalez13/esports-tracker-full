@@ -17,6 +17,11 @@ def gap_band(wins, losses, played):
     return 0 if difference < -5 * played else 1 if difference <= 5 * played else 2 if difference <= 15 * played else 3
 
 
+def horizon_observed(sequence, start, horizon):
+    """A win settles the event early; no-win needs observation to the deadline."""
+    return start < horizon and (len(sequence) >= horizon or 'V' in sequence[start:horizon])
+
+
 def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=None):
     # Keep all opponents when splitting player sessions, even for a single pair.
     players = defaultdict(list)
@@ -55,7 +60,7 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=No
                 if pair is not None and rival != pair[2]:
                     continue
                 earlier = prior[rival]
-                if 2 <= len(matches) <= 6 and closed:
+                if 1 <= len(matches) <= 6 and closed:
                     complete += len(matches) == 6
                     if len(earlier) >= minimum_prior:
                         wins = sum(r["result"] == "V" for r in earlier)
@@ -74,7 +79,7 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=No
                                     sample[5] += 1
                                     sample[1] += sequence[played] == 'V'
                                     for index, horizon in enumerate((4, 5, 6), 2):
-                                        if played < horizon <= len(sequence):
+                                        if horizon_observed(sequence, played, horizon):
                                             sample[index + 4] += 1
                                             sample[index] += 'V' in sequence[played:horizon]
                                     for threshold in (0, 5, 10):
@@ -85,13 +90,13 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=No
                                         sample[5] += 1
                                         sample[1] += sequence[played] == 'V'
                                         for index, horizon in enumerate((4, 5, 6), 2):
-                                            if played < horizon <= len(sequence):
+                                            if horizon_observed(sequence, played, horizon):
                                                 sample[index + 4] += 1
                                                 sample[index] += 'V' in sequence[played:horizon]
                             for condition, position, eligible in (
                                 (0, 1, sequence[0] == 'V'),
-                                (1, 2, sequence[1] == 'V'),
-                                (2, 2, sequence[0] != 'V' and sequence[1] == 'V'),
+                                (1, 2, sequence[1:2] == 'V'),
+                                (2, 2, sequence[0] != 'V' and sequence[1:2] == 'V'),
                             ):
                                 if eligible and len(sequence) == 6:
                                     sample = repeat_counts[(league, repeat_band, condition)]
@@ -103,7 +108,7 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=No
                             if pct <= threshold:
                                 continue
                             for horizon in (4, 5, 6):
-                                if len(sequence) < horizon:
+                                if not horizon_observed(sequence, 0, horizon):
                                     continue
                                 sample = horizons[(league, threshold, horizon)]
                                 sample[0] += 1
@@ -119,7 +124,7 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=No
                             for k in range(6):
                                 if "V" not in sequence[:k]:
                                     for horizon in (4, 5, 6):
-                                        if k < horizon <= len(sequence):
+                                        if horizon_observed(sequence, k, horizon):
                                             sample = conditional_horizons[(league, threshold, band, k, horizon)]
                                             sample[0] += 1
                                             sample[1] += "V" in sequence[k:horizon]

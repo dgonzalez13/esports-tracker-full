@@ -7,15 +7,18 @@ secuencia inicial; no se sustituyen muestras individuales por estadísticas de l
 ## Series con menos de seis resultados
 
 Una sesión cerrada (más de 90 minutos desde el último partido del jugador) con
-entre dos y seis encuentros de la pareja puede aportar a los plazos observados:
+entre uno y seis encuentros de la pareja puede aportar a los plazos observados:
 
-- V≤4 requiere al menos cuatro resultados.
-- V≤5 requiere al menos cinco resultados.
-- V≤6 requiere seis resultados.
+- Una victoria observada en el partido 1, 2 o 3 ya confirma el evento para
+  V≤4, V≤5 y V≤6, aunque no haya más resultados de esa serie.
+- Si no hay victoria, V≤4 requiere cuatro resultados, V≤5 cinco y V≤6 seis.
+- Para repetir victoria, solo confirma el evento una nueva victoria posterior al
+  prefijo comparado, dentro del plazo.
 - V siguiente requiere un resultado posterior al prefijo que se compara.
 
 Cada porcentaje tiene su propio denominador `n`. Los resultados no observados no
-cuentan como derrotas. Las sesiones abiertas y las que tienen más de seis
+cuentan como derrotas. Los casos sin victoria con seguimiento insuficiente se excluyen, no se tratan
+como derrotas. Las sesiones abiertas y las que tienen más de seis
 encuentros de la pareja no se usan como series de seis. Se mantienen al menos
 20 enfrentamientos anteriores a la sesión, sin usar sus resultados futuros para
 calcular los filtros previos.
