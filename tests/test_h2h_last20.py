@@ -68,5 +68,5 @@ class Last20Tests(unittest.TestCase):
             {'recent_h2h': {'players': [{'player': 'A', 'rivals': [rival]}]}}]}}})
         self.assertIn('V%20', html)
         self.assertIn('Dif.20', html)
-        self.assertIn('data-alternative="100.00%"', html)
+        self.assertIn('data-alternative="100.00% (n=1)"', html)
         self.assertIn('data-repeat-grouping', html)

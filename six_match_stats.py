@@ -39,9 +39,10 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=No
     gap_horizons = defaultdict(lambda: [0, 0])
     win_gap_horizons = defaultdict(lambda: [0, 0])
     conditional_horizons = defaultdict(lambda: [0, 0])
-    repeat_counts = defaultdict(lambda: [0, 0, 0, 0, 0])
-    active_repeat = defaultdict(lambda: [0, 0, 0, 0, 0])
-    active_repeat_gap = defaultdict(lambda: [0, 0, 0, 0, 0])
+    repeat_counts = defaultdict(lambda: [0] * 5)
+    # Active counts: eligible prefixes, four successes, four horizon denominators.
+    active_repeat = defaultdict(lambda: [0] * 9)
+    active_repeat_gap = defaultdict(lambda: [0] * 9)
     complete = 0
     for (league, player), history in players.items():
         prior = defaultdict(list)
@@ -54,8 +55,8 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=No
                 if pair is not None and rival != pair[2]:
                     continue
                 earlier = prior[rival]
-                if len(matches) == 6 and closed:
-                    complete += 1
+                if 2 <= len(matches) <= 6 and closed:
+                    complete += len(matches) == 6
                     if len(earlier) >= minimum_prior:
                         wins = sum(r["result"] == "V" for r in earlier)
                         losses = sum(r["result"] == "D" for r in earlier)
@@ -64,29 +65,35 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=No
                         sequence = ''.join(r["result"] for r in matches)
                         repeat_band = 0 if pct > 40 else 1 if pct >= 35 else 2 if pct >= 30 else None
                         if repeat_band is not None:
-                            for played in range(1, 6):
+                            for played in range(1, len(sequence)):
                                 prefix = sequence[:played]
                                 if prefix.count('V') == 1 and prefix.index('V') in (0, 1):
                                     position = prefix.index('V') + 1
                                     sample = active_repeat[(league, repeat_band, position, played)]
                                     sample[0] += 1
+                                    sample[5] += 1
                                     sample[1] += sequence[played] == 'V'
                                     for index, horizon in enumerate((4, 5, 6), 2):
-                                        sample[index] += 'V' in sequence[played:horizon]
+                                        if played < horizon <= len(sequence):
+                                            sample[index + 4] += 1
+                                            sample[index] += 'V' in sequence[played:horizon]
                                     for threshold in (0, 5, 10):
                                         if (wins - losses) * 100 <= threshold * len(earlier):
                                             continue
                                         sample = active_repeat_gap[(league, repeat_band, threshold, position, played)]
                                         sample[0] += 1
+                                        sample[5] += 1
                                         sample[1] += sequence[played] == 'V'
                                         for index, horizon in enumerate((4, 5, 6), 2):
-                                            sample[index] += 'V' in sequence[played:horizon]
+                                            if played < horizon <= len(sequence):
+                                                sample[index + 4] += 1
+                                                sample[index] += 'V' in sequence[played:horizon]
                             for condition, position, eligible in (
                                 (0, 1, sequence[0] == 'V'),
                                 (1, 2, sequence[1] == 'V'),
                                 (2, 2, sequence[0] != 'V' and sequence[1] == 'V'),
                             ):
-                                if eligible:
+                                if eligible and len(sequence) == 6:
                                     sample = repeat_counts[(league, repeat_band, condition)]
                                     sample[0] += 1
                                     sample[1] += sequence[position] == 'V'
@@ -96,6 +103,8 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=No
                             if pct <= threshold:
                                 continue
                             for horizon in (4, 5, 6):
+                                if len(sequence) < horizon:
+                                    continue
                                 sample = horizons[(league, threshold, horizon)]
                                 sample[0] += 1
                                 sample[1] += "V" in sequence[:horizon]
@@ -110,10 +119,12 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=No
                             for k in range(6):
                                 if "V" not in sequence[:k]:
                                     for horizon in (4, 5, 6):
-                                        if k < horizon:
+                                        if k < horizon <= len(sequence):
                                             sample = conditional_horizons[(league, threshold, band, k, horizon)]
                                             sample[0] += 1
                                             sample[1] += "V" in sequence[k:horizon]
+                                    if len(sequence) != 6:
+                                        continue
                                     sample = counts[(league, threshold)][k]
                                     sample[0] += 1
                                     sample[1] += "V" not in sequence
@@ -134,18 +145,26 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=No
             "active_repeat_gap_rows": [
                 {"league": league, "band": REPEAT_BANDS[band], "gap_threshold": threshold,
                  "win_position": position, "played": played, "sample": counts[0],
-                 "next_win_pct": counts[1] / counts[0] * 100 if counts[0] else None,
-                 "repeat_by_4_pct": counts[2] / counts[0] * 100 if counts[0] and played < 4 else None,
-                 "repeat_by_5_pct": counts[3] / counts[0] * 100 if counts[0] and played < 5 else None,
-                 "repeat_by_6_pct": counts[4] / counts[0] * 100 if counts[0] else None}
+                 "next_win_sample": counts[5],
+                 "next_win_pct": counts[1] / counts[5] * 100 if counts[5] else None,
+                 "repeat_by_4_sample": counts[6],
+                 "repeat_by_4_pct": counts[2] / counts[6] * 100 if counts[6] else None,
+                 "repeat_by_5_sample": counts[7],
+                 "repeat_by_5_pct": counts[3] / counts[7] * 100 if counts[7] else None,
+                 "repeat_by_6_sample": counts[8],
+                 "repeat_by_6_pct": counts[4] / counts[8] * 100 if counts[8] else None}
                 for (league, band, threshold, position, played), counts in sorted(active_repeat_gap.items())
             ],
             "active_repeat_rows": [
                 {"league": league, "band": label, "win_position": position, "played": played,
-                 "sample": counts[0], "next_win_pct": counts[1] / counts[0] * 100 if counts[0] else None,
-                 "repeat_by_4_pct": counts[2] / counts[0] * 100 if counts[0] and played < 4 else None,
-                 "repeat_by_5_pct": counts[3] / counts[0] * 100 if counts[0] and played < 5 else None,
-                 "repeat_by_6_pct": counts[4] / counts[0] * 100 if counts[0] else None}
+                 "sample": counts[0], "next_win_sample": counts[5],
+                 "next_win_pct": counts[1] / counts[5] * 100 if counts[5] else None,
+                 "repeat_by_4_sample": counts[6],
+                 "repeat_by_4_pct": counts[2] / counts[6] * 100 if counts[6] else None,
+                 "repeat_by_5_sample": counts[7],
+                 "repeat_by_5_pct": counts[3] / counts[7] * 100 if counts[7] else None,
+                 "repeat_by_6_sample": counts[8],
+                 "repeat_by_6_pct": counts[4] / counts[8] * 100 if counts[8] else None}
                 for league in sorted({key[0] for key in players}) for band, label in enumerate(REPEAT_BANDS)
                 for position in (1, 2) for played in range(position, 6)
                 for counts in [active_repeat[(league, band, position, played)]]

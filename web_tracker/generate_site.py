@@ -1926,7 +1926,7 @@ def render_recent_group_h2h_dashboard(data):
         '<p class="section-subtitle">Estimaciones: ≥1 victoria desde ahora hasta completar 4, 5 o 6 partidos, '
         'usando solo series de esta pareja (A frente a B), con igual umbral previo y diferencia inicial. '
         'Se asume que los partidos de las últimas 8 horas corresponden al inicio de una misma serie. '
-        'n = series históricas comparables; sin muestra o fuera de los umbrales se muestra —.</p>'
+        'n = series comparables de esta pareja que alcanzan el horizonte indicado; sin muestra o fuera de los umbrales se muestra —.</p>'
         '<p class="section-subtitle">V%20 y Dif.20: últimos 20 enfrentamientos finalizados entre ambos; '
         '— si faltan partidos con resultado registrado. Dif. se expresa en puntos porcentuales.</p>'
         + render_gap_filters()
@@ -1989,13 +1989,13 @@ def render_six_match_stats(payload):
         'Los umbrales son estrictos y se solapan. Cada dirección A→B se analiza por separado, '
         'agrupando todas las parejas de cada liga.</p>'
         '<p class="section-subtitle">Sesiones inferidas por pausas de más de 90 minutos entre partidos del jugador; '
-        'solo parejas con exactamente 6 encuentros y sesiones terminadas hace más de 90 minutos. '
+        'sesiones terminadas hace más de 90 minutos y parejas con hasta 6 encuentros. '
         'Sin identificador oficial de grupo, esta aproximación puede omitir o unir sesiones. '
-        'Se excluyen series incompletas y se usa solo el histórico detallado, que puede tener cobertura parcial. '
+        'Cada horizonte exige al menos ese número de resultados registrados; una serie de 4 partidos solo aporta a V≤4. Se usa el histórico detallado, con cobertura parcial. '
         'Frecuencias observadas, no probabilidades garantizadas.</p>'
         + '<h3>Al menos una victoria en los primeros 4, 5 o 6 partidos</h3>'
         + '<p class="section-subtitle">Sin condicionar a una secuencia inicial. Se comparan los primeros '
-        '4, 5 y 6 encuentros de las mismas series completas de seis partidos. '
+        '4, 5 y 6 encuentros de las series que alcanzan cada plazo; n puede variar entre columnas. '
         'Cada fila agrupa conjuntamente por V% previo de A y Dif. = V% de A − V% de B, '
         'calculados antes de la serie. Dif. usa umbrales estrictos >0, >5 y >10 puntos porcentuales; '
         'los grupos se solapan y no deben sumarse.</p>'
@@ -2037,7 +2037,7 @@ def render_gap_match_stats(payload):
             'al comienzo de la serie. Las derrotas de A son las victorias de B; los empates cuentan en el total. '
             'Ejemplo: A 42%, B 40% → +2 puntos porcentuales, equilibrados. '
             f'Se exige un mínimo de {payload["minimum_prior"]} partidos previos. '
-            'Se usan las mismas series completas de seis encuentros y sesiones inferidas con pausas de más '
+            'Cada horizonte usa las series que alcanzan ese plazo, con sesiones inferidas por pausas de más '
             'de 90 minutos. Histórico detallado disponible, con cobertura parcial. '
             'Los umbrales >35% y >40% se solapan. Cada dirección se analiza por separado; '
             'muestras pequeñas pueden producir frecuencias poco estables.</p>'
@@ -2058,6 +2058,13 @@ def matchup_gap(rival):
 
 def new_statistics_records(records, excluded_keys):
     return [record for record in records if is_operational_record(record, excluded_keys)]
+
+
+def pair_repeat_cell(sample, field):
+    if not sample or sample.get(field) is None:
+        return "\u2014"
+    count = sample.get(field.replace('_pct', '_sample'), sample.get('sample', 0))
+    return f"{fmt_pct(sample[field])} (n={count})" if count else "\u2014"
 
 
 def render_active_repeat_matches(data):
@@ -2100,9 +2107,9 @@ def render_active_repeat_matches(data):
                            if losses is not None else None)
                     threshold = next((value for value in (10, 5, 0) if gap is not None and gap > value), None)
                     gap_sample = gap_lookup.get((league, band, threshold, position, played))
-                    gap_values = [fmt_pct(gap_sample[field]) if gap_sample and gap_sample['sample'] and gap_sample[field] is not None else '—'
+                    gap_values = [pair_repeat_cell(gap_sample, field)
                                   for field in ('next_win_pct', 'repeat_by_4_pct', 'repeat_by_5_pct', 'repeat_by_6_pct')]
-                    values = [fmt_pct(sample[field]) if sample and sample['sample'] and sample[field] is not None else '—'
+                    values = [pair_repeat_cell(sample, field)
                               for field in ('next_win_pct', 'repeat_by_4_pct', 'repeat_by_5_pct', 'repeat_by_6_pct')]
                     selected.append((rival.get('next_match'), [league, player['player'], rival['rival'], fmt_pct(pct),
                         prior_gap, *last20_cells(rival.get('prior20', {})),
@@ -2124,7 +2131,7 @@ def render_active_repeat_matches(data):
             '<p class="section-subtitle">V%20 y Dif.20 usan los últimos 20 enfrentamientos anteriores a la secuencia (— si faltan registros). '
             'Muestra V% + Dif.: añade al rango de V% la mayor diferencia aplicable: >10, >5 o >0 pp. '
             'Son umbrales acumulativos, estrictos y medidos antes de la serie; para Dif.≤0 no hay muestra agrupada. '
-            'Rng muestra el rango de V% o el umbral de Dif. según la muestra seleccionada; n indica series comparables de esta pareja; sin muestra individual se muestra —.</p>'
+            'Rng muestra el rango de V% o el umbral de Dif. según la muestra seleccionada. Cada porcentaje incluye su propio n de series de esta pareja que alcanzan ese plazo. La columna n corresponde al siguiente partido; sin muestra individual se muestra —.</p>'
             '<label class="upcoming-filters">Agrupar muestra: <select data-repeat-grouping>'
             '<option value="original">V%</option><option value="alternative">V% + Dif.</option></select></label>'
             + render_gap_filters()
