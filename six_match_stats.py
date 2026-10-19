@@ -17,12 +17,15 @@ def gap_band(wins, losses, played):
     return 0 if difference < -5 * played else 1 if difference <= 5 * played else 2 if difference <= 15 * played else 3
 
 
-def calculate_six_match_stats(records, reference_time, minimum_prior=20):
+def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=None):
+    # Keep all opponents when splitting player sessions, even for a single pair.
     players = defaultdict(list)
     seen = set()
     for row in records:
         stamp = _record_time(row)
         if stamp is None or stamp > reference_time or row.get("result") not in {"V", "E", "D"}:
+            continue
+        if pair is not None and (row.get("league"), row.get("player_key")) != pair[:2]:
             continue
         key = (row.get("league"), row.get("player_key"), row.get("match_id") or stamp,
                row.get("rival_key"))
@@ -48,6 +51,8 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20):
                 pairs[row["rival_key"]].append(row)
             closed = _record_time(session[-1]) + timedelta(minutes=90) < reference_time
             for rival, matches in pairs.items():
+                if pair is not None and rival != pair[2]:
+                    continue
                 earlier = prior[rival]
                 if len(matches) == 6 and closed:
                     complete += 1

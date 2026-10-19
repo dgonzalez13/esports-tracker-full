@@ -61,7 +61,7 @@ class Last20Tests(unittest.TestCase):
                 self.assertEqual(row['next_win_pct'], 0)
                 self.assertEqual(row['repeat_by_5_pct'], 100)
             self.assertFalse(any(r['played'] == 5 for r in stats['active_repeat_gap_rows']))
-        rival = dict(rival='B', sequence='VDD', historical_played=23,
+        rival = dict(rival='B', pair_stats=stats, sequence='VDD', historical_played=23,
                      historical_wins=13, historical_losses=10,
                      prior20={'available': 20, 'win_pct': 60, 'gap': 20})
         html = render_active_repeat_matches({'six_match_stats': stats, 'leagues': {'GT': {'groups': [

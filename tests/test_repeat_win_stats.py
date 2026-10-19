@@ -34,7 +34,7 @@ class RepeatWinTests(unittest.TestCase):
         self.assertEqual(row['repeat_by_4_pct'], 0)
         self.assertEqual(row['repeat_by_5_pct'], 100)
         self.assertFalse(any(r['sample'] for r in payload['active_repeat_rows'] if r['played'] == 5))
-        rival = dict(rival='B', sequence='VDD', played=3, historical_played=23, historical_wins=10,
+        rival = dict(rival='B', pair_stats=payload, sequence='VDD', played=3, historical_played=23, historical_wins=10,
                      next_match='2026-09-03T12:00:00+00:00')
         data = {'six_match_stats': payload, 'leagues': {'GT': {'groups': [
             {'recent_h2h': {'players': [{'player': 'A', 'rivals': [rival]}]}}
@@ -51,6 +51,16 @@ class RepeatWinTests(unittest.TestCase):
             rival = dict(rival='B', sequence=sequence, historical_played=30+len(sequence), historical_wins=15+sequence.count('V'))
             data = {'leagues': {'GT': {'groups': [{'recent_h2h': {'players': [{'player': 'A', 'rivals': [rival]}]}}]}}}
             self.assertEqual('<td>A</td>' in render_active_repeat_matches(data), included, sequence)
+
+    def test_global_samples_are_not_used_when_pair_has_no_sample(self):
+        rival = dict(rival='B', sequence='VDD', played=3, historical_played=23,
+                     historical_wins=10)
+        data = {'six_match_stats': self.stats('VDDDVD'),
+                'leagues': {'GT': {'groups': [{'recent_h2h': {'players': [
+                    {'player': 'A', 'rivals': [rival]}]}}]}}}
+        html = render_active_repeat_matches(data)
+        self.assertNotIn('100.00%', html)
+        self.assertIn('data-original="0" data-alternative="0"', html)
 
     def stats(self, sequence, wins=9):
         records = test_six_match_stats.SixMatchTests().history(wins=wins, sequence=sequence)

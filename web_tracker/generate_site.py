@@ -1837,9 +1837,17 @@ def attach_recent_group_h2h(data, records, reference_time, schedule=None):
             key = (league, tuple(sorted((name_key(fixture["player"]), name_key(fixture["rival"])))))
             if key not in started_matches or stamp > started_matches[key]:
                 started_matches[key] = stamp
+    player_records = {}
+    for record in new_statistics_records(records, set(tuple(k) for k in data.get("excluded_player_keys", []))):
+        player_records.setdefault((record.get("league"), record.get("player_key")), []).append(record)
+    pair_stats = {}
     def matchup(player, rival, league, historical_lookup):
         row = calculate_h2h_stats(recent, player, rival, league=league)
         identity = (league, name_key(player), name_key(rival))
+        if identity not in pair_stats:
+            pair_stats[identity] = calculate_six_match_stats(
+                player_records.get(identity[:2], []), reference_time, pair=identity)
+        row['pair_stats'] = pair_stats[identity]
         row['last20'] = last20.get(identity, {})
         row['prior20'] = prior20.get(identity, {})
         historical = historical_lookup.get((name_key(player), name_key(rival)))
@@ -1882,10 +1890,9 @@ def attach_recent_group_h2h(data, records, reference_time, schedule=None):
 
 def render_recent_group_h2h_dashboard(data):
     excluded = set(tuple(item) for item in data.get("h2h_exclusions", []))
-    probability_lookup = {
-        (r["league"], r["threshold"], r["band"], r["initial_without_win"], r["horizon"]): r
-        for r in data.get("six_match_stats", {}).get("conditional_horizons", [])
-    }
+    def probability_lookup(rival):
+        return {(r['league'], r['threshold'], r['band'], r['initial_without_win'], r['horizon']): r
+                for r in rival.get('pair_stats', {}).get('conditional_horizons', [])}
     selected = []
     for league, payload in data.get("leagues", {}).items():
         for group in payload.get("groups", []):
@@ -1904,7 +1911,7 @@ def render_recent_group_h2h_dashboard(data):
         [league, player, rival["rival"],
          fmt_pct(rival["historical_win_pct"]), matchup_gap(rival),
          *last20_cells(rival.get('last20', {})), rival["sequence"] or "Sin partidos", next_group_match_label(rival)]
-        + matchup_win_estimates(league, rival, probability_lookup,
+        + matchup_win_estimates(league, rival, probability_lookup(rival),
                                 data.get("six_match_stats", {}).get("minimum_prior", 20))
         for league, label, player, rival, color in selected
     ]
@@ -1917,7 +1924,7 @@ def render_recent_group_h2h_dashboard(data):
         'Horario de Madrid. Ordenadas por hora de comienzo; sin horario al final. '
         'Los partidos iniciados sin resultado confirmado siguen visibles; el calendario no confirma si continúan en juego.</p>'
         '<p class="section-subtitle">Estimaciones: ≥1 victoria desde ahora hasta completar 4, 5 o 6 partidos, '
-        'comparando liga, umbral previo de A y diferencia A−B al inicio del tramo sin ganar. '
+        'usando solo series de esta pareja (A frente a B), con igual umbral previo y diferencia inicial. '
         'Se asume que los partidos de las últimas 8 horas corresponden al inicio de una misma serie. '
         'n = series históricas comparables; sin muestra o fuera de los umbrales se muestra —.</p>'
         '<p class="section-subtitle">V%20 y Dif.20: últimos 20 enfrentamientos finalizados entre ambos; '
@@ -2055,10 +2062,6 @@ def new_statistics_records(records, excluded_keys):
 
 def render_active_repeat_matches(data):
     stats = data.get('six_match_stats', {})
-    lookup = {(r['league'], r['band'], r['win_position'], r['played']): r
-              for r in stats.get('active_repeat_rows', [])}
-    gap_lookup = {(r['league'], r['band'], r['gap_threshold'], r['win_position'], r['played']): r
-                  for r in stats.get('active_repeat_gap_rows', [])}
     excluded = {tuple(r) for r in data.get('h2h_exclusions', [])}
     bettable = {tuple(r) for r in data.get('bettable_keys', [])}
     selected = []
@@ -2087,6 +2090,11 @@ def render_active_repeat_matches(data):
                         continue
                     band = REPEAT_BANDS[0 if pct > 40 else 1 if pct >= 35 else 2]
                     position = sequence.index('V') + 1
+                    individual = rival.get('pair_stats', {})
+                    lookup = {(r['league'], r['band'], r['win_position'], r['played']): r
+                              for r in individual.get('active_repeat_rows', [])}
+                    gap_lookup = {(r['league'], r['band'], r['gap_threshold'], r['win_position'], r['played']): r
+                                  for r in individual.get('active_repeat_gap_rows', [])}
                     sample = lookup.get((league, band, position, played))
                     gap = ((wins - (losses - sequence.count('D'))) * 100 / prior
                            if losses is not None else None)
@@ -2110,13 +2118,13 @@ def render_active_repeat_matches(data):
             '<p class="section-subtitle">Una única victoria, en el primer o segundo encuentro, y entre dos y cinco '
             'partidos disputados. Se asume que la secuencia de las últimas 8 horas es el inicio de la serie. '
             'V% previo descuenta del histórico los partidos de esa secuencia. Las muestras comparables tienen '
-            'el mismo rango previo, liga, posición de la victoria y número de partidos disputados, '
+            'la misma pareja (A frente a B), rango previo, posición de la victoria y número de partidos disputados, '
             'sin ninguna segunda victoria hasta ese momento. Los porcentajes corresponden a partidos posteriores '
             'al último disputado. — indica horizonte agotado o sin muestra. Horario de Madrid.</p>'
             '<p class="section-subtitle">V%20 y Dif.20 usan los últimos 20 enfrentamientos anteriores a la secuencia (— si faltan registros). '
             'Muestra V% + Dif.: añade al rango de V% la mayor diferencia aplicable: >10, >5 o >0 pp. '
             'Son umbrales acumulativos, estrictos y medidos antes de la serie; para Dif.≤0 no hay muestra agrupada. '
-            'Rng muestra el rango de V% o el umbral de Dif. según la muestra seleccionada; n indica series comparables.</p>'
+            'Rng muestra el rango de V% o el umbral de Dif. según la muestra seleccionada; n indica series comparables de esta pareja; sin muestra individual se muestra —.</p>'
             '<label class="upcoming-filters">Agrupar muestra: <select data-repeat-grouping>'
             '<option value="original">V%</option><option value="alternative">V% + Dif.</option></select></label>'
             + render_gap_filters()

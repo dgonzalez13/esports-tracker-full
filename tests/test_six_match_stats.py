@@ -6,6 +6,18 @@ from web_tracker.generate_site import render_six_match_stats, render_gap_match_s
 
 
 class SixMatchTests(unittest.TestCase):
+    def test_pair_samples_exclude_other_pairs_and_reverse_direction(self):
+        reference = datetime(2026, 9, 3, tzinfo=timezone.utc)
+        records = self.history(sequence="DDDDDV")
+        others = [dict(r, player_key="other", rival_key="opponent",
+                       match_id="other-" + str(r["match_id"]))
+                  for r in self.history(sequence="VVVVVV")]
+        reverse = [dict(r, player_key="fox", rival_key="david") for r in records]
+        isolated = calculate_six_match_stats(records, reference)
+        scoped = calculate_six_match_stats(records + others + reverse, reference,
+                                           pair=("GT", "david", "fox"))
+        self.assertEqual(scoped, isolated)
+
     def test_row_estimates_use_prior_counts_and_conditioned_horizons(self):
         payload = calculate_six_match_stats(self.history(sequence="DDDDVD"), datetime(2026, 9, 3, tzinfo=timezone.utc))
         lookup = {(r["league"], r["threshold"], r["band"], r["initial_without_win"], r["horizon"]): r
