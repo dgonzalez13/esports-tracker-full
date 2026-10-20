@@ -123,14 +123,31 @@ def update_repaired_history(
     candidate_by_id = {row["perspective_id"]: row for row in candidates}
 
     existing = load_records(history_path)
+    from eadriatic_saved_results import SOURCE_TYPE, result_key, with_alternate_origin
+    official_by_key = {}
+    for candidate in candidates:
+        official_by_key.setdefault(result_key(candidate), []).append(candidate)
     repaired = []
     seen = set()
     updated = 0
     added = 0
     unchanged = 0
     conflicts = 0
+    promoted = 0
 
     for row in existing:
+        if row.get('source_type') == SOURCE_TYPE:
+            equivalents = official_by_key.get(result_key(row), [])
+            ids = {candidate['perspective_id'] for candidate in equivalents}
+            if len(ids) > 1:
+                raise ValueError('Ambiguous official match for a manually imported result')
+            if equivalents:
+                candidate = equivalents[0]
+                repaired.append(with_alternate_origin(candidate, row))
+                seen.add(candidate['perspective_id'])
+                updated += 1
+                promoted += 1
+                continue
         perspective = row["perspective_id"]
         candidate = candidate_by_id.get(perspective)
         if candidate is None:
@@ -197,6 +214,7 @@ def update_repaired_history(
         "generated_perspectives": len(candidates),
         "added_perspectives": added,
         "updated_perspectives": updated,
+        "promoted_manual_perspectives": promoted,
         "unchanged_perspectives": unchanged,
         "conflicts": conflicts,
         "duplicate_perspectives": len(candidates) - added - updated,

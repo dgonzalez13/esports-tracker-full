@@ -1,0 +1,60 @@
+name: Import Eadriatic Manual Results
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Aplicar importación (desmarcado: solo previsualizar)'
+        type: boolean
+        default: false
+      complete_days:
+        description: 'Días completos de Madrid, separados por comas (ej. 2026-10-19)'
+        type: string
+        required: false
+        default: ''
+
+concurrency:
+  group: tracker-data-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Import inbox
+        id: import
+        env:
+          APPLY_IMPORT: ${{ inputs.apply }}
+          COMPLETE_DAYS: ${{ inputs.complete_days }}
+        run: python import_eadriatic_inbox.py --report artifacts/manual_import/report.json
+      - name: Update Eadriatic analysis
+        if: steps.import.outputs.changed == 'true'
+        run: python group_analysis.py EADRIATIC
+      - name: Regenerate dashboard
+        if: steps.import.outputs.changed == 'true'
+        run: python web_tracker/generate_site.py
+      - name: Commit imported results
+        if: steps.import.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add eadriatic/data/match_history.jsonl eadriatic/data/*_eadriatic_player_stats.txt eadriatic/manual_import_log.json group_analysis.json docs/index.html
+          git diff --cached --quiet || git commit -m "Import manually saved Eadriatic results"
+          git push
+      - name: Keep import report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eadriatic-manual-import-report
+          path: artifacts/manual_import/report.json
+          if-no-files-found: ignore

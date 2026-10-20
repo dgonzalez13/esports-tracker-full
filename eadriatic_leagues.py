@@ -505,12 +505,13 @@ def build_df(stats):
 # -------------------------
 # GUARDAR TXT (FORMATO GT)
 # -------------------------
-def save_txt(df, vs_text):
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+def save_txt(df, vs_text, *, target_date=None, output_dir=None):
+    output_dir = output_dir or OUTPUT_DIR
+    os.makedirs(output_dir, exist_ok=True)
 
-    today = datetime.now()
+    today = target_date or datetime.now(ZoneInfo('Europe/Madrid'))
     filename = today.strftime("%Y%m%d") + "_eadriatic_player_stats.txt"
-    path = os.path.join(OUTPUT_DIR, filename)
+    path = os.path.join(output_dir, filename)
 
     with open(path, "w", encoding="utf-8") as f:
         f.write(f"ESTADÍSTICAS {today.strftime('%Y-%m-%d')}\n\n")
@@ -535,13 +536,43 @@ def save_txt(df, vs_text):
             f.write(f"\n{player}\n")
             f.write(vs_text[player] + "\n")
 
-    print(f"\n✔ Guardado en {path}")
+    print(f"\nGuardado en {path}")
 
 
 # -------------------------
 # MAIN
 # -------------------------
-def main():
+def main(argv=None):
+    import argparse
+    import glob
+    import json
+
+    parser = argparse.ArgumentParser(description='Collect official Eadriatic results or import saved pages offline')
+    parser.add_argument('--source', choices=('official', 'betsapi', 'bsportsfan'), default='official')
+    parser.add_argument('--html', nargs='+', help='Saved HTML/MHTML files or wildcard patterns')
+    parser.add_argument('--apply', action='store_true', help='Apply a saved-page import (default: preview only)')
+    parser.add_argument('--export-dir', help='Export decoded HTML, normalized results and import summary')
+    parser.add_argument('--history', default=str(MATCH_HISTORY_FILE), help='Destination JSONL history')
+    parser.add_argument('--complete-day', action='append', default=[], metavar='YYYY-MM-DD',
+                        help='Declare all pages of this Madrid date imported; rebuild its daily TXT')
+    args = parser.parse_args(argv)
+    if args.source != 'official':
+        from eadriatic_saved_results import import_saved_results
+        if not args.html:
+            parser.error('--html is required for an offline import')
+        paths = []
+        for pattern in args.html:
+            matches = sorted(glob.glob(pattern))
+            if not matches:
+                parser.error(f'No files match {pattern}')
+            paths.extend(matches)
+        summary = import_saved_results(list(dict.fromkeys(paths)), args.history,
+                                       apply=args.apply, export_dir=args.export_dir,
+                                       complete_days=args.complete_day)
+        print(json.dumps(summary, ensure_ascii=True, indent=2))
+        return summary
+    if args.html or args.apply or args.export_dir or args.complete_day or args.history != str(MATCH_HISTORY_FILE):
+        parser.error('Import options require --source betsapi or --source bsportsfan')
     print("Descargando HTML...")
     html = fetch_eadriatic_html()
 

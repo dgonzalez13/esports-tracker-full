@@ -216,8 +216,12 @@ def merge_record(existing, candidate):
 
 
 def merge_records(existing_records, candidates):
+    records = [*existing_records, *candidates]
+    if any(row.get('source_type') == 'betsapi_saved_html' for row in records):
+        from eadriatic_saved_results import reconcile_saved_sources
+        records = reconcile_saved_sources(records)
     indexed = {}
-    for record in [*existing_records, *candidates]:
+    for record in records:
         validate_record(record)
         key = record["perspective_id"]
         indexed[key] = merge_record(indexed[key], record) if key in indexed else dict(record)

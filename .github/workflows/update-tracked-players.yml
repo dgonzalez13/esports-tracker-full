@@ -28,6 +28,10 @@ on:
         type: choice
         options: [C, N]
 
+concurrency:
+  group: tracker-data-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   update-tracked-players:
     runs-on: ubuntu-latest
