@@ -10,12 +10,8 @@ BASE = Path(__file__).resolve().parent.parent
 if str(BASE) not in sys.path:
     sys.path.insert(0, str(BASE))
 
-from coincident_matches import (
-    MAX_AUTOMATIC_CANDIDATES,
-    calculate_all_coincident_pairs,
-)
 from current_streaks_v2 import (
-    DEFAULT_OPERATIONAL_WINDOW_HOURS, build_current_streaks_v2_payload,
+    build_current_streaks_v2_payload,
     calculate_operational_snapshot,
 )
 from history_query import load_all_history, filter_by_time
@@ -23,16 +19,13 @@ from h2h_analysis import calculate_h2h_stats
 from six_match_stats import calculate_six_match_stats, gap_band, GAP_LABELS, REPEAT_BANDS
 from h2h_exclusions import load_h2h_exclusions, load_h2h_min_gap
 from team_analysis import calculate_team_stats
-from streak_break_stats import build_streak_statistics
-from web_tracker.streak_statistics import render_streak_statistics
 from match_history import name_key
 from current_streaks_v2 import _record_time
 from fixture_schedule import load_schedule
 from web_tracker.upcoming_matches import render_upcoming_matches, upcoming_fixtures
-from coincident_schedule import attach_schedules, fixture_label
 from selected_players import (
     bettable_player_keys, excluded_player_keys, is_operational_record,
-    load_coincident_config, load_tracked_players,
+    load_tracked_players,
 )
 DOCS_DIR = BASE / "docs"
 GROUP_ANALYSIS_FILE = BASE / "group_analysis.json"
@@ -281,7 +274,7 @@ def metric(label, value, hint=None):
     )
 
 
-def render_page(data, current_streaks, coincident_pairs=None, current_streaks_v2=None, schedule=None, streak_statistics=None):
+def render_page(data, current_streaks, current_streaks_v2=None, schedule=None):
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -303,14 +296,12 @@ def render_page(data, current_streaks, coincident_pairs=None, current_streaks_v2
 </header>
 <main>
     {render_current_streaks_v2(current_streaks_v2 or {})}
-    {render_streak_statistics(streak_statistics)}
     {render_upcoming_matches(schedule or {})}
     {render_recent_group_h2h_dashboard(data)}
     {render_active_repeat_matches(data)}
     {render_gap_match_stats(data.get("six_match_stats"))}
     {render_repeat_win_stats(data.get("six_match_stats"))}
     {render_team_statistics(data.get("team_stats", []))}
-    {render_coincident_matches(coincident_pairs if coincident_pairs is not None else [], current_streaks_v2 or {})}
     {render_group_dashboard(data, current_streaks)}
 </main>
 <script>{(BASE / 'web_tracker' / 'player_name_alignment.js').read_text(encoding='utf-8')}</script>
@@ -734,27 +725,10 @@ summary {
         flex-direction: column;
     }
 }
-.coincident-both-green {
-    background: #bbf7d0;
-    color: #052e16;
-    box-shadow: inset 5px 0 0 #15803d;
-}
-.coincident-both-red {
-    background: #fecaca;
-    color: #450a0a;
-    box-shadow: inset 5px 0 0 #b91c1c;
-}
-.coincident-mixed-confirmed {
-    background: #fde68a;
-    color: #422006;
-    box-shadow: inset 5px 0 0 #b45309;
-}
 .streak-group-shaded { background: #eef4f8; }
 .recent-h2h-green td { background: #dcfce7; color: #14532d; }
 #recent-group-h2h tr[hidden] { display: none; }
 #team-statistics tr[hidden] { display: none; }
-.coincident-collapsed > summary { cursor: pointer; }
-.coincident-collapsed > summary h2 { display: inline; }
 .upcoming-filters { display: flex; flex-wrap: wrap; gap: 8px 12px; font-size: 12px; }
 .upcoming-filters label { display: flex; align-items: center; gap: 5px; }
 .upcoming-filters select { font: inherit; padding: 5px 8px; max-width: 100%; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); }
@@ -769,7 +743,7 @@ summary {
     text-decoration: none; cursor: help;
 }
 #upcoming-status { margin: 6px 0; font-size: 12px; }
-.coincident-pair.upcoming-panel > summary { justify-content: flex-start; }
+.match-panel.upcoming-panel > summary { justify-content: flex-start; }
 .upcoming-panel > summary h2 { margin: 0; font-size: 16px; color: inherit; }
 .upcoming-table { width: 100%; min-width: 0; table-layout: fixed; }
 .upcoming-time-col { width: 60px; }
@@ -794,20 +768,7 @@ summary {
     .player-result:hover .player-result-note { display: block; }
 }
 
-.coincident-pair tbody tr:not(.coincident-both-green):not(.coincident-both-red):not(.coincident-mixed-confirmed) {
-    background: #ffffff;
-}
-
-.coincident-pair tbody tr:not(.coincident-both-green):not(.coincident-both-red):not(.coincident-mixed-confirmed):nth-child(even) {
-    background: #f8fafc;
-}
-
-.coincident-pair th {
-    background: #e5e7eb;
-    color: #374151;
-}
-
-.coincident-pair {
+.match-panel {
     margin-bottom: 10px;
     border: 1px solid var(--line);
     border-radius: 8px;
@@ -816,7 +777,7 @@ summary {
     overflow: hidden;
 }
 
-.coincident-pair > summary {
+.match-panel > summary {
     cursor: pointer;
     list-style: none;
     padding: 13px 15px;
@@ -830,48 +791,35 @@ summary {
     color: #065f5b;
 }
 
-.coincident-pair > summary:hover {
+.match-panel > summary:hover {
     background: #f0fdfa;
 }
 
-.coincident-pair > summary:focus-visible {
+.match-panel > summary:focus-visible {
     outline: 3px solid #0f766e;
     outline-offset: -3px;
 }
 
-.coincident-pair > summary::-webkit-details-marker {
+.match-panel > summary::-webkit-details-marker {
     display: none;
 }
 
-.coincident-pair > summary::before {
+.match-panel > summary::before {
     content: "▶";
     margin-right: 8px;
     color: var(--muted);
     font-size: 11px;
 }
 
-.coincident-pair[open] > summary::before {
+.match-panel[open] > summary::before {
     content: "▼";
 }
 
-.coincident-pair-body {
+.match-panel-body {
     padding: 0 15px 15px;
     border-top: 1px solid var(--line);
 }
-.coincident-cross-group {
-    border-color: #38bdf8;
-}
-
-.coincident-cross-group > summary {
-    background: #dbeafe;
-    color: #0c4a6e;
-}
-
-.coincident-cross-group > summary:hover {
-    background: #bfdbfe;
-}
-
-.coincident-pair > summary .badge {
+.match-panel > summary .badge {
     background: #ffffff;
     border-color: #cbd5e1;
     color: #374151;
@@ -881,14 +829,14 @@ summary {
     min-width: 0;
 }
 
-.coincident-pair > summary > span {
+.match-panel > summary > span {
     min-width: 0;
     max-width: 100%;
     overflow-wrap: anywhere;
 }
 
 @media (max-width: 600px) {
-    .coincident-pair > summary .badge-row {
+    .match-panel > summary .badge-row {
         flex-basis: 100%;
     }
 }
@@ -980,387 +928,6 @@ def render_current_streaks_v2(payload):
         f'{metadata_badge("Indicator threshold", "50%")}'
         '</div></div><div class="streak-grid">'
         f'{"".join(panels)}</div></section>'
-    )
-
-
-def _madrid_time(value):
-    try:
-        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-    except (TypeError, ValueError):
-        return "—"
-    return parsed.astimezone(ZoneInfo("Europe/Madrid")).strftime("%d/%m/%Y %H:%M")
-
-
-
-def _coincident_indicator_strength_lookup(current_streaks_v2):
-    lookup = {}
-    for league, rows in (current_streaks_v2 or {}).get("leagues", {}).items():
-        for row in rows:
-            player_key = row.get("player_key")
-            indicator = row.get("indicator", "NONE")
-            if not player_key:
-                continue
-            if indicator == "GREEN":
-                strength = float(row.get("win_pct", 0.0) or 0.0)
-            elif indicator == "RED":
-                strength = float(row.get("loss_pct", 0.0) or 0.0)
-            else:
-                strength = 0.0
-            lookup[(str(league).upper(), player_key)] = strength
-    return lookup
-
-
-def _coincident_pair_metrics(pair, strength_lookup):
-    matches = sorted(pair.get("metric_matches", pair.get("matches", [])), key=lambda row: row.get("pair_order", 0))
-    key_a = (
-        str(pair.get("player_a_league", "")).upper(),
-        name_key(str(pair.get("player_a", ""))),
-    )
-    key_b = (
-        str(pair.get("player_b_league", "")).upper(),
-        name_key(str(pair.get("player_b", ""))),
-    )
-    strength_a = float(pair.get("player_a_pct", strength_lookup.get(key_a, 0.0)))
-    strength_b = float(pair.get("player_b_pct", strength_lookup.get(key_b, 0.0)))
-    combined_pct = strength_a * strength_b / 100.0
-    misses = 0
-    both_failed = 0
-    unclassified_misses = 0
-    pending_second_result = 0
-    max_misses = 0
-    running_misses = 0
-    for row in matches:
-        if row.get("confirmation") in {"BOTH_GREEN", "BOTH_RED", "MIXED"}:
-            running_misses = 0
-        else:
-            running_misses += 1
-            max_misses = max(max_misses, running_misses)
-    for row in reversed(matches):
-        if row.get("confirmation") in {"BOTH_GREEN", "BOTH_RED", "MIXED"}:
-            break
-        misses += 1
-        expected_a = {"GREEN": "V", "RED": "D"}.get(pair.get("player_a_indicator"))
-        expected_b = {"GREEN": "V", "RED": "D"}.get(pair.get("player_b_indicator"))
-        result_a, result_b = row.get("player_a_result"), row.get("player_b_result")
-        if row.get("state") == "Failed" and (result_a not in {"V", "E", "D"} or result_b not in {"V", "E", "D"}):
-            pending_second_result += 1
-        elif expected_a is None or expected_b is None or result_a not in {"V", "E", "D"} or result_b not in {"V", "E", "D"}:
-            unclassified_misses += 1
-        elif result_a != expected_a and result_b != expected_b:
-            both_failed += 1
-
-    return {
-        "combined_pct": round(combined_pct, 2),
-        "player_a_pct": round(strength_a, 2),
-        "player_b_pct": round(strength_b, 2),
-        "misses_since_hit": misses,
-        "both_failed_since_hit": both_failed,
-        "unclassified_misses_since_hit": unclassified_misses,
-        "pending_second_result": pending_second_result,
-        "max_misses_without_hit": max_misses,
-    }
-
-
-def render_pair_calendar(pair):
-    if "calendar_matches" not in pair:
-        return ""
-    reference = pair["calendar_reference"]
-    notices = []
-    for league, source in pair.get("calendar_sources", {}).items():
-        stamp = source.get("updated_at")
-        label = _madrid_time(stamp) if stamp else "Unavailable"
-        warning = " — refresh failed; previous data" if source.get("error") else ""
-        notices.append(f'{league}: {label}{warning}')
-    rows = []
-    for row in pair["calendar_matches"]:
-        values = []
-        for side in ("a", "b"):
-            values.extend([row[f"player_{side}"], _madrid_time(row[f"player_{side}_timestamp"]),
-                           row[f"player_{side}_rival"],
-                           fixture_label(row.get(f"player_{side}_result"), row[f"player_{side}_timestamp"], reference,
-                                         row.get(f"player_{side}_fixture_status"))])
-        rows.append(values + [f'{row["gap_minutes"]} min', row["state"]])
-    body = render_table(
-        ["Player A", "Time A", "Opponent A", "Status A", "Player B", "Time B", "Opponent B", "Status B", "Gap", "Coincidence"], rows,
-    ) if rows else '<p class="section-subtitle">No upcoming coincidences in the available calendar.</p>'
-    unpaired = pair.get("unpaired_matches", [])
-    if unpaired:
-        body += '<h4>Unpaired matches — excluded from coincidence statistics</h4>' + render_table(
-            ["Side", "Player", "Time", "Opponent", "Status"],
-            [[r["side"], r["player"], _madrid_time(r["timestamp_utc"]), r["rival"],
-              fixture_label(r.get("result"), r["timestamp_utc"], reference, r.get("fixture_status"))] for r in unpaired])
-    return ('<h4>Upcoming and pending coincidences</h4>'
-            '<p class="section-subtitle">All published fixtures available at the last refresh. '
-            'Times in Madrid. This page is not live. A confirmed failure settles the coincidence immediately.</p>'
-            f'<p class="section-subtitle">Calendar updated: {text(" · ".join(notices))}</p>' + body)
-
-
-def render_coincident_pair(pair, reliability=None):
-    matches = sorted(pair.get("matches", []), key=lambda row: row.get("pair_order", 0))
-    title = (
-        f'{pair.get("player_a_league", "")} · {pair.get("player_a", "")} '
-        f'[{pair.get("player_a_indicator", "NONE")}] ↔ '
-        f'{pair.get("player_b_league", "")} · {pair.get("player_b", "")} '
-        f'[{pair.get("player_b_indicator", "NONE")}]'
-    )
-    maximum = pair.get("max_gap_minutes", 30)
-
-    if not matches:
-        body = (
-            f'<p class="section-subtitle">'
-            f'No coincident matches within {text(maximum)} minutes.'
-            f'</p>'
-        )
-    else:
-        rows = [[
-            row.get("pair_order", ""),
-            row.get("player_a", ""),
-            _madrid_time(row.get("player_a_timestamp")),
-            row.get("player_a_result", ""),
-            row.get("player_a_rival", ""),
-            row.get("player_b", ""),
-            _madrid_time(row.get("player_b_timestamp")),
-            row.get("player_b_result", ""),
-            row.get("player_b_rival", ""),
-            f'{row.get("gap_minutes", 0)} min',
-            {
-                "BOTH_GREEN": "BOTH GREEN",
-                "BOTH_RED": "BOTH RED",
-                "MIXED": "MIXED",
-            }.get(row.get("confirmation"), "—"),
-        ] for row in matches]
-
-        row_classes = [
-            {
-                "BOTH_GREEN": "coincident-both-green",
-                "BOTH_RED": "coincident-both-red",
-                "MIXED": "coincident-mixed-confirmed",
-            }.get(row.get("confirmation"), "")
-            for row in matches
-        ]
-
-        body = render_table(
-            [
-                "#", "Player A", "Time A", "Result A", "Opponent A",
-                "Player B", "Time B", "Result B", "Opponent B",
-                "Gap", "Confirmation",
-            ],
-            rows,
-            numeric_columns={0, 9},
-            row_classes=row_classes,
-        )
-
-    reliability_badge = ""
-    if reliability:
-        breakdown = (
-            f' (both failed: {reliability["both_failed_since_hit"]}'
-            + (f'; unclassified: {reliability["unclassified_misses_since_hit"]}'
-               if reliability.get("unclassified_misses_since_hit") else "")
-            + (f'; awaiting second result: {reliability["pending_second_result"]}'
-               if reliability.get("pending_second_result") else "")
-            + ')'
-        ) if "both_failed_since_hit" in reliability else ""
-        reliability_badge = (
-            f'<span class="badge">'
-            f'Combined: {reliability["combined_pct"]:.2f}% · '
-            f'Without a hit: {reliability["misses_since_hit"]}{breakdown} · '
-            f'Max without a hit: {reliability["max_misses_without_hit"]}'
-            f'</span>'
-        )
-
-    detail_class = "coincident-pair coincident-cross-group" if pair.get("different_groups") else "coincident-pair"
-    return (
-        f'<details class="{detail_class}">'
-        '<summary>'
-        f'<span>{text(title)}</span>'
-        '<span class="badge-row">'
-        f'{metadata_badge("Matches", len(matches))}'
-        f'{reliability_badge}'
-        '</span>'
-        '</summary>'
-        '<div class="coincident-pair-body">'
-        '<div class="badge-row" style="margin-top: 12px">'
-        f'{metadata_badge("Window", f"{pair.get("operational_window_hours", 8)} hours")}'
-        f'{metadata_badge("Maximum gap", f"{maximum} min")}'
-        '</div>'
-        f'{body}'
-        f'{render_pair_calendar(pair)}'
-        '</div>'
-        '</details>'
-    )
-
-
-def _coincident_group_metrics(group, strength_lookup):
-    strengths = [
-        float(strength_lookup.get((str(player.get("league", "")).upper(), player.get("player_key", "")), 0.0))
-        for player in group.get("players", [])
-    ]
-    combined = 0.0
-    if strengths:
-        combined = 100.0
-        for strength in strengths:
-            combined *= strength / 100.0
-    matches = sorted(group.get("matches", []), key=lambda row: row.get("group_order", 0))
-    misses = 0
-    max_misses = 0
-    running = 0
-    valid = {"ALL_GREEN", "ALL_RED", "MIXED"}
-    for row in matches:
-        if row.get("confirmation") in valid:
-            running = 0
-        else:
-            running += 1
-            max_misses = max(max_misses, running)
-    for row in reversed(matches):
-        if row.get("confirmation") in valid:
-            break
-        misses += 1
-    return {
-        "combined_pct": round(combined, 2),
-        "misses_since_hit": misses,
-        "max_misses_without_hit": max_misses,
-    }
-
-
-def render_coincident_group(group, reliability):
-    players = group.get("players", [])
-    matches = sorted(group.get("matches", []), key=lambda row: row.get("group_order", 0))
-    title = " ↔ ".join(
-        f'{player.get("league", "")} · {player.get("player", "")} [{player.get("indicator", "NONE")}]'
-        for player in players
-    )
-    headers = ["#"]
-    for index in range(len(players)):
-        label = chr(ord("A") + index)
-        headers.extend([f"Player {label}", f"Time {label}", f"Result {label}", f"Opponent {label}"])
-    headers.extend(["Gap", "Confirmation"])
-    rows = []
-    row_classes = []
-    labels = {"ALL_GREEN": "ALL GREEN", "ALL_RED": "ALL RED", "MIXED": "MIXED"}
-    classes = {
-        "ALL_GREEN": "coincident-both-green", "ALL_RED": "coincident-both-red",
-        "MIXED": "coincident-mixed-confirmed",
-    }
-    for row in matches:
-        values = [row.get("group_order", "")]
-        for member in row.get("members", []):
-            values.extend([
-                member.get("player", ""), _madrid_time(member.get("timestamp")),
-                member.get("result", ""), member.get("rival", ""),
-            ])
-        values.extend([
-            f'{row.get("gap_minutes", 0)} min',
-            labels.get(row.get("confirmation"), "—"),
-        ])
-        rows.append(values)
-        row_classes.append(classes.get(row.get("confirmation"), ""))
-    body = (
-        render_table(headers, rows, numeric_columns={0, len(headers) - 2}, row_classes=row_classes)
-        if rows else
-        f'<p class="section-subtitle">No coincident matches within {text(group.get("max_gap_minutes", 30))} minutes.</p>'
-    )
-    badge = (
-        f'<span class="badge">Combined: {reliability["combined_pct"]:.2f}% · '
-        f'Without a hit: {reliability["misses_since_hit"]} · '
-        f'Max without a hit: {reliability["max_misses_without_hit"]}</span>'
-    )
-    detail_class = "coincident-pair coincident-cross-group" if group.get("different_groups") else "coincident-pair"
-    return (
-        f'<details class="{detail_class}"><summary>'
-        f'<span>{text(title)}</span><span class="badge-row">'
-        f'{metadata_badge("Matches", len(matches))}{badge}</span></summary>'
-        '<div class="coincident-pair-body"><div class="badge-row" style="margin-top: 12px">'
-        f'{metadata_badge("Window", f"{group.get("operational_window_hours", 8)} hours")}'
-        f'{metadata_badge("Maximum gap", f"{group.get("max_gap_minutes", 30)} min")}'
-        f'</div>{body}</div></details>'
-    )
-
-
-def _render_coincident_group_section(groups, size, strength_lookup, minimum=35.0, minimum_matches=6):
-    visible = []
-    for group in groups:
-        if group.get("size") != size:
-            continue
-        metrics = _coincident_group_metrics(group, strength_lookup)
-        if metrics["combined_pct"] > minimum and len(group.get("matches", [])) >= minimum_matches:
-            visible.append((group, metrics))
-    visible.sort(key=lambda item: -item[1]["combined_pct"])
-    noun = "Triples" if size == 3 else "Groups of 4"
-    content = (
-        "".join(render_coincident_group(group, metrics) for group, metrics in visible)
-        if visible else f'<p class="section-subtitle">No {noun.lower()} meet the &gt; 35% and 6-match minimum.</p>'
-    )
-    return (
-        '<section class="dashboard-section"><div class="section-head"><div>'
-        f'<h2>Coincident Matches — {noun} — Last 8 Hours</h2>'
-        '<p class="section-subtitle">Only groups above 35% combined with at least 6 coincident matches are shown.</p>'
-        f'</div><div class="badge-row">{metadata_badge("Group size", size)}'
-        f'{metadata_badge("Minimum combined", "> 35%")} '
-        f'{metadata_badge("Minimum matches", ">= 6")}</div></div>{content}</section>'
-    )
-
-
-def render_coincident_matches(pairs, current_streaks_v2=None):
-    eligible_players = getattr(pairs, "eligible_players", 0)
-    selected_candidates = getattr(pairs, "selected_candidates", 0)
-    candidate_limit = getattr(pairs, "candidate_limit", MAX_AUTOMATIC_CANDIDATES)
-    selection_mode = getattr(pairs, "selection_mode", "automatic")
-    excluded_candidates = getattr(pairs, "excluded_candidates", 0)
-
-    strength_lookup = _coincident_indicator_strength_lookup(current_streaks_v2 or {})
-    minimum_combined_pct = 40.0
-    minimum_pair_matches = 6
-    visible_pairs = []
-    for pair in pairs:
-        metrics = _coincident_pair_metrics(pair, strength_lookup)
-        if (
-            metrics["combined_pct"] > minimum_combined_pct
-            and len(pair.get("matches", [])) >= minimum_pair_matches
-        ):
-            visible_pairs.append((pair, metrics))
-    visible_pairs.sort(key=lambda item: -item[1]["combined_pct"])
-
-    content = (
-        ''.join(
-            render_coincident_pair(pair, reliability)
-            for pair, reliability in visible_pairs
-        )
-        if visible_pairs
-        else '<p class="section-subtitle">No pairs meet the &gt; 40% and 6-match minimum.</p>'
-    )
-
-    pair_section = (
-        '<details class="dashboard-section coincident-collapsed">'
-        '<summary><h2>Coincident Matches — Last 8 Hours</h2></summary>'
-        '<div class="section-head"><div>'
-        '<p class="section-subtitle">'
-        'Only pairs above 40% combined with at least 6 coincident matches are shown.'
-        '</p>'
-        '</div><div class="badge-row">'
-        f'{metadata_badge("Eligible players", eligible_players)}'
-        f'{metadata_badge("Selected candidates", selected_candidates)}'
-        f'{metadata_badge("Selection mode", selection_mode)}'
-        f'{metadata_badge("Excluded candidates", excluded_candidates)}'
-        f'{metadata_badge("Candidate limit", candidate_limit if selection_mode == "automatic" else "manual")}'
-        f'{metadata_badge("Minimum combined", "> 40%")} '
-        f'{metadata_badge("Minimum matches", ">= 6")} '
-        '</div></div>'
-        f'{content}'
-        '</details>'
-    )
-    custom = getattr(pairs, "custom_pairs", [])
-    custom_section = (
-        '<section class="dashboard-section"><div class="section-head"><div>'
-        '<h2>Coincident Matches — Custom Pairs — Last 8 Hours</h2>'
-        '<p class="section-subtitle">Up to 10 configured pairs with fixed GREEN/RED indicators. '
-        'No minimum percentage or match count.</p></div></div>'
-        + (''.join(render_coincident_pair(pair, _coincident_pair_metrics(pair, strength_lookup)) for pair in custom)
-           if custom else '<p class="section-subtitle">No custom pairs configured in tracked_players.txt.</p>')
-        + '</section>'
-    )
-    return (
-        pair_section
-        + custom_section
     )
 
 
@@ -2332,7 +1899,6 @@ def main():
     group_analysis["h2h_min_gap"] = load_h2h_min_gap(TRACKED_PLAYERS_FILE)
     tracked_players = load_tracked_players(TRACKED_PLAYERS_FILE)
     group_analysis['bettable_keys'] = sorted(bettable_player_keys(tracked_players))
-    coincident_config = load_coincident_config(TRACKED_PLAYERS_FILE)
     records = load_all_history()
     excluded_keys = excluded_player_keys(tracked_players)
     group_analysis['excluded_player_keys'] = sorted(excluded_keys)
@@ -2348,19 +1914,8 @@ def main():
         excluded_keys=excluded_keys,
     )
     current_streaks_v2 = build_current_streaks_v2_payload(snapshot, reference_time=reference_time)
-    coincident_pairs = calculate_all_coincident_pairs(
-        records, snapshot=snapshot, reference_time=reference_time,
-        window_hours=DEFAULT_OPERATIONAL_WINDOW_HOURS,
-        excluded_keys=excluded_keys, tracked_players=tracked_players,
-        manual_selected_keys=coincident_config["selected_keys"],
-        excluded_candidate_keys=coincident_config["excluded_keys"],
-        custom_pairs=coincident_config["custom_pairs"],
-    )
-    attach_schedules(coincident_pairs, records, schedule, reference_time, excluded_keys)
     html = render_page(
-        group_analysis, current_streaks, coincident_pairs, current_streaks_v2, schedule,
-        build_streak_statistics(records, reference_time, excluded_keys,
-                                tracked_players=tracked_players, schedule=schedule),
+        group_analysis, current_streaks, current_streaks_v2, schedule,
     )
 
     write_html(html)

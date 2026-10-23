@@ -5,7 +5,6 @@ import uuid
 from unittest.mock import patch
 
 import group_analysis
-from coincident_matches import build_selected_player_refs, calculate_all_coincident_pairs
 from current_streaks_v2 import calculate_current_streaks_v2
 from match_history import name_key
 from selected_players import load_tracked_players, tracked_player_keys
@@ -50,17 +49,13 @@ class TrackedMarkerConsumerRegressionTests(unittest.TestCase):
         self.assertEqual(groups["GT"][0][0], "Lucas")
         self.assertTrue(all(not player.endswith("*") for rows in groups.values() for group in rows for player in group))
 
-    def test_v2_and_coincident_matches_exclude_unbettable_identity(self):
+    def test_v2_excludes_unbettable_identity(self):
         records = [perspective(), perspective("Eric", "EADRIATIC")]
         payload = calculate_current_streaks_v2(
             records, self.players,
             reference_time=datetime(2026, 8, 1, 9, tzinfo=timezone.utc),
         )
         self.assertEqual(payload["leagues"]["GT"], [])
-        refs = build_selected_player_refs(self.players)
-        self.assertEqual(refs, [])
-        pairs = calculate_all_coincident_pairs(records, refs)
-        self.assertEqual(pairs, [])
 
     def test_legacy_tracking_and_h2h_indicator_use_clean_key(self):
         keys = tracked_player_keys(self.players)

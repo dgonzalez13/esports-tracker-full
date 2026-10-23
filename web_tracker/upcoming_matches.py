@@ -58,9 +58,9 @@ def render_upcoming_matches(schedule, reference=None):
         updates.append(f"{league}: {updated}{suffix}")
     return (
         '<section class="dashboard-section" id="upcoming-matches">'
-        '<details class="coincident-pair upcoming-panel">'
+        '<details class="match-panel upcoming-panel">'
         '<summary><h2>Próximos partidos</h2></summary>'
-        '<div class="coincident-pair-body">'
+        '<div class="match-panel-body">'
         '<p class="section-subtitle">Todos los jugadores · Horario de Madrid · Calendario publicado, no en directo.</p>'
         '<div class="upcoming-filters"><label>Ventana <select id="upcoming-window">'
         '<option value="1">Próxima hora</option><option value="2">Próximas 2 horas</option>'

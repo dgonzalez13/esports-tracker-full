@@ -3,7 +3,6 @@ import unittest
 from unittest.mock import patch
 
 import group_analysis
-from coincident_matches import build_automatic_player_refs, calculate_all_coincident_pairs
 from current_streaks_v2 import calculate_operational_snapshot
 from match_history import name_key
 from selected_players import parse_tracked_player_line
@@ -33,10 +32,6 @@ class OperationalSnapshotTests(unittest.TestCase):
         snapshot = calculate_operational_snapshot(rows, [tracked("Green"), tracked("Red")], reference_time=now)
         green = next(row for row in snapshot if row["player"] == "Green")
         self.assertEqual((green["played"], green["indicator"]), (6, "GREEN"))
-        refs = build_automatic_player_refs(snapshot)
-        self.assertEqual([row["indicator"] for row in refs], ["RED", "GREEN"])
-        pairs = calculate_all_coincident_pairs(rows, snapshot=snapshot, reference_time=now)
-        self.assertTrue(all(row["confirmation"] in {"MIXED", None} for row in pairs[0]["matches"]))
 
     def test_empty_slot(self):
         empty = parse_tracked_player_line("GT|*")
@@ -58,7 +53,7 @@ class OperationalSnapshotTests(unittest.TestCase):
             groups = group_analysis.load_groups()
         self.assertEqual(groups["GT"], [])
 
-    def test_last_24_group_index_manual_selection_and_exclusion(self):
+    def test_last_24_and_group_index(self):
         now = datetime(2026, 8, 3, 12, tzinfo=timezone.utc)
         players = [tracked("A"), tracked("B"), tracked("C")]
         players[1]["group_index"] = 1
@@ -71,14 +66,6 @@ class OperationalSnapshotTests(unittest.TestCase):
         a = next(row for row in snapshot if row["player"] == "A")
         self.assertEqual(len(a["last_24"]), 24)
         self.assertEqual(a["group_index"], 0)
-        pairs = calculate_all_coincident_pairs(
-            rows, snapshot=snapshot, reference_time=now, tracked_players=players,
-            manual_selected_keys={("GT", "a"), ("GT", "b")},
-            excluded_candidate_keys={("GT", "b")},
-        )
-        self.assertEqual(pairs.selection_mode, "manual")
-        self.assertEqual(pairs.selected_candidates, 1)
-        self.assertEqual(len(pairs), 0)
 
 
 if __name__ == "__main__":

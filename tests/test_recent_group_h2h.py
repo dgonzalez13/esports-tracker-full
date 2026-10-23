@@ -39,12 +39,12 @@ class RecentGroupH2HTests(unittest.TestCase):
         self.assertNotIn('<tr class="recent-h2h-blue">', html)
         self.assertNotIn('<tr class="recent-h2h-green">', html)
 
-    def test_standalone_block_above_coincident_matches_without_duplicate(self):
+    def test_standalone_block_above_group_analysis_without_duplicate(self):
         group = {"target": ["David", "Fox"], "label": "Grupo 1"}
         data = {"leagues": {"GT": {"groups": [group]}}}
         attach_recent_group_h2h(data, [], datetime(2026, 10, 1, 12, tzinfo=timezone.utc))
-        html = render_page(data, {}, [])
-        self.assertLess(html.index('id="recent-group-h2h"'), html.index('<h2>Coincident Matches'))
+        html = render_page(data, {})
+        self.assertLess(html.index('id="recent-group-h2h"'), html.index('<h2>Group Analysis'))
         self.assertEqual(html.count('Próximo partido'), 2)
         self.assertIn('No hay enfrentamientos destacados.', html)
         self.assertGreater(html.index('Frente a frente · últimas 8 horas'), html.index('<h2>Group Analysis'))

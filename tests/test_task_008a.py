@@ -2,7 +2,6 @@ from datetime import datetime, timezone
 import unittest
 
 import group_analysis
-from coincident_matches import build_automatic_player_refs
 from current_streaks_v2 import calculate_operational_snapshot
 from match_history import name_key
 from selected_players import parse_tracked_player_line
@@ -23,14 +22,13 @@ class Task008AOperationalExclusionTests(unittest.TestCase):
         self.assertEqual((row["player"], row["tracked"], row["bettable"], row["empty_slot"]),
                          ("Lucas", True, False, False))
 
-    def test_unbettable_player_is_absent_from_snapshot_and_automatic_refs(self):
+    def test_unbettable_player_is_absent_from_snapshot(self):
         player = parse_tracked_player_line("GT|Lucas*")
         snapshot = calculate_operational_snapshot(
             [record("Lucas")], [player],
             reference_time=datetime(2026, 8, 3, 11, tzinfo=timezone.utc),
         )
         self.assertEqual(snapshot, [])
-        self.assertEqual(build_automatic_player_refs(snapshot), [])
 
     def test_h2h_excludes_principal_and_excluded_rival(self):
         result = {

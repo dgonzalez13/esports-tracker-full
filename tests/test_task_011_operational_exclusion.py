@@ -6,7 +6,6 @@ from unittest.mock import patch
 import uuid
 
 import group_analysis
-from coincident_matches import calculate_all_coincident_pairs
 from current_streaks_v2 import calculate_operational_snapshot
 from match_history import name_key
 from selected_players import is_operational_record, parse_tracked_player_line
@@ -73,18 +72,6 @@ class OperationalConsumersTests(unittest.TestCase):
         self.assertEqual((lucas["sequence"], lucas["last_10"], lucas["current_streak"]), ("VEDD", "VEDD", 2))
         self.assertEqual((lucas["win_pct"], lucas["loss_pct"], lucas["indicator"]), (25.0, 50.0, "RED"))
 
-    def test_coincident_discards_both_sides_and_preserves_remaining_pair(self):
-        rows = [
-            event("Lucas", "Fox", minute=0), event("Kratos", "Normal", minute=1),
-            event("Lucas", "Normal", minute=10), event("Kratos", "Normal", minute=11),
-        ]
-        refs = [
-            {"league": "GT", "player": "Lucas", "player_key": "lucas"},
-            {"league": "GT", "player": "Kratos", "player_key": "kratos"},
-        ]
-        pairs = calculate_all_coincident_pairs(rows, refs, excluded_keys=self.excluded)
-        self.assertEqual(len(pairs[0]["matches"]), 1)
-        self.assertEqual(pairs[0]["matches"][0]["player_a_rival"], "Normal")
 
     def test_h2h_discards_excluded_principal_and_rival(self):
         rival = lambda name: {"rival": name, "W": 12, "D": 0, "L": 8, "matches": 20,
