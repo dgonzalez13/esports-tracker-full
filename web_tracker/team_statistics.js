@@ -46,12 +46,12 @@
     function aggregateMatches(rows, grouping = 'both', minimum = 1) {
         const groups = new Map();
         for (const row of rows) {
-            const key = JSON.stringify(grouping === 'rival' ? [row.rival] :
-                grouping === 'team' ? [row.rivalTeam] : [row.rival, row.rivalTeam]);
-            if (!groups.has(key)) groups.set(key, {rival: row.rival, rivalTeam: row.rivalTeam, rows: []});
+            const key = JSON.stringify(grouping === 'rival' ? [row.team, row.rival] :
+                grouping === 'team' ? [row.team, row.rivalTeam] : [row.team, row.rival, row.rivalTeam]);
+            if (!groups.has(key)) groups.set(key, {team: row.team, rival: row.rival, rivalTeam: row.rivalTeam, rows: []});
             groups.get(key).rows.push(row);
         }
-        return [...groups.values()].map(group => ({rival: group.rival, rivalTeam: group.rivalTeam,
+        return [...groups.values()].map(group => ({team: group.team, rival: group.rival, rivalTeam: group.rivalTeam,
             ...summarize(group.rows)})).filter(group => group.played >= Math.max(1, Number(minimum) || 1));
     }
 
@@ -121,7 +121,7 @@
                 output.append(p);
                 return;
             }
-            const headers = [...(filters.grouping !== 'team' ? ['Jugador rival'] : []),
+            const headers = ['Equipo del jugador', ...(filters.grouping !== 'team' ? ['Jugador rival'] : []),
                 ...(filters.grouping !== 'rival' ? ['Equipo rival'] : []),
                 'Partidos', 'V', 'E', 'D', 'V%', 'E%', 'D%', 'Dif. V−D (pp)'];
             const table = document.createElement('table');
@@ -133,7 +133,7 @@
             }
             const body = table.createTBody();
             for (const row of groups) {
-                const cells = [...(filters.grouping !== 'team' ? [names(data.players, row.rival)] : []),
+                const cells = [names(data.teams, row.team), ...(filters.grouping !== 'team' ? [names(data.players, row.rival)] : []),
                     ...(filters.grouping !== 'rival' ? [names(data.teams, row.rivalTeam)] : []),
                     row.played, row.wins, row.draws, row.losses, pct(row.winsPct), pct(row.drawsPct),
                     pct(row.lossesPct), gap(row.gap)];

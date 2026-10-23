@@ -6,6 +6,24 @@ from web_tracker.generate_site import matchup_win_estimates
 
 
 class SixMatchTests(unittest.TestCase):
+    def test_pair_horizons_include_first_series_and_condition_on_no_win(self):
+        records = self.history(sequence="DDDDVD")[-6:]
+        payload = calculate_six_match_stats(records, datetime(2026, 9, 3, tzinfo=timezone.utc),
+                                            minimum_prior=1000, pair=("GT", "david", "fox"))
+        lookup = {(r["league"], r["initial_without_win"], r["horizon"]): r
+                  for r in payload["pair_horizons"]}
+        self.assertEqual(matchup_win_estimates("GT", {"played": 4, "wins": 0}, lookup, 1000),
+                         ["—", "100.00% (n=1)", "100.00% (n=1)"])
+        self.assertFalse(any(r['sample'] for r in payload['conditional_horizons']))
+
+    def test_unfiltered_pair_counts_early_wins_but_not_unobserved_failures(self):
+        for sequence, expected in [('V', [1, 1, 1]), ('DDDD', [1, 0, 0])]:
+            records = self.history(sequence=sequence)[-len(sequence):]
+            payload = calculate_six_match_stats(records, datetime(2026, 9, 3, tzinfo=timezone.utc),
+                                                pair=("GT", "david", "fox"))
+            rows = [r for r in payload['pair_horizons'] if r['initial_without_win'] == 0]
+            self.assertEqual([r['sample'] for r in rows], expected)
+
     def test_pair_samples_exclude_other_pairs_and_reverse_direction(self):
         reference = datetime(2026, 9, 3, tzinfo=timezone.utc)
         records = self.history(sequence="DDDDDV")
@@ -18,10 +36,10 @@ class SixMatchTests(unittest.TestCase):
                                            pair=("GT", "david", "fox"))
         self.assertEqual(scoped, isolated)
 
-    def test_row_estimates_use_prior_counts_and_conditioned_horizons(self):
+    def test_row_estimates_use_pair_history_and_conditioned_horizons(self):
         payload = calculate_six_match_stats(self.history(sequence="DDDDVD"), datetime(2026, 9, 3, tzinfo=timezone.utc))
-        lookup = {(r["league"], r["threshold"], r["band"], r["initial_without_win"], r["horizon"]): r
-                  for r in payload["conditional_horizons"]}
+        lookup = {(r["league"], r["initial_without_win"], r["horizon"]): r
+                  for r in payload["pair_horizons"]}
         rival = {"played": 2, "wins": 0, "losses": 2,
                  "historical_played": 22, "historical_wins": 9, "historical_losses": 13}
         self.assertEqual(matchup_win_estimates("GT", rival, lookup, 20),

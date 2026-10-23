@@ -44,6 +44,7 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=No
     gap_horizons = defaultdict(lambda: [0, 0])
     win_gap_horizons = defaultdict(lambda: [0, 0])
     conditional_horizons = defaultdict(lambda: [0, 0])
+    pair_horizons = defaultdict(lambda: [0, 0])
     repeat_counts = defaultdict(lambda: [0] * 5)
     # Active counts: eligible prefixes, four successes, four horizon denominators.
     active_repeat = defaultdict(lambda: [0] * 9)
@@ -64,6 +65,14 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=No
                 if 1 <= len(matches) <= 6 and closed:
                     complete += len(matches) == 6
                     zero_win_series += len(matches) == 6 and not any(r['result'] == 'V' for r in matches)
+                    sequence = ''.join(r["result"] for r in matches)
+                    for k in range(6):
+                        if 'V' not in sequence[:k]:
+                            for horizon in (4, 5, 6):
+                                if horizon_observed(sequence, k, horizon):
+                                    sample = pair_horizons[(league, k, horizon)]
+                                    sample[0] += 1
+                                    sample[1] += 'V' in sequence[k:horizon]
                     if len(earlier) >= minimum_prior:
                         wins = sum(r["result"] == "V" for r in earlier)
                         losses = sum(r["result"] == "D" for r in earlier)
@@ -141,6 +150,13 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=No
                 prior[rival].extend(matches)
     return {"minimum_prior": minimum_prior, "complete_series": complete,
             "zero_win_series": zero_win_series,
+            "pair_horizons": [
+                {"league": league, "initial_without_win": k, "horizon": horizon,
+                 "sample": sample, "win_pct": wins / sample * 100 if sample else None}
+                for league in sorted({key[0] for key in players})
+                for horizon in (4, 5, 6) for k in range(horizon)
+                for sample, wins in [pair_horizons[(league, k, horizon)]]
+            ],
             "win_gap_horizons": [
                 {"league": league, "threshold": threshold, "gap_threshold": gap_threshold,
                  "horizon": horizon, "sample": sample, "with_win": wins,

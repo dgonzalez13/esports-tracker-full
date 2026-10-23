@@ -38,4 +38,13 @@ assert.equal(selectMatches(data, {player: '0', team: '0', rival: '1', rivalTeam:
 assert.equal(selectMatches(data, {player: '0', from: '2026-10-16', to: '2026-10-16'})[0].result, 'E');
 assert.equal(selectMatches(data, {player: '0', from: '2026-11-01'}).length, 0);
 assert.equal(summarize([]).winsPct, null);
+// Same opponent and opposing team, different teams for the selected player.
+const switchedTeams = [...red, {...red[0], team: 2, result: 'D'}];
+for (const mode of ['rival', 'team', 'both']) {
+    const groups = aggregateMatches(switchedTeams, mode);
+    assert.equal(groups.reduce((n, row) => n + row.played, 0), 3);
+    assert.equal(groups.find(row => row.team === 2).losses, 1);
+    assert.equal(groups.find(row => row.team === 2).played, 1);
+    assert.equal(groups.filter(row => row.team === 0).reduce((n, row) => n + row.played, 0), 2);
+}
 console.log('Team statistics filters, orientation and non-duplicated grouping: OK');

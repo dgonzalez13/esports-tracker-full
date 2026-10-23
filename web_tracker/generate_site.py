@@ -1530,8 +1530,8 @@ def render_underdog_matchups(data):
 def render_recent_group_h2h_dashboard(data):
     excluded = set(tuple(item) for item in data.get("h2h_exclusions", []))
     def probability_lookup(rival):
-        return {(r['league'], r['threshold'], r['band'], r['initial_without_win'], r['horizon']): r
-                for r in rival.get('pair_stats', {}).get('conditional_horizons', [])}
+        return {(r['league'], r['initial_without_win'], r['horizon']): r
+                for r in rival.get('pair_stats', {}).get('pair_horizons', [])}
     selected = []
     for league, payload in data.get("leagues", {}).items():
         for group in payload.get("groups", []):
@@ -1563,9 +1563,9 @@ def render_recent_group_h2h_dashboard(data):
         'Horario de Madrid. Ordenadas por hora de comienzo; sin horario al final. '
         'Los partidos iniciados sin resultado confirmado siguen visibles; el calendario no confirma si continúan en juego.</p>'
         '<p class="section-subtitle">Estimaciones: ≥1 victoria desde ahora hasta completar 4, 5 o 6 partidos, '
-        'usando solo series de esta pareja (A frente a B), con igual umbral previo y diferencia inicial. '
+        'usando solo series de esta pareja (A frente a B), sin filtrar por porcentaje previo ni diferencia de victorias. '
         'Se asume que los partidos de las últimas 8 horas corresponden al inicio de una misma serie. '
-        'n = series comparables de esta pareja con resultado conocido para ese horizonte; sin muestra o fuera de los umbrales se muestra —.</p>'
+        'n = series de esta pareja sin victorias en los primeros partidos indicados por SEC y con resultado conocido para ese horizonte; sin muestra se muestra —.</p>'
         '<p class="section-subtitle">V%20 y Dif.20: últimos 20 enfrentamientos finalizados entre ambos; '
         '— si faltan partidos con resultado registrado. Dif. se expresa en puntos porcentuales.</p>'
         + render_gap_filters()
@@ -1595,17 +1595,11 @@ def render_gap_filter_script(section_id):
 
 def matchup_win_estimates(league, rival, lookup, minimum_prior):
     played = rival["played"]
-    prior = rival.get("historical_played", 0) - played
-    wins = rival.get("historical_wins", 0) - rival["wins"]
-    losses = rival.get("historical_losses", 0) - rival.get("losses", 0)
-    if prior < minimum_prior or wins < 0 or losses < 0 or rival["wins"]:
+    if rival["wins"]:
         return ["—"] * 3
-    pct = wins / prior * 100
-    threshold = 40 if pct > 40 else 35 if pct > 35 else None
-    band = GAP_LABELS[gap_band(wins, losses, prior)]
     values = []
     for horizon in (4, 5, 6):
-        row = lookup.get((league, threshold, band, played, horizon))
+        row = lookup.get((league, played, horizon))
         values.append(f'{fmt_pct(row["win_pct"])} (n={row["sample"]})'
                       if played < horizon and row and row["sample"] else "—")
     return values
@@ -1747,7 +1741,7 @@ def render_team_statistics(stats):
         '<option value="gap">Mayor diferencia V−D</option></select></label>'
         '<button type="button" id="team-stats-reset">Restablecer filtros</button></div>'
         f'<p id="team-stats-summary" role="status">{stats["unique_matches"]} partidos únicos disponibles. Selecciona un jugador.</p>'
-        '<p class="section-subtitle">Los totales corresponden a todos los partidos de la selección. '
+        '<p class="section-subtitle">Cada fila se desglosa por el equipo del jugador seleccionado. Los totales corresponden a todos los partidos de la selección. '
         'El mínimo de partidos solo oculta agrupaciones pequeñas; no cambia esos totales.</p>'
         '<div id="team-stats-table" class="table-wrap"></div>'
         '<noscript>Activa JavaScript para filtrar y agrupar estas estadísticas.</noscript>'
