@@ -301,8 +301,6 @@ def render_page(data, current_streaks, current_streaks_v2=None, schedule=None):
     {render_recent_group_h2h_dashboard(data)}
     {render_underdog_matchups(data)}
     {render_active_repeat_matches(data)}
-    {render_gap_match_stats(data.get("six_match_stats"))}
-    {render_repeat_win_stats(data.get("six_match_stats"))}
     {render_team_statistics(data.get("team_stats", []))}
     {render_group_dashboard(data, current_streaks)}
 </main>
@@ -730,7 +728,9 @@ summary {
 .streak-group-shaded { background: #eef4f8; }
 .recent-h2h-green td { background: #dcfce7; color: #14532d; }
 #recent-group-h2h tr[hidden] { display: none; }
-#team-statistics tr[hidden] { display: none; }
+#team-statistics input, #team-statistics button { font: inherit; padding: 5px 8px; }
+#team-statistics input[type="number"] { width: 76px; }
+#team-stats-summary { font-weight: 700; font-variant-numeric: tabular-nums; }
 #underdog-matchups td:nth-child(7) { white-space: normal; min-width: 260px; max-width: 540px; }
 .upcoming-filters { display: flex; flex-wrap: wrap; gap: 8px 12px; font-size: 12px; }
 .upcoming-filters label { display: flex; align-items: center; gap: 5px; }
@@ -1576,7 +1576,6 @@ def render_recent_group_h2h_dashboard(data):
                                        8: 'Próximo partido (Madrid)', 9: '≥1 victoria hasta completar 4 partidos',
                                        10: '≥1 victoria hasta completar 5 partidos', 11: '≥1 victoria hasta completar 6 partidos'})
            if rows else '<p class="section-subtitle">No hay enfrentamientos destacados.</p>')
-        + render_six_match_stats(data.get("six_match_stats"))
         + '</section>' + render_gap_filter_script('recent-group-h2h')
     )
 
@@ -1612,75 +1611,6 @@ def matchup_win_estimates(league, rival, lookup, minimum_prior):
     return values
 
 
-def render_six_match_stats(payload):
-    if payload is None:
-        return ""
-    horizon_rows = [
-        [row["league"], f'> {row["threshold"]}%', f'> {row["gap_threshold"]} pp', row["horizon"], row["sample"], row["with_win"],
-         fmt_pct(row["win_pct"]) if row["sample"] else "Sin muestra",
-         fmt_pct(row["without_win_pct"]) if row["sample"] else "Sin muestra"]
-        for row in payload.get("win_gap_horizons", [])
-    ]
-    return (
-        '<details class="six-match-statistics"><summary>Frecuencias históricas · series de 6 partidos</summary>'
-        '<p class="section-subtitle">Porcentaje de A frente a B calculado antes de empezar cada serie, '
-        f'con al menos {payload["minimum_prior"]} enfrentamientos previos en el histórico detallado disponible. '
-        'Los umbrales son estrictos y se solapan. Cada dirección A→B se analiza por separado, '
-        'agrupando todas las parejas de cada liga.</p>'
-        '<p class="section-subtitle">Sesiones inferidas por pausas de más de 90 minutos entre partidos del jugador; '
-        'sesiones terminadas hace más de 90 minutos y parejas con hasta 6 encuentros. '
-        'Sin identificador oficial de grupo, esta aproximación puede omitir o unir sesiones. '
-        'Una victoria observada dentro del plazo cuenta aunque la serie tenga menos partidos. Sin victoria, solo cuenta si se alcanza el plazo. Se usa el histórico detallado, con cobertura parcial. '
-        'Frecuencias observadas, no probabilidades garantizadas.</p>'
-        + '<h3>Al menos una victoria en los primeros 4, 5 o 6 partidos</h3>'
-        + '<p class="section-subtitle">Sin condicionar a una secuencia inicial. Se comparan los primeros '
-        '4, 5 y 6 encuentros de las series con resultado conocido para cada plazo; n puede variar entre columnas. '
-        'Cada fila agrupa conjuntamente por V% previo de A y Dif. = V% de A − V% de B, '
-        'calculados antes de la serie. Dif. usa umbrales estrictos >0, >5 y >10 puntos porcentuales; '
-        'los grupos se solapan y no deben sumarse.</p>'
-        + render_table(["Liga", "V% previo", "Dif.", "Primeros partidos", "Series analizadas", "Series con ≥1 V",
-                        "% ≥1 victoria", "% sin victorias"], horizon_rows, numeric_columns={3, 4, 5, 6, 7})
-        + '</details>'
-    )
-
-
-def render_gap_match_stats(payload):
-    if payload is None:
-        return ""
-    bands = list(dict.fromkeys(row["band"] for row in payload.get("gap_rows", [])))
-    blocks = []
-    for band in bands:
-        horizons = [
-            [r["league"], f'> {r["threshold"]}%', r["horizon"], r["sample"], r["with_win"],
-             fmt_pct(r["win_pct"]) if r["sample"] else "Sin muestra"]
-            for r in payload["gap_horizons"] if r["band"] == band
-        ]
-        conditioned = [
-            [r["league"], f'> {r["threshold"]}%', r["initial_without_win"], 6-r["initial_without_win"],
-             r["sample"], r["zero_wins"], fmt_pct(r["zero_win_pct"]) if r["sample"] else "Sin muestra",
-             fmt_pct(r["remaining_win_pct"]) if r["sample"] else "Sin muestra"]
-            for r in payload["gap_rows"] if r["band"] == band
-        ]
-        blocks.append('<details><summary>' + text(band) + '</summary>'
-                      + '<h3>Al menos una victoria en los primeros 4, 5 o 6 partidos</h3>'
-                      + render_table(["Liga", "V% previo A", "Primeros partidos", "Series", "Series con ≥1 V", "% ≥1 V"],
-                                     horizons, numeric_columns={2, 3, 4, 5})
-                      + '<h3>Condicionado al inicio sin victorias</h3>'
-                      + render_table(["Liga", "V% previo A", "Primeros sin ganar", "Restantes", "Series",
-                                      "Series con 0 V", "% sin ganar en 6", "% ≥1 V restante"],
-                                     conditioned, numeric_columns={2, 3, 4, 5, 6, 7})
-                      + '</details>')
-    return ('<section class="dashboard-section" id="h2h-win-gap-statistics">'
-            '<h2>Frecuencias según la diferencia de victorias entre A y B</h2>'
-            '<p class="section-subtitle">Diferencia = V% de A − V% de B en sus enfrentamientos anteriores '
-            'al comienzo de la serie. Las derrotas de A son las victorias de B; los empates cuentan en el total. '
-            'Ejemplo: A 42%, B 40% → +2 puntos porcentuales, equilibrados. '
-            f'Se exige un mínimo de {payload["minimum_prior"]} partidos previos. '
-            'Cada horizonte usa las series que alcanzan ese plazo, con sesiones inferidas por pausas de más '
-            'de 90 minutos. Histórico detallado disponible, con cobertura parcial. '
-            'Los umbrales >35% y >40% se solapan. Cada dirección se analiza por separado; '
-            'muestras pequeñas pueden producir frecuencias poco estables.</p>'
-            + ''.join(blocks) + '</section>')
 
 
 def new_table_pair_allowed(data, league, player, rival):
@@ -1787,59 +1717,43 @@ def render_active_repeat_matches(data):
             + '<script>' + (BASE / 'web_tracker' / 'h2h_repeat_samples.js').read_text(encoding='utf-8') + '</script>')
 
 
-def render_repeat_win_stats(payload):
-    if payload is None:
-        return ""
-    rows = [
-        [r['league'], r['band'], r['condition'], r['sample'], r['repeat_by_6'],
-         *[fmt_pct(r[field]) if r['sample'] else 'Sin muestra'
-           for field in ('next_win_pct', 'repeat_by_4_pct', 'repeat_by_5_pct', 'repeat_by_6_pct')]]
-        for r in payload.get('repeat_rows', [])
-    ]
-    return ('<section class="dashboard-section" id="repeat-win-statistics"><details>'
-            '<summary><h2>Repetir victoria tras ganar el primer o segundo partido</h2></summary>'
-            '<p class="section-subtitle">Porcentaje histórico de A frente a B antes de empezar la serie. '
-            'Rangos sin solapamiento: >40%, 35–40% incluidos y 30–&lt;35%. '
-            '«Victoria en el segundo» admite haber ganado también el primero; '
-            '«Primera victoria en el segundo» exige empate o derrota en el primero.</p>'
-            '<p class="section-subtitle">Se mide una nueva victoria después del partido indicado: '
-            'en el encuentro inmediatamente siguiente o antes de completar 4, 5 y 6 encuentros. '
-            'Las victorias iniciales no cuentan como repetición. Las condiciones pueden solaparse. '
-            f'Mínimo de {payload["minimum_prior"]} enfrentamientos previos. '
-            'Solo series completas de seis en sesiones inferidas por pausas de más de 90 minutos, '
-            'cerradas hace más de 90 minutos, con el histórico detallado disponible. '
-            'Frecuencias observadas por liga, no garantías; muestras pequeñas pueden ser poco estables.</p>'
-            + render_table(['Liga', 'V% previo A', 'Condición', 'Series', 'Series con otra V hasta 6',
-                            '% V siguiente', '% otra V hasta 4', '% otra V hasta 5', '% otra V hasta 6'],
-                           rows, numeric_columns={3, 4, 5, 6, 7, 8})
-            + '</details></section>')
 
 
 def render_team_statistics(stats):
-    rows = [[r['league'], r['player'], r['player_team'], r['rival'], r['rival_team'],
-             r['played'], r['wins'], r['draws'], r['losses'], fmt_pct(r['wins_pct']),
-             f'{r["wins_pct"] - r["losses_pct"]:+.2f}', fmt_pct(r['draws_pct']), fmt_pct(r['losses_pct'])] for r in stats]
+    stats = stats or dict(schema_version=1, players=[], teams=[], matches=[], unique_matches=0,
+                          first_date=None, last_date=None)
+    payload = json.dumps(stats, ensure_ascii=True, separators=(',', ':')).replace('<', r'\u003c')
     return (
-        '<section class="dashboard-section" id="team-statistics"><details>'
+        '<section class="dashboard-section" id="team-statistics"><details open>'
         '<summary><h2>Estadísticas por jugadores y equipos</h2></summary>'
-        '<p class="section-subtitle">V/E/D desde la perspectiva del primer jugador. '
-        'Solo partidos finalizados con los equipos de ambos jugadores registrados; '
-        'los partidos antiguos sin equipos no se incluyen. Cada combinación y su dirección se cuentan por separado. '
-        'Ordenados por número de encuentros. Una muestra pequeña puede dar porcentajes poco estables.</p>'
-        '<label>Buscar jugador, rival, equipo o liga <input type="search" id="team-stats-search"></label>'
-        + (render_table(['Liga', 'Jugador A', 'Equipo A', 'Jugador B', 'Equipo B', 'Partidos', 'V', 'E', 'D', 'V%', 'Diferencia A−B (pp)', 'E%', 'D%'],
-                        rows, numeric_columns={5, 6, 7, 8, 9, 10, 11, 12}) if rows else
-           '<p class="section-subtitle">Todavía no hay partidos con ambos equipos registrados.</p>')
-        + '<p id="team-stats-empty" hidden>No hay combinaciones para esta búsqueda.</p>'
-        '</details></section><script>(() => {'
-        'const section = document.getElementById("team-statistics");'
-        'const rows = [...section.querySelectorAll("tbody tr")];'
-        'section.querySelector("input").addEventListener("input", event => {'
-        'const terms = event.target.value.trim().toLocaleLowerCase().split(/\\s+/).filter(Boolean);'
-        'for (const row of rows) { const value = row.textContent.toLocaleLowerCase();'
-        'row.hidden = !terms.every(term => value.includes(term)); }'
-        'section.querySelector("#team-stats-empty").hidden = !rows.length || rows.some(row => !row.hidden);'
-        '});})();</script>'
+        '<p class="section-subtitle">Selecciona un jugador y su equipo para consultar sus totales. '
+        'Cada partido se guarda una sola vez y se interpreta desde el jugador seleccionado: '
+        'no se suman las dos direcciones A–B y B–A. Solo se incluyen resultados finalizados con '
+        'ambos equipos registrados; la cobertura del histórico puede ser parcial. Fechas de Madrid.</p>'
+        '<div class="upcoming-filters">'
+        '<label>Liga <select id="team-stats-league"><option value="">Todas las ligas</option>'
+        '<option>GT</option><option>EADRIATIC</option></select></label>'
+        '<label>Jugador <select id="team-stats-player"><option value="">Selecciona un jugador</option></select></label>'
+        '<label>Equipo del jugador <select id="team-stats-team"><option value="">Todos sus equipos</option></select></label>'
+        '<label>Rival <select id="team-stats-rival"><option value="">Todos los rivales</option></select></label>'
+        '<label>Equipo rival <select id="team-stats-rival-team"><option value="">Todos los equipos rivales</option></select></label>'
+        '<label>Agrupar por <select id="team-stats-group"><option value="both">Rival + equipo rival</option>'
+        '<option value="rival">Jugador rival</option><option value="team">Equipo rival</option></select></label>'
+        '<label>Desde <input type="date" id="team-stats-from"></label>'
+        '<label>Hasta <input type="date" id="team-stats-to"></label>'
+        '<label>Mínimo de partidos por fila <input type="number" min="1" value="1" id="team-stats-minimum"></label>'
+        '<label>Ordenar por <select id="team-stats-sort"><option value="played">Más partidos</option>'
+        '<option value="win-desc">Mayor V%</option><option value="win-asc">Menor V%</option>'
+        '<option value="gap">Mayor diferencia V−D</option></select></label>'
+        '<button type="button" id="team-stats-reset">Restablecer filtros</button></div>'
+        f'<p id="team-stats-summary" role="status">{stats["unique_matches"]} partidos únicos disponibles. Selecciona un jugador.</p>'
+        '<p class="section-subtitle">Los totales corresponden a todos los partidos de la selección. '
+        'El mínimo de partidos solo oculta agrupaciones pequeñas; no cambia esos totales.</p>'
+        '<div id="team-stats-table" class="table-wrap"></div>'
+        '<noscript>Activa JavaScript para filtrar y agrupar estas estadísticas.</noscript>'
+        f'<script type="application/json" id="team-stats-data">{payload}</script>'
+        '</details></section><script>'
+        + (BASE / 'web_tracker' / 'team_statistics.js').read_text(encoding='utf-8') + '</script>'
     )
 
 
@@ -1978,7 +1892,6 @@ def main():
     current_streaks = load_current_streaks(tracked_players, records)
     reference_time = datetime.now(timezone.utc)
     group_analysis['team_stats'] = calculate_team_stats(statistics_records, reference_time)
-    group_analysis["six_match_stats"] = calculate_six_match_stats(statistics_records, reference_time)
     schedule = load_schedule()
     attach_recent_group_h2h(group_analysis, records, reference_time, schedule)
     snapshot = calculate_operational_snapshot(

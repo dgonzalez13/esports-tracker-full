@@ -2,7 +2,7 @@ import unittest
 from datetime import datetime, timezone
 from tests import test_six_match_stats
 from six_match_stats import calculate_six_match_stats
-from web_tracker.generate_site import (render_repeat_win_stats, render_active_repeat_matches,
+from web_tracker.generate_site import (render_active_repeat_matches,
                                        new_statistics_records, matchup_gap)
 
 
@@ -99,7 +99,6 @@ class RepeatWinTests(unittest.TestCase):
             self.assertEqual(row['band'], label)
             self.assertEqual(row['sample'], 1)
         self.assertTrue(all(r['sample'] == 0 for r in self.stats('VVVVVV', 5)['repeat_rows']))
-        self.assertIn('Sin muestra', render_repeat_win_stats(self.stats('VDDDDD')))
 
 
 if __name__ == '__main__':

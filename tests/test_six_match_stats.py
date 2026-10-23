@@ -2,7 +2,7 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from six_match_stats import calculate_six_match_stats, gap_band
 from tests.test_h2h_analysis import perspective
-from web_tracker.generate_site import render_six_match_stats, render_gap_match_stats, matchup_win_estimates
+from web_tracker.generate_site import matchup_win_estimates
 
 
 class SixMatchTests(unittest.TestCase):
@@ -47,9 +47,6 @@ class SixMatchTests(unittest.TestCase):
         self.assertEqual(row["win_pct"], 100)
         conditional = [r for r in payload["gap_rows"] if r["threshold"] == 40 and r["initial_without_win"] == 5]
         self.assertEqual(sum(r["sample"] for r in conditional), 1)
-        html = render_gap_match_stats(payload)
-        self.assertIn('id="h2h-win-gap-statistics"', html)
-        self.assertIn("Sin muestra", html)
 
     def test_first_four_five_six_use_prefix_not_later_victories(self):
         reference = datetime(2026, 9, 3, tzinfo=timezone.utc)
@@ -60,7 +57,6 @@ class SixMatchTests(unittest.TestCase):
             self.assertEqual([r["win_pct"] for r in rows], expected)
             self.assertTrue(all(r["sample"] == 1 for r in rows))
             self.assertEqual([r["without_win_pct"] for r in rows], [100 - v for v in expected])
-            self.assertIn("primeros 4, 5 o 6 partidos", render_six_match_stats(result))
 
     def history(self, wins=9, sequence="DEDEDD"):
         start = datetime(2026, 9, 1, tzinfo=timezone.utc)
@@ -89,7 +85,6 @@ class SixMatchTests(unittest.TestCase):
             row = self.row(result, 35, k)
             self.assertEqual((row["sample"], row["remaining_win_pct"]), (1, 100))
         self.assertEqual(self.row(result, 35, 3)["sample"], 0)
-        self.assertIn("Sin muestra", render_six_match_stats(result))
 
     def test_open_and_incomplete_series_excluded(self):
         records = self.history()

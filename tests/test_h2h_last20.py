@@ -3,8 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 from tests import test_six_match_stats
 from six_match_stats import calculate_six_match_stats
-from web_tracker.generate_site import (build_last20_lookup, last20_cells, render_active_repeat_matches,
-                                       render_six_match_stats)
+from web_tracker.generate_site import (build_last20_lookup, last20_cells, render_active_repeat_matches)
 
 
 class Last20Tests(unittest.TestCase):
@@ -23,10 +22,6 @@ class Last20Tests(unittest.TestCase):
                     group = [r for r in rows if r['gap_threshold'] == gap]
                     self.assertEqual([r['sample'] for r in group], [1, 1, 1])
                     self.assertEqual([r['win_pct'] for r in group], [0, 100, 100])
-            html = render_six_match_stats(stats)
-            self.assertIn('<th>Dif.</th>', html)
-            self.assertNotIn('Resultado condicionado a los primeros partidos sin ganar', html)
-            self.assertEqual(html.count('<table>'), 1)
 
     def test_last20_chronological_deduplicated_final_results_only(self):
         reference = datetime(2026, 9, 3, tzinfo=timezone.utc)
