@@ -23,6 +23,7 @@ from match_history import name_key
 from current_streaks_v2 import _record_time
 from fixture_schedule import load_schedule
 from web_tracker.upcoming_matches import render_upcoming_matches, upcoming_fixtures
+from web_tracker.pair_series_schedule import pair_series_schedule
 from selected_players import (
     bettable_player_keys, excluded_player_keys, is_operational_record,
     load_tracked_players,
@@ -298,6 +299,7 @@ def render_page(data, current_streaks, current_streaks_v2=None, schedule=None):
     {render_current_streaks_v2(current_streaks_v2 or {})}
     {render_upcoming_matches(schedule or {})}
     {render_recent_group_h2h_dashboard(data)}
+    {render_underdog_matchups(data)}
     {render_active_repeat_matches(data)}
     {render_gap_match_stats(data.get("six_match_stats"))}
     {render_repeat_win_stats(data.get("six_match_stats"))}
@@ -729,6 +731,7 @@ summary {
 .recent-h2h-green td { background: #dcfce7; color: #14532d; }
 #recent-group-h2h tr[hidden] { display: none; }
 #team-statistics tr[hidden] { display: none; }
+#underdog-matchups td:nth-child(7) { white-space: normal; min-width: 260px; max-width: 540px; }
 .upcoming-filters { display: flex; flex-wrap: wrap; gap: 8px 12px; font-size: 12px; }
 .upcoming-filters label { display: flex; align-items: center; gap: 5px; }
 .upcoming-filters select { font: inherit; padding: 5px 8px; max-width: 100%; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); }
@@ -1375,6 +1378,7 @@ def last20_cells(stats):
 def attach_recent_group_h2h(data, records, reference_time, schedule=None):
     """Use the same bounded eight-hour window as the operational dashboard."""
     records = list(records)
+    current_sequences, pair_fixtures = pair_series_schedule(records, schedule, reference_time)
     start = reference_time - timedelta(hours=8)
     recent = filter_by_time(records, start=start, end=reference_time)
     history = filter_by_time(records, end=reference_time)
@@ -1411,6 +1415,8 @@ def attach_recent_group_h2h(data, records, reference_time, schedule=None):
     def matchup(player, rival, league, historical_lookup):
         row = calculate_h2h_stats(recent, player, rival, league=league)
         identity = (league, name_key(player), name_key(rival))
+        row['current_pair_sequence'] = current_sequences.get(identity, '')
+        row['pair_fixtures'] = pair_fixtures.get((league, tuple(sorted(identity[1:]))), [])
         if identity not in pair_stats:
             pair_stats[identity] = calculate_six_match_stats(
                 player_records.get(identity[:2], []), reference_time, pair=identity)
@@ -1453,6 +1459,72 @@ def attach_recent_group_h2h(data, records, reference_time, schedule=None):
                     for player in players
                 ],
             }
+
+
+def render_underdog_matchups(data):
+    excluded = {tuple(item) for item in data.get('h2h_exclusions', [])}
+    selected = {}
+    for league, payload in data.get('leagues', {}).items():
+        for group in payload.get('groups', []):
+            for player in group.get('recent_h2h', {}).get('players', []):
+                for rival in player.get('rivals', []):
+                    a, b = player['player'], rival['rival']
+                    identity = (league, name_key(a), name_key(b))
+                    if identity in excluded or not new_table_pair_allowed(data, league, a, b):
+                        continue
+                    total = rival.get('historical_played', 0)
+                    wins = rival.get('historical_wins', 0)
+                    losses = rival.get('historical_losses', 0)
+                    sequence = rival.get('current_pair_sequence', rival.get('sequence', ''))
+                    if not total or wins * 100 <= 30 * total or losses <= wins or 'V' in sequence:
+                        continue
+                    remaining = max(0, 6 - len(sequence))
+                    fixtures = rival.get('pair_fixtures', [])[:remaining]
+                    hours = []
+                    for fixture in fixtures:
+                        stamp = datetime.fromisoformat(fixture['timestamp'])
+                        label = stamp.astimezone(ZoneInfo('Europe/Madrid')).strftime('%d/%m %H:%M')
+                        if fixture['started']:
+                            label += ' (sin resultado)'
+                        hours.append(label)
+                    if remaining == 0:
+                        hours_label = 'Seis partidos disputados'
+                    elif not hours:
+                        hours_label = 'Sin horarios publicados'
+                    else:
+                        hours_label = ' · '.join(hours)
+                        if len(hours) < remaining:
+                            hours_label += f' · Faltan {remaining - len(hours)} horarios por publicar'
+                    stats = rival.get('pair_stats', {})
+                    sample, failures = stats.get('complete_series', 0), stats.get('zero_win_series', 0)
+                    row = [league, a, b, fmt_pct(wins * 100 / total), fmt_pct(losses * 100 / total),
+                           sequence or 'Sin partidos', hours_label,
+                           failures if sample else '—', sample,
+                           fmt_pct(failures * 100 / sample) if sample else '—']
+                    order = fixtures[0]['timestamp'] if fixtures else '9999'
+                    selected[identity] = (order, row)
+    rows = [row for _, row in sorted(selected.values(), key=lambda item: (item[0], item[1][:3]))]
+    return (
+        '<section class="dashboard-section" id="underdog-matchups">'
+        '<div class="section-head"><h2>A por su primera victoria · A &gt;30% y B &gt; A</h2></div>'
+        '<p class="section-subtitle">Parejas de los grupos actuales: porcentaje histórico de A superior al 30% '
+        'y porcentaje de B superior al de A en sus enfrentamientos. SEC muestra los resultados de A '
+        'en las últimas 8 horas. La pareja desaparece en la siguiente actualización cuando A gana. '
+        'Se muestran todos los horarios publicados pendientes hasta completar seis partidos, en Madrid; '
+        'los partidos iniciados sin resultado confirmado siguen pendientes. No se inventan horarios ausentes.</p>'
+        '<p class="section-subtitle">Sin V en 6: número de series históricas completas de esta pareja '
+        'en las que A no ganó ninguno de los seis encuentros, sobre el total de series completas. '
+        'Cada dirección se analiza por separado, sin agrupar otras parejas ni condicionar el histórico '
+        'a la SEC o los porcentajes actuales. Sesiones inferidas por pausas de más de 90 minutos del jugador; '
+        'solo series de exactamente seis partidos cerradas hace más de 90 minutos. '
+        'Las series incompletas no cuentan como fallos; el histórico detallado puede tener cobertura parcial. '
+        '— significa que no hay series completas registradas.</p>'
+        + render_table(['Liga', 'Jugador A', 'Rival B', 'V% A', 'V% B', 'SEC', 'Horarios pendientes (Madrid)',
+                        'Sin V en 6', 'Series de 6', '% sin V'], rows,
+                       numeric_columns={3, 4, 7, 8, 9}, seq_columns={5})
+        + ('<p class="section-subtitle">No hay parejas que cumplan estas condiciones.</p>' if not rows else '')
+        + '</section>'
+    )
 
 
 def render_recent_group_h2h_dashboard(data):

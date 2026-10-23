@@ -49,6 +49,7 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=No
     active_repeat = defaultdict(lambda: [0] * 9)
     active_repeat_gap = defaultdict(lambda: [0] * 9)
     complete = 0
+    zero_win_series = 0
     for (league, player), history in players.items():
         prior = defaultdict(list)
         for session in split_player_sessions(history):
@@ -62,6 +63,7 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=No
                 earlier = prior[rival]
                 if 1 <= len(matches) <= 6 and closed:
                     complete += len(matches) == 6
+                    zero_win_series += len(matches) == 6 and not any(r['result'] == 'V' for r in matches)
                     if len(earlier) >= minimum_prior:
                         wins = sum(r["result"] == "V" for r in earlier)
                         losses = sum(r["result"] == "D" for r in earlier)
@@ -138,6 +140,7 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=No
                                     sample[1] += "V" not in sequence
                 prior[rival].extend(matches)
     return {"minimum_prior": minimum_prior, "complete_series": complete,
+            "zero_win_series": zero_win_series,
             "win_gap_horizons": [
                 {"league": league, "threshold": threshold, "gap_threshold": gap_threshold,
                  "horizon": horizon, "sample": sample, "with_win": wins,
