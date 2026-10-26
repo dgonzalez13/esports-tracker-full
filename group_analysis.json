@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "analysis_scope": "historical TXT; h2h_alerts are operational JSONL-filtered",
-  "generated_at": "26/10/2026 10:24:01 CET",
+  "generated_at": "26/10/2026 10:31:23 CET",
   "league": "EADRIATIC",
   "files_count": 164,
   "data_from": "20260516",
@@ -527,13 +527,13 @@
         "VanGogh",
         "Beckham"
       ],
-      "target_repr": "{'Beckham', 'Kai', 'Bruno', 'Pascal', 'VanGogh'}",
+      "target_repr": "{'Pascal', 'VanGogh', 'Bruno', 'Kai', 'Beckham'}",
       "h2h_keys": [
-        "Bruno",
         "Pascal",
+        "Bruno",
         "Beckham",
-        "Kai",
-        "VanGogh"
+        "VanGogh",
+        "Kai"
       ],
       "coincidencias_5": 1,
       "coincidencias_4": 2,
@@ -543,19 +543,19 @@
       "totals_5": [
         {
           "player": "Beckham",
-          "W": 2,
+          "W": 3,
           "D": 2,
           "L": 5,
-          "win_pct": 22.22222222222222,
-          "loss_pct": 55.55555555555556
+          "win_pct": 30.0,
+          "loss_pct": 50.0
         },
         {
           "player": "Bruno",
           "W": 6,
           "D": 0,
-          "L": 4,
-          "win_pct": 60.0,
-          "loss_pct": 40.0
+          "L": 5,
+          "win_pct": 54.54545454545454,
+          "loss_pct": 45.45454545454545
         },
         {
           "player": "Kai",
@@ -567,19 +567,19 @@
         },
         {
           "player": "Pascal",
-          "W": 6,
+          "W": 7,
           "D": 2,
           "L": 2,
-          "win_pct": 60.0,
-          "loss_pct": 20.0
+          "win_pct": 63.63636363636363,
+          "loss_pct": 18.181818181818183
         },
         {
           "player": "VanGogh",
           "W": 4,
           "D": 1,
-          "L": 4,
-          "win_pct": 44.44444444444444,
-          "loss_pct": 44.44444444444444
+          "L": 5,
+          "win_pct": 40.0,
+          "loss_pct": 50.0
         }
       ],
       "totals_4": [
@@ -628,45 +628,30 @@
         {
           "position": 1,
           "player": "Bruno",
-          "score": -2.6194403387385847
+          "score": -3.8099165292147674
         },
         {
           "position": 2,
           "player": "Pascal",
-          "score": -19.998383968972206
+          "score": -18.411082381670617
         },
         {
           "position": 3,
           "player": "Beckham",
-          "score": -40.20682517542896
+          "score": -40.05665633274055
         },
         {
           "position": 4,
           "player": "VanGogh",
-          "score": -59.652275480488825
+          "score": -59.7542035550597
         },
         {
           "position": 5,
           "player": "Kai",
-          "score": -66.39494877159946
+          "score": -66.39494877159947
         }
       ],
       "dominance": [
-        {
-          "player": "Beckham",
-          "wins": 0,
-          "rivals": 4
-        },
-        {
-          "player": "Kai",
-          "wins": 0,
-          "rivals": 4
-        },
-        {
-          "player": "Bruno",
-          "wins": 2,
-          "rivals": 4
-        },
         {
           "player": "Pascal",
           "wins": 1,
@@ -676,26 +661,41 @@
           "player": "VanGogh",
           "wins": 0,
           "rivals": 4
+        },
+        {
+          "player": "Bruno",
+          "wins": 2,
+          "rivals": 4
+        },
+        {
+          "player": "Kai",
+          "wins": 0,
+          "rivals": 4
+        },
+        {
+          "player": "Beckham",
+          "wins": 0,
+          "rivals": 4
         }
       ],
       "h2h_ranking": [
         {
           "player": "Beckham",
-          "score": 41.45728643216081,
-          "matches": 796,
-          "weighted_score": 33000.0
+          "score": 41.53074027603513,
+          "matches": 797,
+          "weighted_score": 33100.0
         },
         {
           "player": "VanGogh",
-          "score": 35.07109004739337,
-          "matches": 844,
-          "weighted_score": 29600.000000000004
+          "score": 35.02958579881657,
+          "matches": 845,
+          "weighted_score": 29600.0
         },
         {
           "player": "Bruno",
-          "score": 51.66240409207161,
-          "matches": 391,
-          "weighted_score": 20200.0
+          "score": 51.53061224489795,
+          "matches": 392,
+          "weighted_score": 20199.999999999996
         },
         {
           "player": "Kai",
@@ -705,17 +705,17 @@
         },
         {
           "player": "Pascal",
-          "score": 46.34760705289673,
-          "matches": 397,
-          "weighted_score": 18400.0
+          "score": 46.482412060301506,
+          "matches": 398,
+          "weighted_score": 18500.0
         }
       ],
       "betting": {
         "back": {
           "player": "Bruno",
-          "score": 51.66240409207161,
-          "matches": 391,
-          "weighted_score": 20200.0,
+          "score": 51.53061224489795,
+          "matches": 392,
+          "weighted_score": 20199.999999999996,
           "best_matchups": [
             {
               "rival": "VanGogh",
@@ -728,9 +728,9 @@
               "matches": 81
             },
             {
-              "rival": "Pascal",
-              "win_pct": 42.857142857142854,
-              "matches": 35
+              "rival": "Beckham",
+              "win_pct": 42.30769230769231,
+              "matches": 104
             }
           ],
           "best_matchup_details": [
@@ -765,19 +765,19 @@
               "stk_lose": 2
             },
             {
-              "rival": "Pascal",
-              "W": 15,
-              "D": 5,
-              "L": 15,
-              "matches": 35,
-              "win_pct": 42.857142857142854,
-              "draw_pct": 14.285714285714285,
-              "loss_pct": 42.857142857142854,
-              "seq": "EDDDDVDVVDEVDVVDDVVEVDDDDV",
-              "last5": "DDDDV",
-              "last10": "DVVEVDDDDV",
-              "stk_win": 1,
-              "stk_lose": 1
+              "rival": "Beckham",
+              "W": 44,
+              "D": 17,
+              "L": 43,
+              "matches": 104,
+              "win_pct": 42.30769230769231,
+              "draw_pct": 16.346153846153847,
+              "loss_pct": 41.34615384615385,
+              "seq": "DVDVDVEVDEDEVDVVDVDEDVEDVEDEVVEDEDDDDDVVVDDDEVDVVDDVVVVDDDEVDEVVDDVDDVDVEVVDDVDDVDVEEVVDEVVVVDVEVD",
+              "last5": "DVEVD",
+              "last10": "EVVVVDVEVD",
+              "stk_win": 0,
+              "stk_lose": 0
             }
           ]
         },
@@ -876,9 +876,9 @@
             },
             {
               "rival": "VanGogh",
-              "win_pct": 46.089385474860336,
-              "loss_pct": 36.592178770949715,
-              "matches": 358
+              "win_pct": 46.239554317548745,
+              "loss_pct": 36.49025069637883,
+              "matches": 359
             }
           ]
         },
@@ -899,9 +899,9 @@
             },
             {
               "rival": "Pascal",
-              "win_pct": 42.857142857142854,
-              "loss_pct": 42.857142857142854,
-              "matches": 35
+              "win_pct": 41.66666666666667,
+              "loss_pct": 44.44444444444444,
+              "matches": 36
             },
             {
               "rival": "VanGogh",
@@ -951,9 +951,9 @@
             },
             {
               "rival": "Bruno",
-              "win_pct": 42.857142857142854,
-              "loss_pct": 42.857142857142854,
-              "matches": 35
+              "win_pct": 44.44444444444444,
+              "loss_pct": 41.66666666666667,
+              "matches": 36
             },
             {
               "rival": "Kai",
@@ -974,9 +974,9 @@
           "rivals": [
             {
               "rival": "Beckham",
-              "win_pct": 36.592178770949715,
-              "loss_pct": 46.089385474860336,
-              "matches": 358
+              "win_pct": 36.49025069637883,
+              "loss_pct": 46.239554317548745,
+              "matches": 359
             },
             {
               "rival": "Bruno",
@@ -1050,18 +1050,18 @@
             },
             {
               "rival": "VanGogh",
-              "W": 165,
+              "W": 166,
               "D": 62,
               "L": 131,
-              "matches": 358,
-              "win_pct": 46.089385474860336,
-              "draw_pct": 17.318435754189945,
-              "loss_pct": 36.592178770949715,
-              "seq": "DEEVEVVEVDEVVDVVDVVEVVVVEVDVEVDVVDDVVVDDVVVVVVVEEEDDVDDDVVDEVEVDVEDDVEDDVVDDDVDVEEVVEDDDVDDVEVEDEEVDVDEDDDDEDDVEVVDDDVVDDEVDVVEVVVDVEVVVVVDEDVDVVVDDEVEDVVDVVDVDDVDDVVVVEVEEVDDVEVVVDVDEDDVDVVDVVDEVVDDVDEEVVVVDVVVDVDDEDDVVVDVVVEEVVVDVDVDVEVVVDVVEDVEVEVDVDDE",
-              "last5": "DVDDE",
-              "last10": "VEVEVDVDDE",
-              "stk_win": 0,
-              "stk_lose": 1
+              "matches": 359,
+              "win_pct": 46.239554317548745,
+              "draw_pct": 17.270194986072422,
+              "loss_pct": 36.49025069637883,
+              "seq": "DEEVEVVEVDEVVDVVDVVEVVVVEVDVEVDVVDDVVVDDVVVVVVVEEEDDVDDDVVDEVEVDVEDDVEDDVVDDDVDVEEVVEDDDVDDVEVEDEEVDVDEDDDDEDDVEVVDDDVVDDEVDVVEVVVDVEVVVVVDEDVDVVVDDEVEDVVDVVDVDDVDDVVVVEVEEVDDVEVVVDVDEDDVDVVDVVDEVVDDVDEEVVVVDVVVDVDDEDDVVVDVVVEEVVVDVDVDVEVVVDVVEDVEVEVDVDDEV",
+              "last5": "VDDEV",
+              "last10": "EVEVDVDDEV",
+              "stk_win": 1,
+              "stk_lose": 2
             }
           ]
         },
@@ -1102,16 +1102,16 @@
               "rival": "Pascal",
               "W": 15,
               "D": 5,
-              "L": 15,
-              "matches": 35,
-              "win_pct": 42.857142857142854,
-              "draw_pct": 14.285714285714285,
-              "loss_pct": 42.857142857142854,
-              "seq": "EDDDDVDVVDEVDVVDDVVEVDDDDV",
-              "last5": "DDDDV",
-              "last10": "DVVEVDDDDV",
-              "stk_win": 1,
-              "stk_lose": 1
+              "L": 16,
+              "matches": 36,
+              "win_pct": 41.66666666666667,
+              "draw_pct": 13.88888888888889,
+              "loss_pct": 44.44444444444444,
+              "seq": "EDDDDVDVVDEVDVVDDVVEVDDDDVD",
+              "last5": "DDDVD",
+              "last10": "VVEVDDDDVD",
+              "stk_win": 0,
+              "stk_lose": 0
             },
             {
               "rival": "VanGogh",
@@ -1215,18 +1215,18 @@
             },
             {
               "rival": "Bruno",
-              "W": 15,
+              "W": 16,
               "D": 5,
               "L": 15,
-              "matches": 35,
-              "win_pct": 42.857142857142854,
-              "draw_pct": 14.285714285714285,
-              "loss_pct": 42.857142857142854,
-              "seq": "EVVVVDVDDVEDVDDVVDDEDVVVVD",
-              "last5": "VVVVD",
-              "last10": "VDDEDVVVVD",
-              "stk_win": 0,
-              "stk_lose": 0
+              "matches": 36,
+              "win_pct": 44.44444444444444,
+              "draw_pct": 13.88888888888889,
+              "loss_pct": 41.66666666666667,
+              "seq": "EVVVVDVDDVEDVDDVVDDEDVVVVDV",
+              "last5": "VVVDV",
+              "last10": "DDEDVVVVDV",
+              "stk_win": 1,
+              "stk_lose": 1
             },
             {
               "rival": "Kai",
@@ -1267,16 +1267,16 @@
               "rival": "Beckham",
               "W": 131,
               "D": 62,
-              "L": 165,
-              "matches": 358,
-              "win_pct": 36.592178770949715,
-              "draw_pct": 17.318435754189945,
-              "loss_pct": 46.089385474860336,
-              "seq": "VEEDEDDEDVEDDVDDVDDEDDDDEDVDEDVDDVVDDDVVDDDDDDDEEEVVDVVVDDVEDEDVDEVVDEVVDDVVVDVDEEDDEVVVDVVDEDEVEEDVDVEVVVVEVVDEDDVVVDDVVEDVDDEDDDVDEDDDDDVEVDVDDDVVEDEVDDVDDVDVVDVVDDDDEDEEDVVDEDDDVDVEVVDVDDVDDVEDDVVDVEEDDDDVDDDVDVVEVVDDDVDDDEEDDDVDVDVDEDDDVDDEVDEDEDVDVVE",
-              "last5": "VDVVE",
-              "last10": "DEDEDVDVVE",
+              "L": 166,
+              "matches": 359,
+              "win_pct": 36.49025069637883,
+              "draw_pct": 17.270194986072422,
+              "loss_pct": 46.239554317548745,
+              "seq": "VEEDEDDEDVEDDVDDVDDEDDDDEDVDEDVDDVVDDDVVDDDDDDDEEEVVDVVVDDVEDEDVDEVVDEVVDDVVVDVDEEDDEVVVDVVDEDEVEEDVDVEVVVVEVVDEDDVVVDDVVEDVDDEDDDVDEDDDDDVEVDVDDDVVEDEVDDVDDVDVVDVVDDDDEDEEDVVDEDDDVDVEVVDVDDVDDVEDDVVDVEEDDDDVDDDVDVVEVVDDDVDDDEEDDDVDVDVDEDDDVDDEVDEDEDVDVVED",
+              "last5": "DVVED",
+              "last10": "EDEDVDVVED",
               "stk_win": 0,
-              "stk_lose": 3
+              "stk_lose": 0
             },
             {
               "rival": "Bruno",
@@ -1337,10 +1337,10 @@
         "Cezar",
         "Leonardo"
       ],
-      "target_repr": "{'Cezar', 'Gabriel', 'Leonardo', 'Flash', 'Alexander'}",
+      "target_repr": "{'Flash', 'Alexander', 'Cezar', 'Leonardo', 'Gabriel'}",
       "h2h_keys": [
-        "Gabriel",
         "Flash",
+        "Gabriel",
         "Leonardo",
         "Alexander",
         "Cezar"
@@ -1455,13 +1455,18 @@
       ],
       "dominance": [
         {
-          "player": "Cezar",
+          "player": "Flash",
+          "wins": 2,
+          "rivals": 4
+        },
+        {
+          "player": "Alexander",
           "wins": 0,
           "rivals": 4
         },
         {
-          "player": "Gabriel",
-          "wins": 3,
+          "player": "Cezar",
+          "wins": 0,
           "rivals": 4
         },
         {
@@ -1470,13 +1475,8 @@
           "rivals": 4
         },
         {
-          "player": "Flash",
-          "wins": 2,
-          "rivals": 4
-        },
-        {
-          "player": "Alexander",
-          "wins": 0,
+          "player": "Gabriel",
+          "wins": 3,
           "rivals": 4
         }
       ],
@@ -2392,30 +2392,30 @@
           "rival": "Voodoo",
           "W": 16,
           "D": 5,
-          "L": 3,
-          "matches": 24,
-          "win_pct": 66.66666666666666,
-          "draw_pct": 20.833333333333336,
-          "loss_pct": 12.5,
-          "seq": "VVEEVEVEDDDVVVVEVVVVVVVV",
-          "last5": "VVVVV",
-          "last10": "VEVVVVVVVV",
-          "stk_win": 8,
-          "stk_lose": 13,
+          "L": 4,
+          "matches": 25,
+          "win_pct": 64.0,
+          "draw_pct": 20.0,
+          "loss_pct": 16.0,
+          "seq": "VVEEVEVEDDDVVVVEVVVVVVVVD",
+          "last5": "VVVVD",
+          "last10": "EVVVVVVVVD",
+          "stk_win": 0,
+          "stk_lose": 0,
           "signal": "STRONG",
           "confidence": "HIGH",
           "low_sample": false,
           "recent_window": 20,
           "recent_available": 20,
-          "recent_sequence": "EVEVEDDVVVVEVVVVVVVV",
+          "recent_sequence": "VEVEDDVVVVEVVVVVVVVD",
           "recent_wins": 14,
-          "recent_draws": 4,
-          "recent_losses": 2,
+          "recent_draws": 3,
+          "recent_losses": 3,
           "recent_win_pct": 70.0,
-          "recent_draw_pct": 20.0,
-          "recent_loss_pct": 10.0,
-          "recent_win_pct_delta": 3.33,
-          "recent_trend": "STABLE",
+          "recent_draw_pct": 15.0,
+          "recent_loss_pct": 15.0,
+          "recent_win_pct_delta": 6.0,
+          "recent_trend": "UP",
           "recent_sample_status": "COMPLETE",
           "recent_window_complete": true
         },
@@ -2567,10 +2567,10 @@
             "William",
             "Scorpion"
           ],
-          "target_repr": "{'William', 'Walnut', 'Scorpion', 'Punk', 'Voodoo'}",
+          "target_repr": "{'Punk', 'Voodoo', 'Scorpion', 'Walnut', 'William'}",
           "h2h_keys": [
-            "William",
             "Voodoo",
+            "William",
             "Scorpion",
             "Walnut",
             "Punk"
@@ -2585,9 +2585,9 @@
               "player": "Punk",
               "W": 24,
               "D": 5,
-              "L": 11,
-              "win_pct": 60.0,
-              "loss_pct": 27.500000000000004
+              "L": 12,
+              "win_pct": 58.536585365853654,
+              "loss_pct": 29.268292682926827
             },
             {
               "player": "Scorpion",
@@ -2599,27 +2599,27 @@
             },
             {
               "player": "Voodoo",
-              "W": 16,
+              "W": 17,
               "D": 7,
               "L": 17,
-              "win_pct": 40.0,
-              "loss_pct": 42.5
+              "win_pct": 41.46341463414634,
+              "loss_pct": 41.46341463414634
             },
             {
               "player": "Walnut",
               "W": 15,
               "D": 9,
-              "L": 16,
-              "win_pct": 37.5,
-              "loss_pct": 40.0
+              "L": 17,
+              "win_pct": 36.58536585365854,
+              "loss_pct": 41.46341463414634
             },
             {
               "player": "William",
-              "W": 14,
+              "W": 15,
               "D": 3,
               "L": 23,
-              "win_pct": 35.0,
-              "loss_pct": 57.49999999999999
+              "win_pct": 36.58536585365854,
+              "loss_pct": 56.09756097560976
             }
           ],
           "totals_4": [
@@ -2668,12 +2668,12 @@
             {
               "position": 1,
               "player": "Punk",
-              "score": -2.42424242424244
+              "score": -5.090909090909097
             },
             {
               "position": 2,
               "player": "Walnut",
-              "score": -22.785584075906655
+              "score": -23.098480865313512
             },
             {
               "position": 3,
@@ -2683,30 +2683,15 @@
             {
               "position": 4,
               "player": "William",
-              "score": -55.01219123356528
+              "score": -54.54511341749418
             },
             {
               "position": 5,
               "player": "Voodoo",
-              "score": -81.57763801695928
+              "score": -78.0776380169593
             }
           ],
           "dominance": [
-            {
-              "player": "William",
-              "wins": 0,
-              "rivals": 4
-            },
-            {
-              "player": "Walnut",
-              "wins": 0,
-              "rivals": 4
-            },
-            {
-              "player": "Scorpion",
-              "wins": 1,
-              "rivals": 4
-            },
             {
               "player": "Punk",
               "wins": 2,
@@ -2716,14 +2701,29 @@
               "player": "Voodoo",
               "wins": 0,
               "rivals": 4
+            },
+            {
+              "player": "Scorpion",
+              "wins": 1,
+              "rivals": 4
+            },
+            {
+              "player": "Walnut",
+              "wins": 0,
+              "rivals": 4
+            },
+            {
+              "player": "William",
+              "wins": 0,
+              "rivals": 4
             }
           ],
           "h2h_ranking": [
             {
               "player": "William",
-              "score": 41.39650872817955,
-              "matches": 802,
-              "weighted_score": 33200.0
+              "score": 41.46948941469489,
+              "matches": 803,
+              "weighted_score": 33300.0
             },
             {
               "player": "Scorpion",
@@ -2733,34 +2733,34 @@
             },
             {
               "player": "Voodoo",
-              "score": 34.12698412698413,
-              "matches": 756,
-              "weighted_score": 25800.0
+              "score": 34.21400264200793,
+              "matches": 757,
+              "weighted_score": 25900.0
             },
             {
               "player": "Walnut",
-              "score": 44.779582366589324,
-              "matches": 431,
+              "score": 44.675925925925924,
+              "matches": 432,
               "weighted_score": 19300.0
             },
             {
               "player": "Punk",
-              "score": 51.28205128205128,
-              "matches": 78,
-              "weighted_score": 3999.9999999999995
+              "score": 50.63291139240506,
+              "matches": 79,
+              "weighted_score": 4000.0
             }
           ],
           "betting": {
             "back": {
               "player": "Punk",
-              "score": 51.28205128205128,
-              "matches": 78,
-              "weighted_score": 3999.9999999999995,
+              "score": 50.63291139240506,
+              "matches": 79,
+              "weighted_score": 4000.0,
               "best_matchups": [
                 {
                   "rival": "Voodoo",
-                  "win_pct": 66.66666666666666,
-                  "matches": 24
+                  "win_pct": 64.0,
+                  "matches": 25
                 },
                 {
                   "rival": "William",
@@ -2778,16 +2778,16 @@
                   "rival": "Voodoo",
                   "W": 16,
                   "D": 5,
-                  "L": 3,
-                  "matches": 24,
-                  "win_pct": 66.66666666666666,
-                  "draw_pct": 20.833333333333336,
-                  "loss_pct": 12.5,
-                  "seq": "VVEEVEVEDDDVVVVEVVVVVVVV",
-                  "last5": "VVVVV",
-                  "last10": "VEVVVVVVVV",
-                  "stk_win": 8,
-                  "stk_lose": 13
+                  "L": 4,
+                  "matches": 25,
+                  "win_pct": 64.0,
+                  "draw_pct": 20.0,
+                  "loss_pct": 16.0,
+                  "seq": "VVEEVEVEDDDVVVVEVVVVVVVVD",
+                  "last5": "VVVVD",
+                  "last10": "EVVVVVVVVD",
+                  "stk_win": 0,
+                  "stk_lose": 0
                 },
                 {
                   "rival": "William",
@@ -2823,14 +2823,14 @@
             },
             "lay": {
               "player": "Voodoo",
-              "score": 34.12698412698413,
-              "matches": 756,
-              "weighted_score": 25800.0,
+              "score": 34.21400264200793,
+              "matches": 757,
+              "weighted_score": 25900.0,
               "worst_matchups": [
                 {
                   "rival": "Punk",
-                  "win_pct": 12.5,
-                  "matches": 24
+                  "win_pct": 16.0,
+                  "matches": 25
                 },
                 {
                   "rival": "Scorpion",
@@ -2846,18 +2846,18 @@
               "worst_matchup_details": [
                 {
                   "rival": "Punk",
-                  "W": 3,
+                  "W": 4,
                   "D": 5,
                   "L": 16,
-                  "matches": 24,
-                  "win_pct": 12.5,
-                  "draw_pct": 20.833333333333336,
-                  "loss_pct": 66.66666666666666,
-                  "seq": "DDEEDEDEVVVDDDDEDDDDDDDD",
-                  "last5": "DDDDD",
-                  "last10": "DEDDDDDDDD",
-                  "stk_win": 0,
-                  "stk_lose": 0
+                  "matches": 25,
+                  "win_pct": 16.0,
+                  "draw_pct": 20.0,
+                  "loss_pct": 64.0,
+                  "seq": "DDEEDEDEVVVDDDDEDDDDDDDDV",
+                  "last5": "DDDDV",
+                  "last10": "EDDDDDDDDV",
+                  "stk_win": 1,
+                  "stk_lose": 1
                 },
                 {
                   "rival": "Scorpion",
@@ -2904,9 +2904,9 @@
                 },
                 {
                   "rival": "Voodoo",
-                  "win_pct": 66.66666666666666,
-                  "loss_pct": 12.5,
-                  "matches": 24
+                  "win_pct": 64.0,
+                  "loss_pct": 16.0,
+                  "matches": 25
                 },
                 {
                   "rival": "Walnut",
@@ -2956,9 +2956,9 @@
               "rivals": [
                 {
                   "rival": "Punk",
-                  "win_pct": 12.5,
-                  "loss_pct": 66.66666666666666,
-                  "matches": 24
+                  "win_pct": 16.0,
+                  "loss_pct": 64.0,
+                  "matches": 25
                 },
                 {
                   "rival": "Scorpion",
@@ -3003,9 +3003,9 @@
                 },
                 {
                   "rival": "William",
-                  "win_pct": 46.62162162162162,
-                  "loss_pct": 30.405405405405407,
-                  "matches": 148
+                  "win_pct": 46.308724832214764,
+                  "loss_pct": 30.87248322147651,
+                  "matches": 149
                 }
               ]
             },
@@ -3032,9 +3032,9 @@
                 },
                 {
                   "rival": "Walnut",
-                  "win_pct": 30.405405405405407,
-                  "loss_pct": 46.62162162162162,
-                  "matches": 148
+                  "win_pct": 30.87248322147651,
+                  "loss_pct": 46.308724832214764,
+                  "matches": 149
                 }
               ]
             }
@@ -3062,16 +3062,16 @@
                   "rival": "Voodoo",
                   "W": 16,
                   "D": 5,
-                  "L": 3,
-                  "matches": 24,
-                  "win_pct": 66.66666666666666,
-                  "draw_pct": 20.833333333333336,
-                  "loss_pct": 12.5,
-                  "seq": "VVEEVEVEDDDVVVVEVVVVVVVV",
-                  "last5": "VVVVV",
-                  "last10": "VEVVVVVVVV",
-                  "stk_win": 8,
-                  "stk_lose": 13
+                  "L": 4,
+                  "matches": 25,
+                  "win_pct": 64.0,
+                  "draw_pct": 20.0,
+                  "loss_pct": 16.0,
+                  "seq": "VVEEVEVEDDDVVVVEVVVVVVVVD",
+                  "last5": "VVVVD",
+                  "last10": "EVVVVVVVVD",
+                  "stk_win": 0,
+                  "stk_lose": 0
                 },
                 {
                   "rival": "Walnut",
@@ -3175,18 +3175,18 @@
               "rivals": [
                 {
                   "rival": "Punk",
-                  "W": 3,
+                  "W": 4,
                   "D": 5,
                   "L": 16,
-                  "matches": 24,
-                  "win_pct": 12.5,
-                  "draw_pct": 20.833333333333336,
-                  "loss_pct": 66.66666666666666,
-                  "seq": "DDEEDEDEVVVDDDDEDDDDDDDD",
-                  "last5": "DDDDD",
-                  "last10": "DEDDDDDDDD",
-                  "stk_win": 0,
-                  "stk_lose": 0
+                  "matches": 25,
+                  "win_pct": 16.0,
+                  "draw_pct": 20.0,
+                  "loss_pct": 64.0,
+                  "seq": "DDEEDEDEVVVDDDDEDDDDDDDDV",
+                  "last5": "DDDDV",
+                  "last10": "EDDDDDDDDV",
+                  "stk_win": 1,
+                  "stk_lose": 1
                 },
                 {
                   "rival": "Scorpion",
@@ -3287,14 +3287,14 @@
                   "rival": "William",
                   "W": 69,
                   "D": 34,
-                  "L": 45,
-                  "matches": 148,
-                  "win_pct": 46.62162162162162,
-                  "draw_pct": 22.972972972972975,
-                  "loss_pct": 30.405405405405407,
-                  "seq": "VVEDVEVVVVEDDVEDVDVVVVDVEDVVVEEDVVVDVDVVDVEVDVVVVEVDVDVVDDVEEDEDVVVDVDVVVEEDVVDVEEEDEDEVEDDVVVVEDVDEVVEVEDVEDEDDVDVEDVDVDEVDVDDDVEEVDVDDVEDD",
-                  "last5": "DVEDD",
-                  "last10": "EVDVDDVEDD",
+                  "L": 46,
+                  "matches": 149,
+                  "win_pct": 46.308724832214764,
+                  "draw_pct": 22.818791946308725,
+                  "loss_pct": 30.87248322147651,
+                  "seq": "VVEDVEVVVVEDDVEDVDVVVVDVEDVVVEEDVVVDVDVVDVEVDVVVVEVDVDVVDDVEEDEDVVVDVDVVVEEDVVDVEEEDEDEVEDDVVVVEDVDEVVEVEDVEDEDDVDVEDVDVDEVDVDDDVEEVDVDDVEDDD",
+                  "last5": "VEDDD",
+                  "last10": "VDVDDVEDDD",
                   "stk_win": 0,
                   "stk_lose": 0
                 }
@@ -3350,18 +3350,18 @@
                 },
                 {
                   "rival": "Walnut",
-                  "W": 45,
+                  "W": 46,
                   "D": 34,
                   "L": 69,
-                  "matches": 148,
-                  "win_pct": 30.405405405405407,
-                  "draw_pct": 22.972972972972975,
-                  "loss_pct": 46.62162162162162,
-                  "seq": "DDEVDEDDDDEVVDEVDVDDDDVDEVDDDEEVDDDVDVDDVDEDVDDDDEDVDVDDVVDEEVEVDDDVDVDDDEEVDDVDEEEVEVEDEVVDDDDEVDVEDDEDEVDEVEVVDVDEVDVDVEDVDVVVDEEDVDVVDEVV",
-                  "last5": "VDEVV",
-                  "last10": "EDVDVVDEVV",
-                  "stk_win": 2,
-                  "stk_lose": 3
+                  "matches": 149,
+                  "win_pct": 30.87248322147651,
+                  "draw_pct": 22.818791946308725,
+                  "loss_pct": 46.308724832214764,
+                  "seq": "DDEVDEDDDDEVVDEVDVDDDDVDEVDDDEEVDDDVDVDDVDEDVDDDDEDVDVDDVVDEEVEVDDDVDVDDDEEVDDVDEEEVEVEDEVVDDDDEVDVEDDEDEVDEVEVVDVDEVDVDVEDVDVVVDEEDVDVVDEVVV",
+                  "last5": "DEVVV",
+                  "last10": "DVDVVDEVVV",
+                  "stk_win": 3,
+                  "stk_lose": 4
                 }
               ]
             }
@@ -3377,7 +3377,7 @@
             "King",
             "Fred"
           ],
-          "target_repr": "{'Habibi', 'Fred', 'Carlos', 'Vendetta', 'King'}",
+          "target_repr": "{'Habibi', 'Carlos', 'King', 'Fred', 'Vendetta'}",
           "h2h_keys": [
             "Fred",
             "Vendetta",
@@ -3393,27 +3393,27 @@
           "totals_5": [
             {
               "player": "Carlos",
-              "W": 13,
+              "W": 14,
               "D": 10,
               "L": 14,
-              "win_pct": 35.13513513513514,
-              "loss_pct": 37.83783783783784
+              "win_pct": 36.84210526315789,
+              "loss_pct": 36.84210526315789
             },
             {
               "player": "Fred",
               "W": 16,
               "D": 9,
-              "L": 11,
-              "win_pct": 44.44444444444444,
-              "loss_pct": 30.555555555555557
+              "L": 12,
+              "win_pct": 43.24324324324324,
+              "loss_pct": 32.432432432432435
             },
             {
               "player": "Habibi",
               "W": 16,
               "D": 9,
-              "L": 12,
-              "win_pct": 43.24324324324324,
-              "loss_pct": 32.432432432432435
+              "L": 13,
+              "win_pct": 42.10526315789473,
+              "loss_pct": 34.21052631578947
             },
             {
               "player": "King",
@@ -3425,11 +3425,11 @@
             },
             {
               "player": "Vendetta",
-              "W": 11,
+              "W": 12,
               "D": 11,
               "L": 15,
-              "win_pct": 29.72972972972973,
-              "loss_pct": 40.54054054054054
+              "win_pct": 31.57894736842105,
+              "loss_pct": 39.473684210526315
             }
           ],
           "totals_4": [
@@ -3478,27 +3478,27 @@
             {
               "position": 1,
               "player": "Carlos",
-              "score": -29.20585038977751
+              "score": -28.695269681116095
             },
             {
               "position": 2,
               "player": "King",
-              "score": -33.33333333333333
+              "score": -33.333333333333336
             },
             {
               "position": 3,
               "player": "Fred",
-              "score": -39.84821318378389
+              "score": -40.16809507354767
             },
             {
               "position": 4,
               "player": "Habibi",
-              "score": -53.909476937604744
+              "score": -54.44777921503746
             },
             {
               "position": 5,
               "player": "Vendetta",
-              "score": -85.32575895391977
+              "score": -84.45619373652846
             }
           ],
           "dominance": [
@@ -3508,17 +3508,7 @@
               "rivals": 4
             },
             {
-              "player": "Fred",
-              "wins": 0,
-              "rivals": 4
-            },
-            {
               "player": "Carlos",
-              "wins": 0,
-              "rivals": 4
-            },
-            {
-              "player": "Vendetta",
               "wins": 0,
               "rivals": 4
             },
@@ -3526,32 +3516,42 @@
               "player": "King",
               "wins": 1,
               "rivals": 4
+            },
+            {
+              "player": "Fred",
+              "wins": 0,
+              "rivals": 4
+            },
+            {
+              "player": "Vendetta",
+              "wins": 0,
+              "rivals": 4
             }
           ],
           "h2h_ranking": [
             {
               "player": "Fred",
-              "score": 39.38506588579795,
-              "matches": 683,
+              "score": 39.32748538011696,
+              "matches": 684,
               "weighted_score": 26900.0
             },
             {
               "player": "Habibi",
-              "score": 36.2876254180602,
-              "matches": 598,
+              "score": 36.22704507512521,
+              "matches": 599,
               "weighted_score": 21700.0
             },
             {
               "player": "Carlos",
-              "score": 40.58679706601467,
-              "matches": 409,
-              "weighted_score": 16600.0
+              "score": 40.731707317073166,
+              "matches": 410,
+              "weighted_score": 16699.999999999996
             },
             {
               "player": "Vendetta",
-              "score": 36.0613810741688,
-              "matches": 391,
-              "weighted_score": 14100.0
+              "score": 36.224489795918366,
+              "matches": 392,
+              "weighted_score": 14200.0
             },
             {
               "player": "King",
@@ -3633,9 +3633,9 @@
             },
             "lay": {
               "player": "Vendetta",
-              "score": 36.0613810741688,
-              "matches": 391,
-              "weighted_score": 14100.0,
+              "score": 36.224489795918366,
+              "matches": 392,
+              "weighted_score": 14200.0,
               "worst_matchups": [
                 {
                   "rival": "King",
@@ -3649,8 +3649,8 @@
                 },
                 {
                   "rival": "Habibi",
-                  "win_pct": 39.130434782608695,
-                  "matches": 69
+                  "win_pct": 40.0,
+                  "matches": 70
                 }
               ],
               "worst_matchup_details": [
@@ -3686,18 +3686,18 @@
                 },
                 {
                   "rival": "Habibi",
-                  "W": 27,
+                  "W": 28,
                   "D": 16,
                   "L": 26,
-                  "matches": 69,
-                  "win_pct": 39.130434782608695,
-                  "draw_pct": 23.18840579710145,
-                  "loss_pct": 37.68115942028986,
-                  "seq": "VEVDDEEVVEDVEDDVVVDDDDVEEDDVDVDDVEDDEDEVVDDVVVEDDEDVVVEEVDVEVVDDVVVED",
-                  "last5": "VVVED",
-                  "last10": "EVVDDVVVED",
-                  "stk_win": 0,
-                  "stk_lose": 0
+                  "matches": 70,
+                  "win_pct": 40.0,
+                  "draw_pct": 22.857142857142858,
+                  "loss_pct": 37.142857142857146,
+                  "seq": "VEVDDEEVVEDVEDDVVVDDDDVEEDDVDVDDVEDDEDEVVDDVVVEDDEDVVVEEVDVEVVDDVVVEDV",
+                  "last5": "VVEDV",
+                  "last10": "VVDDVVVEDV",
+                  "stk_win": 1,
+                  "stk_lose": 1
                 }
               ]
             }
@@ -3708,9 +3708,9 @@
               "rivals": [
                 {
                   "rival": "Fred",
-                  "win_pct": 34.645669291338585,
-                  "loss_pct": 40.94488188976378,
-                  "matches": 127
+                  "win_pct": 35.15625,
+                  "loss_pct": 40.625,
+                  "matches": 128
                 },
                 {
                   "rival": "Habibi",
@@ -3737,9 +3737,9 @@
               "rivals": [
                 {
                   "rival": "Carlos",
-                  "win_pct": 40.94488188976378,
-                  "loss_pct": 34.645669291338585,
-                  "matches": 127
+                  "win_pct": 40.625,
+                  "loss_pct": 35.15625,
+                  "matches": 128
                 },
                 {
                   "rival": "Habibi",
@@ -3784,9 +3784,9 @@
                 },
                 {
                   "rival": "Vendetta",
-                  "win_pct": 37.68115942028986,
-                  "loss_pct": 39.130434782608695,
-                  "matches": 69
+                  "win_pct": 37.142857142857146,
+                  "loss_pct": 40.0,
+                  "matches": 70
                 }
               ]
             },
@@ -3836,9 +3836,9 @@
                 },
                 {
                   "rival": "Habibi",
-                  "win_pct": 39.130434782608695,
-                  "loss_pct": 37.68115942028986,
-                  "matches": 69
+                  "win_pct": 40.0,
+                  "loss_pct": 37.142857142857146,
+                  "matches": 70
                 },
                 {
                   "rival": "King",
@@ -3855,18 +3855,18 @@
               "rivals": [
                 {
                   "rival": "Fred",
-                  "W": 44,
+                  "W": 45,
                   "D": 31,
                   "L": 52,
-                  "matches": 127,
-                  "win_pct": 34.645669291338585,
-                  "draw_pct": 24.409448818897637,
-                  "loss_pct": 40.94488188976378,
-                  "seq": "DVEVVDVDDVEEDVVDEDDVDDEDEDEDEDVDVDEVEDEVDDVVVVDEDDVEDVEVEDDEVDVVVDEDDDEEVDVEEVVVDDDDVEDVDDVDVDEDVVEVVVDDEDDVDVVDEEEEDVDEDVEVDVD",
-                  "last5": "EVDVD",
-                  "last10": "VDEDVEVDVD",
-                  "stk_win": 0,
-                  "stk_lose": 0
+                  "matches": 128,
+                  "win_pct": 35.15625,
+                  "draw_pct": 24.21875,
+                  "loss_pct": 40.625,
+                  "seq": "DVEVVDVDDVEEDVVDEDDVDDEDEDEDEDVDVDEVEDEVDDVVVVDEDDVEDVEVEDDEVDVVVDEDDDEEVDVEEVVVDDDDVEDVDDVDVDEDVVEVVVDDEDDVDVVDEEEEDVDEDVEVDVDV",
+                  "last5": "VDVDV",
+                  "last10": "DEDVEVDVDV",
+                  "stk_win": 1,
+                  "stk_lose": 1
                 },
                 {
                   "rival": "Habibi",
@@ -3922,16 +3922,16 @@
                   "rival": "Carlos",
                   "W": 52,
                   "D": 31,
-                  "L": 44,
-                  "matches": 127,
-                  "win_pct": 40.94488188976378,
-                  "draw_pct": 24.409448818897637,
-                  "loss_pct": 34.645669291338585,
-                  "seq": "VDEDDVDVVDEEVDDVEVVDVVEVEVEVEVDVDVEDEVEDVVDDDDVEVVDEVDEDEVVEDVDDDVEVVVEEDVDEEDDDVVVVDEVDVVDVDVEVDDEDDDVVEVVDVDDVEEEEVDVEVDEDVDV",
-                  "last5": "EDVDV",
-                  "last10": "DVEVDEDVDV",
-                  "stk_win": 1,
-                  "stk_lose": 1
+                  "L": 45,
+                  "matches": 128,
+                  "win_pct": 40.625,
+                  "draw_pct": 24.21875,
+                  "loss_pct": 35.15625,
+                  "seq": "VDEDDVDVVDEEVDDVEVVDVVEVEVEVEVDVDVEDEVEDVVDDDDVEVVDEVDEDEVVEDVDDDVEVVVEEDVDEEDDDVVVVDEVDVVDVDVEVDDEDDDVVEVVDVDDVEEEEVDVEVDEDVDVD",
+                  "last5": "DVDVD",
+                  "last10": "VEVDEDVDVD",
+                  "stk_win": 0,
+                  "stk_lose": 0
                 },
                 {
                   "rival": "Habibi",
@@ -4032,16 +4032,16 @@
                   "rival": "Vendetta",
                   "W": 26,
                   "D": 16,
-                  "L": 27,
-                  "matches": 69,
-                  "win_pct": 37.68115942028986,
-                  "draw_pct": 23.18840579710145,
-                  "loss_pct": 39.130434782608695,
-                  "seq": "DEDVVEEDDEVDEVVDDDVVVVDEEVVDVDVVDEVVEVEDDVVDDDEVVEVDDDEEDVDEDDVVDDDEV",
-                  "last5": "DDDEV",
-                  "last10": "EDDVVDDDEV",
-                  "stk_win": 1,
-                  "stk_lose": 2
+                  "L": 28,
+                  "matches": 70,
+                  "win_pct": 37.142857142857146,
+                  "draw_pct": 22.857142857142858,
+                  "loss_pct": 40.0,
+                  "seq": "DEDVVEEDDEVDEVVDDDVVVVDEEVVDVDVVDEVVEVEDDVVDDDEVVEVDDDEEDVDEDDVVDDDEVD",
+                  "last5": "DDEVD",
+                  "last10": "DDVVDDDEVD",
+                  "stk_win": 0,
+                  "stk_lose": 0
                 }
               ]
             },
@@ -4145,18 +4145,18 @@
                 },
                 {
                   "rival": "Habibi",
-                  "W": 27,
+                  "W": 28,
                   "D": 16,
                   "L": 26,
-                  "matches": 69,
-                  "win_pct": 39.130434782608695,
-                  "draw_pct": 23.18840579710145,
-                  "loss_pct": 37.68115942028986,
-                  "seq": "VEVDDEEVVEDVEDDVVVDDDDVEEDDVDVDDVEDDEDEVVDDVVVEDDEDVVVEEVDVEVVDDVVVED",
-                  "last5": "VVVED",
-                  "last10": "EVVDDVVVED",
-                  "stk_win": 0,
-                  "stk_lose": 0
+                  "matches": 70,
+                  "win_pct": 40.0,
+                  "draw_pct": 22.857142857142858,
+                  "loss_pct": 37.142857142857146,
+                  "seq": "VEVDDEEVVEDVEDDVVVDDDDVEEDDVDVDDVEDDEDEVVDDVVVEDDEDVVVEEVDVEVVDDVVVEDV",
+                  "last5": "VVEDV",
+                  "last10": "VVDDVVVEDV",
+                  "stk_win": 1,
+                  "stk_lose": 1
                 },
                 {
                   "rival": "King",
@@ -4706,13 +4706,13 @@
             "VanGogh",
             "Beckham"
           ],
-          "target_repr": "{'Beckham', 'Kai', 'Bruno', 'Pascal', 'VanGogh'}",
+          "target_repr": "{'Pascal', 'VanGogh', 'Bruno', 'Kai', 'Beckham'}",
           "h2h_keys": [
-            "Bruno",
             "Pascal",
+            "Bruno",
             "Beckham",
-            "Kai",
-            "VanGogh"
+            "VanGogh",
+            "Kai"
           ],
           "coincidencias_5": 1,
           "coincidencias_4": 2,
@@ -4722,19 +4722,19 @@
           "totals_5": [
             {
               "player": "Beckham",
-              "W": 2,
+              "W": 3,
               "D": 2,
               "L": 5,
-              "win_pct": 22.22222222222222,
-              "loss_pct": 55.55555555555556
+              "win_pct": 30.0,
+              "loss_pct": 50.0
             },
             {
               "player": "Bruno",
               "W": 6,
               "D": 0,
-              "L": 4,
-              "win_pct": 60.0,
-              "loss_pct": 40.0
+              "L": 5,
+              "win_pct": 54.54545454545454,
+              "loss_pct": 45.45454545454545
             },
             {
               "player": "Kai",
@@ -4746,19 +4746,19 @@
             },
             {
               "player": "Pascal",
-              "W": 6,
+              "W": 7,
               "D": 2,
               "L": 2,
-              "win_pct": 60.0,
-              "loss_pct": 20.0
+              "win_pct": 63.63636363636363,
+              "loss_pct": 18.181818181818183
             },
             {
               "player": "VanGogh",
               "W": 4,
               "D": 1,
-              "L": 4,
-              "win_pct": 44.44444444444444,
-              "loss_pct": 44.44444444444444
+              "L": 5,
+              "win_pct": 40.0,
+              "loss_pct": 50.0
             }
           ],
           "totals_4": [
@@ -4807,45 +4807,30 @@
             {
               "position": 1,
               "player": "Bruno",
-              "score": -2.6194403387385847
+              "score": -3.8099165292147674
             },
             {
               "position": 2,
               "player": "Pascal",
-              "score": -19.998383968972206
+              "score": -18.411082381670617
             },
             {
               "position": 3,
               "player": "Beckham",
-              "score": -40.20682517542896
+              "score": -40.05665633274055
             },
             {
               "position": 4,
               "player": "VanGogh",
-              "score": -59.652275480488825
+              "score": -59.7542035550597
             },
             {
               "position": 5,
               "player": "Kai",
-              "score": -66.39494877159946
+              "score": -66.39494877159947
             }
           ],
           "dominance": [
-            {
-              "player": "Beckham",
-              "wins": 0,
-              "rivals": 4
-            },
-            {
-              "player": "Kai",
-              "wins": 0,
-              "rivals": 4
-            },
-            {
-              "player": "Bruno",
-              "wins": 2,
-              "rivals": 4
-            },
             {
               "player": "Pascal",
               "wins": 1,
@@ -4855,26 +4840,41 @@
               "player": "VanGogh",
               "wins": 0,
               "rivals": 4
+            },
+            {
+              "player": "Bruno",
+              "wins": 2,
+              "rivals": 4
+            },
+            {
+              "player": "Kai",
+              "wins": 0,
+              "rivals": 4
+            },
+            {
+              "player": "Beckham",
+              "wins": 0,
+              "rivals": 4
             }
           ],
           "h2h_ranking": [
             {
               "player": "Beckham",
-              "score": 41.45728643216081,
-              "matches": 796,
-              "weighted_score": 33000.0
+              "score": 41.53074027603513,
+              "matches": 797,
+              "weighted_score": 33100.0
             },
             {
               "player": "VanGogh",
-              "score": 35.07109004739337,
-              "matches": 844,
-              "weighted_score": 29600.000000000004
+              "score": 35.02958579881657,
+              "matches": 845,
+              "weighted_score": 29600.0
             },
             {
               "player": "Bruno",
-              "score": 51.66240409207161,
-              "matches": 391,
-              "weighted_score": 20200.0
+              "score": 51.53061224489795,
+              "matches": 392,
+              "weighted_score": 20199.999999999996
             },
             {
               "player": "Kai",
@@ -4884,17 +4884,17 @@
             },
             {
               "player": "Pascal",
-              "score": 46.34760705289673,
-              "matches": 397,
-              "weighted_score": 18400.0
+              "score": 46.482412060301506,
+              "matches": 398,
+              "weighted_score": 18500.0
             }
           ],
           "betting": {
             "back": {
               "player": "Bruno",
-              "score": 51.66240409207161,
-              "matches": 391,
-              "weighted_score": 20200.0,
+              "score": 51.53061224489795,
+              "matches": 392,
+              "weighted_score": 20199.999999999996,
               "best_matchups": [
                 {
                   "rival": "VanGogh",
@@ -4907,9 +4907,9 @@
                   "matches": 81
                 },
                 {
-                  "rival": "Pascal",
-                  "win_pct": 42.857142857142854,
-                  "matches": 35
+                  "rival": "Beckham",
+                  "win_pct": 42.30769230769231,
+                  "matches": 104
                 }
               ],
               "best_matchup_details": [
@@ -4944,19 +4944,19 @@
                   "stk_lose": 2
                 },
                 {
-                  "rival": "Pascal",
-                  "W": 15,
-                  "D": 5,
-                  "L": 15,
-                  "matches": 35,
-                  "win_pct": 42.857142857142854,
-                  "draw_pct": 14.285714285714285,
-                  "loss_pct": 42.857142857142854,
-                  "seq": "EDDDDVDVVDEVDVVDDVVEVDDDDV",
-                  "last5": "DDDDV",
-                  "last10": "DVVEVDDDDV",
-                  "stk_win": 1,
-                  "stk_lose": 1
+                  "rival": "Beckham",
+                  "W": 44,
+                  "D": 17,
+                  "L": 43,
+                  "matches": 104,
+                  "win_pct": 42.30769230769231,
+                  "draw_pct": 16.346153846153847,
+                  "loss_pct": 41.34615384615385,
+                  "seq": "DVDVDVEVDEDEVDVVDVDEDVEDVEDEVVEDEDDDDDVVVDDDEVDVVDDVVVVDDDEVDEVVDDVDDVDVEVVDDVDDVDVEEVVDEVVVVDVEVD",
+                  "last5": "DVEVD",
+                  "last10": "EVVVVDVEVD",
+                  "stk_win": 0,
+                  "stk_lose": 0
                 }
               ]
             },
@@ -5055,9 +5055,9 @@
                 },
                 {
                   "rival": "VanGogh",
-                  "win_pct": 46.089385474860336,
-                  "loss_pct": 36.592178770949715,
-                  "matches": 358
+                  "win_pct": 46.239554317548745,
+                  "loss_pct": 36.49025069637883,
+                  "matches": 359
                 }
               ]
             },
@@ -5078,9 +5078,9 @@
                 },
                 {
                   "rival": "Pascal",
-                  "win_pct": 42.857142857142854,
-                  "loss_pct": 42.857142857142854,
-                  "matches": 35
+                  "win_pct": 41.66666666666667,
+                  "loss_pct": 44.44444444444444,
+                  "matches": 36
                 },
                 {
                   "rival": "VanGogh",
@@ -5130,9 +5130,9 @@
                 },
                 {
                   "rival": "Bruno",
-                  "win_pct": 42.857142857142854,
-                  "loss_pct": 42.857142857142854,
-                  "matches": 35
+                  "win_pct": 44.44444444444444,
+                  "loss_pct": 41.66666666666667,
+                  "matches": 36
                 },
                 {
                   "rival": "Kai",
@@ -5153,9 +5153,9 @@
               "rivals": [
                 {
                   "rival": "Beckham",
-                  "win_pct": 36.592178770949715,
-                  "loss_pct": 46.089385474860336,
-                  "matches": 358
+                  "win_pct": 36.49025069637883,
+                  "loss_pct": 46.239554317548745,
+                  "matches": 359
                 },
                 {
                   "rival": "Bruno",
@@ -5229,18 +5229,18 @@
                 },
                 {
                   "rival": "VanGogh",
-                  "W": 165,
+                  "W": 166,
                   "D": 62,
                   "L": 131,
-                  "matches": 358,
-                  "win_pct": 46.089385474860336,
-                  "draw_pct": 17.318435754189945,
-                  "loss_pct": 36.592178770949715,
-                  "seq": "DEEVEVVEVDEVVDVVDVVEVVVVEVDVEVDVVDDVVVDDVVVVVVVEEEDDVDDDVVDEVEVDVEDDVEDDVVDDDVDVEEVVEDDDVDDVEVEDEEVDVDEDDDDEDDVEVVDDDVVDDEVDVVEVVVDVEVVVVVDEDVDVVVDDEVEDVVDVVDVDDVDDVVVVEVEEVDDVEVVVDVDEDDVDVVDVVDEVVDDVDEEVVVVDVVVDVDDEDDVVVDVVVEEVVVDVDVDVEVVVDVVEDVEVEVDVDDE",
-                  "last5": "DVDDE",
-                  "last10": "VEVEVDVDDE",
-                  "stk_win": 0,
-                  "stk_lose": 1
+                  "matches": 359,
+                  "win_pct": 46.239554317548745,
+                  "draw_pct": 17.270194986072422,
+                  "loss_pct": 36.49025069637883,
+                  "seq": "DEEVEVVEVDEVVDVVDVVEVVVVEVDVEVDVVDDVVVDDVVVVVVVEEEDDVDDDVVDEVEVDVEDDVEDDVVDDDVDVEEVVEDDDVDDVEVEDEEVDVDEDDDDEDDVEVVDDDVVDDEVDVVEVVVDVEVVVVVDEDVDVVVDDEVEDVVDVVDVDDVDDVVVVEVEEVDDVEVVVDVDEDDVDVVDVVDEVVDDVDEEVVVVDVVVDVDDEDDVVVDVVVEEVVVDVDVDVEVVVDVVEDVEVEVDVDDEV",
+                  "last5": "VDDEV",
+                  "last10": "EVEVDVDDEV",
+                  "stk_win": 1,
+                  "stk_lose": 2
                 }
               ]
             },
@@ -5281,16 +5281,16 @@
                   "rival": "Pascal",
                   "W": 15,
                   "D": 5,
-                  "L": 15,
-                  "matches": 35,
-                  "win_pct": 42.857142857142854,
-                  "draw_pct": 14.285714285714285,
-                  "loss_pct": 42.857142857142854,
-                  "seq": "EDDDDVDVVDEVDVVDDVVEVDDDDV",
-                  "last5": "DDDDV",
-                  "last10": "DVVEVDDDDV",
-                  "stk_win": 1,
-                  "stk_lose": 1
+                  "L": 16,
+                  "matches": 36,
+                  "win_pct": 41.66666666666667,
+                  "draw_pct": 13.88888888888889,
+                  "loss_pct": 44.44444444444444,
+                  "seq": "EDDDDVDVVDEVDVVDDVVEVDDDDVD",
+                  "last5": "DDDVD",
+                  "last10": "VVEVDDDDVD",
+                  "stk_win": 0,
+                  "stk_lose": 0
                 },
                 {
                   "rival": "VanGogh",
@@ -5394,18 +5394,18 @@
                 },
                 {
                   "rival": "Bruno",
-                  "W": 15,
+                  "W": 16,
                   "D": 5,
                   "L": 15,
-                  "matches": 35,
-                  "win_pct": 42.857142857142854,
-                  "draw_pct": 14.285714285714285,
-                  "loss_pct": 42.857142857142854,
-                  "seq": "EVVVVDVDDVEDVDDVVDDEDVVVVD",
-                  "last5": "VVVVD",
-                  "last10": "VDDEDVVVVD",
-                  "stk_win": 0,
-                  "stk_lose": 0
+                  "matches": 36,
+                  "win_pct": 44.44444444444444,
+                  "draw_pct": 13.88888888888889,
+                  "loss_pct": 41.66666666666667,
+                  "seq": "EVVVVDVDDVEDVDDVVDDEDVVVVDV",
+                  "last5": "VVVDV",
+                  "last10": "DDEDVVVVDV",
+                  "stk_win": 1,
+                  "stk_lose": 1
                 },
                 {
                   "rival": "Kai",
@@ -5446,16 +5446,16 @@
                   "rival": "Beckham",
                   "W": 131,
                   "D": 62,
-                  "L": 165,
-                  "matches": 358,
-                  "win_pct": 36.592178770949715,
-                  "draw_pct": 17.318435754189945,
-                  "loss_pct": 46.089385474860336,
-                  "seq": "VEEDEDDEDVEDDVDDVDDEDDDDEDVDEDVDDVVDDDVVDDDDDDDEEEVVDVVVDDVEDEDVDEVVDEVVDDVVVDVDEEDDEVVVDVVDEDEVEEDVDVEVVVVEVVDEDDVVVDDVVEDVDDEDDDVDEDDDDDVEVDVDDDVVEDEVDDVDDVDVVDVVDDDDEDEEDVVDEDDDVDVEVVDVDDVDDVEDDVVDVEEDDDDVDDDVDVVEVVDDDVDDDEEDDDVDVDVDEDDDVDDEVDEDEDVDVVE",
-                  "last5": "VDVVE",
-                  "last10": "DEDEDVDVVE",
+                  "L": 166,
+                  "matches": 359,
+                  "win_pct": 36.49025069637883,
+                  "draw_pct": 17.270194986072422,
+                  "loss_pct": 46.239554317548745,
+                  "seq": "VEEDEDDEDVEDDVDDVDDEDDDDEDVDEDVDDVVDDDVVDDDDDDDEEEVVDVVVDDVEDEDVDEVVDEVVDDVVVDVDEEDDEVVVDVVDEDEVEEDVDVEVVVVEVVDEDDVVVDDVVEDVDDEDDDVDEDDDDDVEVDVDDDVVEDEVDDVDDVDVVDVVDDDDEDEEDVVDEDDDVDVEVVDVDDVDDVEDDVVDVEEDDDDVDDDVDVVEVVDDDVDDDEEDDDVDVDVDEDDDVDDEVDEDEDVDVVED",
+                  "last5": "DVVED",
+                  "last10": "EDEDVDVVED",
                   "stk_win": 0,
-                  "stk_lose": 3
+                  "stk_lose": 0
                 },
                 {
                   "rival": "Bruno",
@@ -5516,10 +5516,10 @@
             "Cezar",
             "Leonardo"
           ],
-          "target_repr": "{'Cezar', 'Gabriel', 'Leonardo', 'Flash', 'Alexander'}",
+          "target_repr": "{'Flash', 'Alexander', 'Cezar', 'Leonardo', 'Gabriel'}",
           "h2h_keys": [
-            "Gabriel",
             "Flash",
+            "Gabriel",
             "Leonardo",
             "Alexander",
             "Cezar"
@@ -5634,13 +5634,18 @@
           ],
           "dominance": [
             {
-              "player": "Cezar",
+              "player": "Flash",
+              "wins": 2,
+              "rivals": 4
+            },
+            {
+              "player": "Alexander",
               "wins": 0,
               "rivals": 4
             },
             {
-              "player": "Gabriel",
-              "wins": 3,
+              "player": "Cezar",
+              "wins": 0,
               "rivals": 4
             },
             {
@@ -5649,13 +5654,8 @@
               "rivals": 4
             },
             {
-              "player": "Flash",
-              "wins": 2,
-              "rivals": 4
-            },
-            {
-              "player": "Alexander",
-              "wins": 0,
+              "player": "Gabriel",
+              "wins": 3,
               "rivals": 4
             }
           ],
