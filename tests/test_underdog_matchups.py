@@ -25,7 +25,8 @@ class UnderdogMatchupTests(unittest.TestCase):
         return row
 
     def test_strict_thresholds_and_first_win_removes_pair(self):
-        for wins, losses, sequence, shown in [(30, 50, '', False), (31, 31, '', False),
+        for wins, losses, sequence, shown in [(30, 50, '', False), (31, 31, '', True),
+                                             (60, 20, '', True), (60, 20, 'DEV', False),
                                              (31, 50, 'DED', True), (31, 50, 'DEV', False)]:
             data, _ = self.data(wins, losses, sequence)
             self.assertEqual('<td>David</td>' in render_underdog_matchups(data), shown)

@@ -1476,7 +1476,7 @@ def render_underdog_matchups(data):
                     wins = rival.get('historical_wins', 0)
                     losses = rival.get('historical_losses', 0)
                     sequence = rival.get('current_pair_sequence', rival.get('sequence', ''))
-                    if not total or wins * 100 <= 30 * total or losses <= wins or 'V' in sequence:
+                    if not total or wins * 100 <= 30 * total or 'V' in sequence:
                         continue
                     remaining = max(0, 6 - len(sequence))
                     fixtures = rival.get('pair_fixtures', [])[:remaining]
@@ -1506,9 +1506,9 @@ def render_underdog_matchups(data):
     rows = [row for _, row in sorted(selected.values(), key=lambda item: (item[0], item[1][:3]))]
     return (
         '<section class="dashboard-section" id="underdog-matchups">'
-        '<div class="section-head"><h2>A por su primera victoria · A &gt;30% y B &gt; A</h2></div>'
+        '<div class="section-head"><h2>A por su primera victoria · A &gt;30%</h2></div>'
         '<p class="section-subtitle">Parejas de los grupos actuales: porcentaje histórico de A superior al 30% '
-        'y porcentaje de B superior al de A en sus enfrentamientos. SEC muestra los resultados de A '
+        'en sus enfrentamientos. SEC muestra los resultados de A '
         'en las últimas 8 horas. La pareja desaparece en la siguiente actualización cuando A gana. '
         'Se muestran todos los horarios publicados pendientes hasta completar seis partidos, en Madrid; '
         'los partidos iniciados sin resultado confirmado siguen pendientes. No se inventan horarios ausentes.</p>'
