@@ -24,7 +24,7 @@ from current_streaks_v2 import _record_time
 from fixture_schedule import load_schedule
 from web_tracker.upcoming_matches import render_upcoming_matches, upcoming_fixtures
 from web_tracker.pair_series_schedule import pair_series_schedule
-from web_tracker.bet_candidates import candidate
+from web_tracker.bet_candidates import candidate, six_rating
 from selected_players import (
     bettable_player_keys, excluded_player_keys, is_operational_record,
     load_tracked_players,
@@ -561,6 +561,10 @@ main {
     overflow-wrap: anywhere;
     line-height: 1.8;
 }
+.candidate-level-1 { color: #12633b; background: #e0f6e8; }
+.candidate-level-2 { color: #715300; background: #fff3c4; }
+.candidate-level-3 { color: #8b350d; background: #ffe3ce; }
+.candidate-warning { font-weight: bold; }
 .table-wrap {
     width: 100%;
     overflow-x: auto;
@@ -1485,18 +1489,28 @@ def render_bet_candidates(data):
                         result = candidate(rival, horizon)
                         if result:
                             order, line = result
-                            lists[horizon][identity] = (order, f'{league} {a} - {b} {line}')
+                            line = text(f'{league} {a} - {b} {line}')
+                            if horizon == 6:
+                                level, warnings = six_rating(rival)
+                                warning = (' <span class="candidate-warning">⚠ '
+                                           + text(' · '.join(warnings)) + '</span>') if warnings else ''
+                                line = f'<span class="candidate-level-{level}">Nivel {level} · {line}{warning}</span>'
+                            lists[horizon][identity] = (order, line)
     sections = []
     for horizon in (4, 6):
         lines = [line for _, line in sorted(lists[horizon].values())]
         stakes = '10, 20, 40, 80' if horizon == 4 else '3, 6, 12, 24, 48, 96'
         sections.append(f'<h3>Candidatos a {horizon} partidos · {stakes}</h3>'
-                        + ('<pre class="candidate-list">' + text('\n'.join(lines)) + '</pre>'
+                        + ('<pre class="candidate-list">' + '\n'.join(lines) + '</pre>'
                            if lines else '<p>No hay candidatos con horarios confirmados.</p>'))
     return ('<section class="dashboard-section" id="bet-candidates">'
             '<h2>Posibles candidatos</h2>'
-            '<p class="section-subtitle">V% A &gt;37%, V% A &gt; V% B, Dif. &gt;0 y Dif.20 &gt;0 '
-            '(se requieren 20 resultados). Sin victorias de A en SEC. '
+            '<p class="section-subtitle">4 partidos: V% A &gt;37%, V% A &gt; V% B, Dif. &gt;0 y Dif.20 &gt;0 '
+            '(se requieren 20 resultados). 6 partidos: V% A &gt;30%, Dif. ≥−10 pp, '
+            'al menos 8 series de 6 y como máximo 10% sin V. No se exige Dif.20. '
+            'Nivel 1 (verde): Dif. &gt;0; nivel 2 (amarillo): −5 ≤ Dif. ≤0; '
+            'nivel 3 (naranja): −10 ≤ Dif. &lt;−5. Advertencias: 8–9 series o 5–10% sin V. '
+            'Sin victorias de A en SEC. '
             '[n] indica el siguiente partido y el importe corresponde a ese paso de la progresión. '
             'Horarios de Madrid. Se omiten parejas sin horario o con un partido iniciado sin resultado; '
             'los horarios que faltan se indican. Las dos listas se evalúan por separado.</p>'
