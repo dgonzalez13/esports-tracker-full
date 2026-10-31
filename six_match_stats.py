@@ -62,10 +62,10 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=No
                 if pair is not None and rival != pair[2]:
                     continue
                 earlier = prior[rival]
-                if 1 <= len(matches) <= 6 and closed:
-                    complete += len(matches) == 6
-                    zero_win_series += len(matches) == 6 and not any(r['result'] == 'V' for r in matches)
-                    sequence = ''.join(r["result"] for r in matches)
+                # Longer sessions still have an observed first-four/five/six.
+                # Count each session once; never manufacture extra sliding series.
+                if matches and closed:
+                    sequence = ''.join(r["result"] for r in matches[:6])
                     for k in range(6):
                         if 'V' not in sequence[:k]:
                             for horizon in (4, 5, 6):
@@ -73,6 +73,9 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=No
                                     sample = pair_horizons[(league, k, horizon)]
                                     sample[0] += 1
                                     sample[1] += 'V' in sequence[k:horizon]
+                if 1 <= len(matches) <= 6 and closed:
+                    complete += len(matches) == 6
+                    zero_win_series += len(matches) == 6 and not any(r['result'] == 'V' for r in matches)
                     if len(earlier) >= minimum_prior:
                         wins = sum(r["result"] == "V" for r in earlier)
                         losses = sum(r["result"] == "D" for r in earlier)

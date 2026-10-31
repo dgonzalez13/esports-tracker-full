@@ -24,6 +24,7 @@ from current_streaks_v2 import _record_time
 from fixture_schedule import load_schedule
 from web_tracker.upcoming_matches import render_upcoming_matches, upcoming_fixtures
 from web_tracker.pair_series_schedule import pair_series_schedule
+from web_tracker.bet_candidates import candidate
 from selected_players import (
     bettable_player_keys, excluded_player_keys, is_operational_record,
     load_tracked_players,
@@ -299,6 +300,7 @@ def render_page(data, current_streaks, current_streaks_v2=None, schedule=None):
     {render_current_streaks_v2(current_streaks_v2 or {})}
     {render_upcoming_matches(schedule or {})}
     {render_recent_group_h2h_dashboard(data)}
+    {render_bet_candidates(data)}
     {render_underdog_matchups(data)}
     {render_active_repeat_matches(data)}
     {render_team_statistics(data.get("team_stats", []))}
@@ -554,6 +556,11 @@ main {
     font-weight: 850;
 }
 
+.candidate-list {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    line-height: 1.8;
+}
 .table-wrap {
     width: 100%;
     overflow-x: auto;
@@ -1461,6 +1468,41 @@ def attach_recent_group_h2h(data, records, reference_time, schedule=None):
             }
 
 
+def render_bet_candidates(data):
+    excluded = {tuple(item) for item in data.get('h2h_exclusions', [])}
+    lists = {4: {}, 6: {}}
+    for league, payload in data.get('leagues', {}).items():
+        for group in payload.get('groups', []):
+            for player in group.get('recent_h2h', {}).get('players', []):
+                for rival in player.get('rivals', []):
+                    a, b = player['player'], rival['rival']
+                    identity = (league, name_key(a), name_key(b))
+                    if identity in excluded or not new_table_pair_allowed(data, league, a, b):
+                        continue
+                    for horizon in (4, 6):
+                        if horizon == 4 and not recent_h2h_row_class(rival, data.get('h2h_min_gap', -10)):
+                            continue
+                        result = candidate(rival, horizon)
+                        if result:
+                            order, line = result
+                            lists[horizon][identity] = (order, f'{league} {a} - {b} {line}')
+    sections = []
+    for horizon in (4, 6):
+        lines = [line for _, line in sorted(lists[horizon].values())]
+        stakes = '10, 20, 40, 80' if horizon == 4 else '3, 6, 12, 24, 48, 96'
+        sections.append(f'<h3>Candidatos a {horizon} partidos · {stakes}</h3>'
+                        + ('<pre class="candidate-list">' + text('\n'.join(lines)) + '</pre>'
+                           if lines else '<p>No hay candidatos con horarios confirmados.</p>'))
+    return ('<section class="dashboard-section" id="bet-candidates">'
+            '<h2>Posibles candidatos</h2>'
+            '<p class="section-subtitle">V% A &gt;37%, V% A &gt; V% B, Dif. &gt;0 y Dif.20 &gt;0 '
+            '(se requieren 20 resultados). Sin victorias de A en SEC. '
+            '[n] indica el siguiente partido y el importe corresponde a ese paso de la progresión. '
+            'Horarios de Madrid. Se omiten parejas sin horario o con un partido iniciado sin resultado; '
+            'los horarios que faltan se indican. Las dos listas se evalúan por separado.</p>'
+            + ''.join(sections) + '</section>')
+
+
 def render_underdog_matchups(data):
     excluded = {tuple(item) for item in data.get('h2h_exclusions', [])}
     selected = {}
@@ -1554,6 +1596,14 @@ def render_recent_group_h2h_dashboard(data):
                                 data.get("six_match_stats", {}).get("minimum_prior", 20))
         for league, label, player, rival, color in selected
     ]
+    probability_notes = {}
+    for index, (_, _, _, rival, _) in enumerate(selected):
+        for row in rival.get('pair_stats', {}).get('pair_horizons', []):
+            if row['initial_without_win'] == 0:
+                column = {4: 9, 5: 10, 6: 11}[row['horizon']]
+                probability_notes[(index, column)] = (
+                    f"Sin condicionar a SEC: {fmt_pct(row['win_pct'])} (n={row['sample']}). "
+                    "La cifra principal usa solo series sin victorias hasta el partido actual de SEC.")
     return (
         '<section class="dashboard-section" id="recent-group-h2h">'
         '<div class="section-head"><h2>Enfrentamientos destacados — últimas 8 horas</h2></div>'
@@ -1566,12 +1616,16 @@ def render_recent_group_h2h_dashboard(data):
         'usando solo series de esta pareja (A frente a B), sin filtrar por porcentaje previo ni diferencia de victorias. '
         'Se asume que los partidos de las últimas 8 horas corresponden al inicio de una misma serie. '
         'n = series de esta pareja sin victorias en los primeros partidos indicados por SEC y con resultado conocido para ese horizonte; sin muestra se muestra —.</p>'
+        '<p class="section-subtitle">Despliega un porcentaje para ver también la frecuencia desde el primer partido. '
+        'Se aprovechan los primeros seis encuentros de sesiones más largas y las series cortas con victoria ya confirmada; '
+        'no se crean series solapadas para aumentar n. Son frecuencias observadas en el histórico disponible.</p>'
         '<p class="section-subtitle">V%20 y Dif.20: últimos 20 enfrentamientos finalizados entre ambos; '
         '— si faltan partidos con resultado registrado. Dif. se expresa en puntos porcentuales.</p>'
         + render_gap_filters()
         + (render_table(["Liga", "Jugador", "Rival", "V%",
                          "Dif.", "V%20", "Dif.20", "Sec", "Próx.", "V≤4", "V≤5", "V≤6"], rows,
                         numeric_columns={3, 4, 5, 6, 9, 10, 11}, row_classes=[item[4] for item in selected],
+                        cell_notes=probability_notes,
                         header_titles={5: 'V% de los últimos 20 enfrentamientos', 6: 'Diferencia A−B en los últimos 20 enfrentamientos (pp)',
                                        8: 'Próximo partido (Madrid)', 9: '≥1 victoria hasta completar 4 partidos',
                                        10: '≥1 victoria hasta completar 5 partidos', 11: '≥1 victoria hasta completar 6 partidos'})
