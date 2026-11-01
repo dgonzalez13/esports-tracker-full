@@ -25,6 +25,7 @@ from fixture_schedule import load_schedule
 from web_tracker.upcoming_matches import render_upcoming_matches, upcoming_fixtures
 from web_tracker.pair_series_schedule import pair_series_schedule
 from web_tracker.bet_candidates import candidate, six_rating
+from web_tracker.historical_pair_series import load_daily_pair_sequences, enrich_pair_stats
 from selected_players import (
     bettable_player_keys, excluded_player_keys, is_operational_record,
     load_tracked_players,
@@ -1386,7 +1387,7 @@ def last20_cells(stats):
     return [fmt_pct(stats['win_pct']), f'{stats["gap"]:+.2f}'] if stats.get('available') == 20 else ['—', '—']
 
 
-def attach_recent_group_h2h(data, records, reference_time, schedule=None):
+def attach_recent_group_h2h(data, records, reference_time, schedule=None, daily_sequences=None):
     """Use the same bounded eight-hour window as the operational dashboard."""
     records = list(records)
     current_sequences, pair_fixtures = pair_series_schedule(records, schedule, reference_time)
@@ -1431,6 +1432,9 @@ def attach_recent_group_h2h(data, records, reference_time, schedule=None):
         if identity not in pair_stats:
             pair_stats[identity] = calculate_six_match_stats(
                 player_records.get(identity[:2], []), reference_time, pair=identity)
+            pair_stats[identity] = enrich_pair_stats(
+                pair_stats[identity], player_records.get(identity[:2], []), reference_time,
+                identity, (daily_sequences or {}).get(identity, {}))
         row['pair_stats'] = pair_stats[identity]
         row['last20'] = last20.get(identity, {})
         row['prior20'] = prior20.get(identity, {})
@@ -1506,13 +1510,15 @@ def render_bet_candidates(data):
     return ('<section class="dashboard-section" id="bet-candidates">'
             '<h2>Posibles candidatos</h2>'
             '<p class="section-subtitle">4 partidos: V% A &gt;37%, V% A &gt; V% B, Dif. &gt;0 y Dif.20 &gt;0 '
-            '(se requieren 20 resultados). 6 partidos: V% A &gt;30%, Dif. ≥−10 pp, '
+            '(si falta Dif.20 se admite con advertencia; si existe, debe ser positiva). '
+            '6 partidos: V% A &gt;30%, Dif. ≥−10 pp, '
             'al menos 8 series de 6 y como máximo 10% sin V. No se exige Dif.20. '
             'Nivel 1 (verde): Dif. &gt;0; nivel 2 (amarillo): −5 ≤ Dif. ≤0; '
             'nivel 3 (naranja): −10 ≤ Dif. &lt;−5. Advertencias: 8–9 series o 5–10% sin V. '
             'Sin victorias de A en SEC. '
             '[n] indica el siguiente partido y el importe corresponde a ese paso de la progresión. '
-            'Horarios de Madrid. Se omiten parejas sin horario o con un partido iniciado sin resultado; '
+            'Horarios de Madrid. Se omiten parejas sin horario. Un partido iniciado sin resultado '
+            'se conserva con advertencia y número provisional hasta confirmar su resultado; '
             'los horarios que faltan se indican. Las dos listas se evalúan por separado.</p>'
             + ''.join(sections) + '</section>')
 
@@ -1572,7 +1578,8 @@ def render_underdog_matchups(data):
         'en las que A no ganó ninguno de los seis encuentros, sobre el total de series completas. '
         'Cada dirección se analiza por separado, sin agrupar otras parejas ni condicionar el histórico '
         'a la SEC o los porcentajes actuales. Sesiones inferidas por pausas de más de 90 minutos del jugador; '
-        'solo series de exactamente seis partidos cerradas hace más de 90 minutos. '
+        'Se añaden secuencias diarias históricas de exactamente seis partidos de la pareja, '
+        'sin duplicar los encuentros ya registrados. Los días actuales no se usan como archivo cerrado. '
         'Las series incompletas no cuentan como fallos; el histórico detallado puede tener cobertura parcial. '
         '— significa que no hay series completas registradas.</p>'
         + render_table(['Liga', 'Jugador A', 'Rival B', 'V% A', 'V% B', 'SEC', 'Horarios pendientes (Madrid)',
@@ -1631,8 +1638,12 @@ def render_recent_group_h2h_dashboard(data):
         'Se asume que los partidos de las últimas 8 horas corresponden al inicio de una misma serie. '
         'n = series de esta pareja sin victorias en los primeros partidos indicados por SEC y con resultado conocido para ese horizonte; sin muestra se muestra —.</p>'
         '<p class="section-subtitle">Despliega un porcentaje para ver también la frecuencia desde el primer partido. '
-        'Se aprovechan los primeros seis encuentros de sesiones más largas y las series cortas con victoria ya confirmada; '
+        'Se aprovechan los primeros seis encuentros de sesiones más largas, las series cortas con victoria ya confirmada '
+        'y las secuencias diarias por rival guardadas en los TXT, sin duplicar fechas cubiertas ni inventar horas; '
         'no se crean series solapadas para aumentar n. Son frecuencias observadas en el histórico disponible.</p>'
+        '<p class="section-subtitle">Si un TXT solo conserva los totales de seis partidos, puede aportar a V≤6 '
+        'desde el inicio, pero no a V≤4, V≤5 ni a una SEC ya comenzada: falta el orden de las victorias. '
+        'Por eso las muestras de las columnas pueden ser distintas.</p>'
         '<p class="section-subtitle">V%20 y Dif.20: últimos 20 enfrentamientos finalizados entre ambos; '
         '— si faltan partidos con resultado registrado. Dif. se expresa en puntos porcentuales.</p>'
         + render_gap_filters()
@@ -1955,7 +1966,8 @@ def main():
     reference_time = datetime.now(timezone.utc)
     group_analysis['team_stats'] = calculate_team_stats(statistics_records, reference_time)
     schedule = load_schedule()
-    attach_recent_group_h2h(group_analysis, records, reference_time, schedule)
+    attach_recent_group_h2h(group_analysis, records, reference_time, schedule,
+                            load_daily_pair_sequences(BASE, reference_time))
     snapshot = calculate_operational_snapshot(
         records, tracked_players, reference_time=reference_time,
         excluded_keys=excluded_keys,

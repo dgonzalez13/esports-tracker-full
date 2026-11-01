@@ -28,7 +28,7 @@ class CandidateTests(unittest.TestCase):
 
     def test_strict_filters_results_missing_data_and_horizon(self):
         for updates in [dict(historical_wins=37), dict(historical_losses=50),
-                        dict(last20={'available': 20, 'gap': 0}), dict(last20={'available': 19, 'gap': 30}),
+                        dict(last20={'available': 20, 'gap': 0}),
                         dict(current_pair_sequence='DV'), dict(current_pair_sequence='DDDD'),
                         dict(pair_fixtures=[])]:
             rival = self.rival()
@@ -36,7 +36,13 @@ class CandidateTests(unittest.TestCase):
             self.assertIsNone(candidate(rival, 4), updates)
         rival = self.rival()
         rival['pair_fixtures'][0]['started'] = True
-        self.assertIsNone(candidate(rival, 4))
+        self.assertIn('pendiente de resultado', candidate(rival, 4)[1])
+
+    def test_missing_last20_is_allowed_with_warning_for_four(self):
+        rival = self.rival()
+        for recent in ({}, {'available': 12}):
+            rival['last20'] = recent
+            self.assertIn('Sin Dif.20', candidate(rival, 4)[1])
 
     def test_missing_hours_not_invented(self):
         rival = self.rival()
@@ -51,7 +57,7 @@ class CandidateTests(unittest.TestCase):
             rating = six_rating(rival)
             self.assertEqual(rating[0] if rating else None, level)
             self.assertEqual(candidate(rival, 6) is not None, level is not None)
-            self.assertIsNone(candidate(rival, 4))
+            self.assertEqual(candidate(rival, 4) is not None, wins > 37 and wins > losses)
 
     def test_six_sample_and_failure_boundaries(self):
         for sample, failures, accepted, warnings in [(7, 0, False, 0), (8, 0, True, 1),

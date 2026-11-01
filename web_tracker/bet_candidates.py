@@ -33,20 +33,23 @@ def candidate(rival, horizon):
         if six_rating(rival) is None:
             return None
     elif (not total or wins * 100 <= 37 * total or wins <= losses
-            or recent.get('available') != 20 or recent.get('gap', 0) <= 0
+            or (recent.get('available') == 20 and recent.get('gap', 0) <= 0)
             ):
         return None
     if 'V' in sequence or len(sequence) >= horizon:
         return None
     fixtures = rival.get('pair_fixtures', [])[:horizon - len(sequence)]
-    # A pending result prevents knowing which numbered future match comes next.
-    if not fixtures or fixtures[0].get('started'):
+    if not fixtures:
         return None
     number = len(sequence) + 1
     stake = (10 if horizon == 4 else 3) * 2 ** (number - 1)
     hours = [datetime.fromisoformat(f['timestamp']).astimezone(ZoneInfo('Europe/Madrid'))
              .strftime('%d/%m %H:%M') for f in fixtures]
     line = f'[{number}] {stake} ' + ' --- '.join(hours)
+    if fixtures[0].get('started'):
+        line += ' [Iniciado: pendiente de resultado; número provisional]'
+    if horizon == 4 and recent.get('available') != 20:
+        line += ' [Sin Dif.20: histórico detallado insuficiente]'
     missing = horizon - len(sequence) - len(fixtures)
     if missing:
         line += f' --- Faltan {missing} horarios por publicar'
