@@ -1500,6 +1500,9 @@ def render_bet_candidates(data):
                                            + text(' · '.join(warnings)) + '</span>') if warnings else ''
                                 line = f'<span class="candidate-level-{level}">Nivel {level} · {line}{warning}</span>'
                             lists[horizon][identity] = (order, line)
+    for identity in lists[6].keys() & lists[4].keys():
+        order, line = lists[6][identity]
+        lists[6][identity] = (order, line + ' <strong class="candidate-overlap">[También en 4]</strong>')
     sections = []
     for horizon in (4, 6):
         lines = [line for _, line in sorted(lists[horizon].values())]
@@ -1519,7 +1522,8 @@ def render_bet_candidates(data):
             '[n] indica el siguiente partido y el importe corresponde a ese paso de la progresión. '
             'Horarios de Madrid. Se omiten parejas sin horario. Un partido iniciado sin resultado '
             'se conserva con advertencia y número provisional hasta confirmar su resultado; '
-            'los horarios que faltan se indican. Las dos listas se evalúan por separado.</p>'
+            'los horarios que faltan se indican. Las dos listas se evalúan por separado. '
+            'La marca [También en 4] identifica los candidatos de seis que aparecen también en la lista de cuatro.</p>'
             + ''.join(sections) + '</section>')
 
 
