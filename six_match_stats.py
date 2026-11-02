@@ -22,6 +22,18 @@ def horizon_observed(sequence, start, horizon):
     return start < horizon and (len(sequence) >= horizon or 'V' in sequence[start:horizon])
 
 
+def failure_series_metrics(failures):
+    """Intervals count complete series, including the next failure (adjacent = 1)."""
+    failures = list(failures)
+    positions = [i for i, failed in enumerate(failures) if failed]
+    intervals = [b-a for a, b in zip(positions, positions[1:])]
+    return {
+        'series_since_failure': len(failures)-1-positions[-1] if positions else None,
+        'failure_interval_mean': sum(intervals)/len(intervals) if intervals else None,
+        'failure_interval_count': len(intervals),
+    }
+
+
 def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=None):
     # Keep all opponents when splitting player sessions, even for a single pair.
     players = defaultdict(list)
@@ -51,6 +63,7 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=No
     active_repeat_gap = defaultdict(lambda: [0] * 9)
     complete = 0
     zero_win_series = 0
+    complete_events = defaultdict(list)
     for (league, player), history in players.items():
         prior = defaultdict(list)
         for session in split_player_sessions(history):
@@ -76,6 +89,8 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=No
                 if 1 <= len(matches) <= 6 and closed:
                     complete += len(matches) == 6
                     zero_win_series += len(matches) == 6 and not any(r['result'] == 'V' for r in matches)
+                    if len(matches) == 6:
+                        complete_events[(league, player, rival)].append(not any(r['result'] == 'V' for r in matches))
                     if len(earlier) >= minimum_prior:
                         wins = sum(r["result"] == "V" for r in earlier)
                         losses = sum(r["result"] == "D" for r in earlier)
@@ -151,7 +166,8 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=No
                                     sample[0] += 1
                                     sample[1] += "V" not in sequence
                 prior[rival].extend(matches)
-    return {"minimum_prior": minimum_prior, "complete_series": complete,
+    intervals = failure_series_metrics(next(iter(complete_events.values()), []) if len(complete_events) <= 1 else [])
+    return {**intervals, "minimum_prior": minimum_prior, "complete_series": complete,
             "zero_win_series": zero_win_series,
             "pair_horizons": [
                 {"league": league, "initial_without_win": k, "horizon": horizon,

@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 from group_analysis import parse_vs_rivals
 from match_history import name_key
 from current_streaks_v2 import split_player_sessions, _record_time
-from six_match_stats import horizon_observed
+from six_match_stats import horizon_observed, failure_series_metrics
 
 
 def load_daily_pair_sequences(base, reference):
@@ -78,7 +78,7 @@ def enrich_pair_stats(stats, player_records, reference, pair, daily):
             if any(len(seq) >= 6 for _, seq in affected):
                 continue
             known_six = any(horizon_observed(seq, 0, 6) for _, seq in affected)
-            aggregate_complete.append((sequence['W'] > 0, known_six))
+            aggregate_complete.append((day, sequence['W'] > 0, known_six))
             used += 1
             continue
         iterator = iter(sequence)
@@ -95,12 +95,18 @@ def enrich_pair_stats(stats, player_records, reference, pair, daily):
             wins = sum('V' in seq[k:horizon] for seq in sequences)
             sample = len(sequences)
             if horizon == 6 and k == 0:
-                extras = [win for win, already_counted in aggregate_complete if not already_counted]
+                extras = [win for _, win, already_counted in aggregate_complete if not already_counted]
                 sample += len(extras)
                 wins += sum(extras)
             horizons.append(dict(league=pair[0], initial_without_win=k, horizon=horizon,
                                  sample=sample, win_pct=wins * 100 / sample if sample else None))
     complete = [seq for _, seq in observations if len(seq) == 6]
+    events = [(max(dates), 'V' not in seq) for dates, seq in observations if len(seq) == 6]
+    events.extend((day, not win) for day, win, _ in aggregate_complete)
+    # Stable sorting retains known order for multiple detailed sessions on one day.
+    events.sort(key=lambda item: item[0])
+    intervals = failure_series_metrics(failed for _, failed in events)
     return {**stats, 'pair_horizons': horizons, 'complete_series': len(complete) + len(aggregate_complete),
-            'zero_win_series': sum('V' not in seq for seq in complete) + sum(not win for win, _ in aggregate_complete),
+            **intervals,
+            'zero_win_series': sum('V' not in seq for seq in complete) + sum(not win for _, win, _ in aggregate_complete),
             'daily_sequences_used': used}

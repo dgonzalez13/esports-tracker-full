@@ -1568,10 +1568,15 @@ def render_underdog_matchups(data):
                         hours_label += f' · {rival["pair_cancelled"]} cancelado(s); {effective_total} partidos efectivos'
                     stats = rival.get('pair_stats', {})
                     sample, failures = stats.get('complete_series', 0), stats.get('zero_win_series', 0)
+                    since = stats.get('series_since_failure')
+                    since_label = (since if since is not None else f'Nunca en {sample} series'
+                                   if sample and failures == 0 else '—')
+                    interval = stats.get('failure_interval_mean')
+                    interval_label = f'{interval:.2f}' if interval is not None else '—'
                     row = [league, a, b, fmt_pct(wins * 100 / total), fmt_pct(losses * 100 / total),
                            sequence or 'Sin partidos', hours_label,
                            failures if sample else '—', sample,
-                           fmt_pct(failures * 100 / sample) if sample else '—']
+                           fmt_pct(failures * 100 / sample) if sample else '—', since_label, interval_label]
                     order = fixtures[0]['timestamp'] if fixtures else '9999'
                     selected[identity] = (order, row)
     rows = [row for _, row in sorted(selected.values(), key=lambda item: (item[0], item[1][:3]))]
@@ -1593,9 +1598,16 @@ def render_underdog_matchups(data):
         'sin duplicar los encuentros ya registrados. Los días actuales no se usan como archivo cerrado. '
         'Las series incompletas no cuentan como fallos; el histórico detallado puede tener cobertura parcial. '
         '— significa que no hay series completas registradas.</p>'
+        '<p class="section-subtitle">Desde último sin V: series completas posteriores al último caso; '
+        '0 si fue la última serie registrada. Media entre sin V: distancia media, en series completas, '
+        'entre casos consecutivos (dos casos seguidos dan 1); requiere al menos dos casos. '
+        'Solo se cuentan series observadas de esta pareja, no días ni partidos. Las series incompletas '
+        'y los huecos del histórico no se incluyen.</p>'
         + render_table(['Liga', 'Jugador A', 'Rival B', 'V% A', 'V% B', 'SEC', 'Horarios pendientes (Madrid)',
-                        'Sin V en 6', 'Series de 6', '% sin V'], rows,
-                       numeric_columns={3, 4, 7, 8, 9}, seq_columns={5})
+                        'Sin V en 6', 'Series de 6', '% sin V', 'Desde último sin V', 'Media entre sin V'], rows,
+                       numeric_columns={3, 4, 7, 8, 9, 10, 11}, seq_columns={5},
+                       header_titles={10: 'Series completas registradas desde el último caso de seis partidos sin victoria',
+                                      11: 'Media de series completas entre casos consecutivos; mínimo dos casos'})
         + ('<p class="section-subtitle">No hay parejas que cumplan estas condiciones.</p>' if not rows else '')
         + '</section>'
     )
