@@ -23,7 +23,7 @@ class CandidateTests(unittest.TestCase):
                 rival = self.rival()
                 rival['current_pair_sequence'] = 'D' * played
                 line = candidate(rival, horizon)[1]
-                self.assertTrue(line.startswith(f'[{played+1}] {initial * 2**played} 31/10 11:00'))
+                self.assertTrue(line.startswith(f'[{played+1}] {initial * 2**played} 11:00'))
                 self.assertEqual(line.count(' --- '), horizon-played-1)
 
     def test_strict_filters_results_missing_data_and_horizon(self):

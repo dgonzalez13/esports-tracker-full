@@ -46,7 +46,7 @@ def candidate(rival, horizon):
     number = len(sequence) + 1
     stake = (10 if horizon == 4 else 3) * 2 ** (number - 1)
     hours = [datetime.fromisoformat(f['timestamp']).astimezone(ZoneInfo('Europe/Madrid'))
-             .strftime('%d/%m %H:%M') for f in fixtures]
+             .strftime('%H:%M') for f in fixtures]
     line = f'[{number}] {stake} ' + ' --- '.join(hours)
     if rival.get('pair_cancelled'):
         line += f' [{rival["pair_cancelled"]} cancelado(s); máximo {effective_total} partidos efectivos]'
