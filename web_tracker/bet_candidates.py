@@ -29,6 +29,8 @@ def candidate(rival, horizon):
     losses = rival.get('historical_losses', 0)
     recent = rival.get('last20', {})
     sequence = rival.get('current_pair_sequence', rival.get('sequence', ''))
+    effective_total = max(0, 6 - rival.get('pair_cancelled', 0))
+    target = min(horizon, effective_total)
     if horizon == 6:
         if six_rating(rival) is None:
             return None
@@ -36,9 +38,9 @@ def candidate(rival, horizon):
             or (recent.get('available') == 20 and recent.get('gap', 0) <= 0)
             ):
         return None
-    if 'V' in sequence or len(sequence) >= horizon:
+    if 'V' in sequence or len(sequence) >= target:
         return None
-    fixtures = rival.get('pair_fixtures', [])[:horizon - len(sequence)]
+    fixtures = rival.get('pair_fixtures', [])[:target - len(sequence)]
     if not fixtures:
         return None
     number = len(sequence) + 1
@@ -46,11 +48,13 @@ def candidate(rival, horizon):
     hours = [datetime.fromisoformat(f['timestamp']).astimezone(ZoneInfo('Europe/Madrid'))
              .strftime('%d/%m %H:%M') for f in fixtures]
     line = f'[{number}] {stake} ' + ' --- '.join(hours)
+    if rival.get('pair_cancelled'):
+        line += f' [{rival["pair_cancelled"]} cancelado(s); máximo {effective_total} partidos efectivos]'
     if fixtures[0].get('started'):
         line += ' [Iniciado: pendiente de resultado; número provisional]'
     if horizon == 4 and recent.get('available') != 20:
         line += ' [Sin Dif.20: histórico detallado insuficiente]'
-    missing = horizon - len(sequence) - len(fixtures)
+    missing = target - len(sequence) - len(fixtures)
     if missing:
         line += f' --- Faltan {missing} horarios por publicar'
     return fixtures[0]['timestamp'], line

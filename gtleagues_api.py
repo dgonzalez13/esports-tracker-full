@@ -111,6 +111,8 @@ def build_history_records(matches, source_file):
     seen_ids = set()
 
     for match in matches:
+        if match.get('status') == 4:
+            continue
         try:
             native_value = match["id"]
             if native_value is None:
@@ -229,6 +231,8 @@ def process(matches):
     matches.sort(key=lambda x: x["kickoff"])
 
     for m in matches:
+        if m.get('status') == 4:
+            continue
         try:
             home = next(p for p in m["participants"] if p["side"] == "home")
             away = next(p for p in m["participants"] if p["side"] == "away")

@@ -23,7 +23,7 @@ from match_history import name_key
 from current_streaks_v2 import _record_time
 from fixture_schedule import load_schedule
 from web_tracker.upcoming_matches import render_upcoming_matches, upcoming_fixtures
-from web_tracker.pair_series_schedule import pair_series_schedule
+from web_tracker.pair_series_schedule import pair_series_schedule, cancelled_pair_counts
 from web_tracker.bet_candidates import candidate, six_rating
 from web_tracker.historical_pair_series import load_daily_pair_sequences, enrich_pair_stats
 from selected_players import (
@@ -1391,6 +1391,7 @@ def attach_recent_group_h2h(data, records, reference_time, schedule=None, daily_
     """Use the same bounded eight-hour window as the operational dashboard."""
     records = list(records)
     current_sequences, pair_fixtures = pair_series_schedule(records, schedule, reference_time)
+    cancellations = cancelled_pair_counts(schedule, reference_time)
     start = reference_time - timedelta(hours=8)
     recent = filter_by_time(records, start=start, end=reference_time)
     history = filter_by_time(records, end=reference_time)
@@ -1429,6 +1430,7 @@ def attach_recent_group_h2h(data, records, reference_time, schedule=None, daily_
         identity = (league, name_key(player), name_key(rival))
         row['current_pair_sequence'] = current_sequences.get(identity, '')
         row['pair_fixtures'] = pair_fixtures.get((league, tuple(sorted(identity[1:]))), [])
+        row['pair_cancelled'] = cancellations.get((league, tuple(sorted(identity[1:]))), 0)
         if identity not in pair_stats:
             pair_stats[identity] = calculate_six_match_stats(
                 player_records.get(identity[:2], []), reference_time, pair=identity)
@@ -1544,7 +1546,8 @@ def render_underdog_matchups(data):
                     sequence = rival.get('current_pair_sequence', rival.get('sequence', ''))
                     if not total or wins * 100 <= 30 * total or 'V' in sequence:
                         continue
-                    remaining = max(0, 6 - len(sequence))
+                    effective_total = max(0, 6 - rival.get('pair_cancelled', 0))
+                    remaining = max(0, effective_total - len(sequence))
                     fixtures = rival.get('pair_fixtures', [])[:remaining]
                     hours = []
                     for fixture in fixtures:
@@ -1554,13 +1557,15 @@ def render_underdog_matchups(data):
                             label += ' (sin resultado)'
                         hours.append(label)
                     if remaining == 0:
-                        hours_label = 'Seis partidos disputados'
+                        hours_label = f'{effective_total} partidos efectivos disputados'
                     elif not hours:
                         hours_label = 'Sin horarios publicados'
                     else:
                         hours_label = ' · '.join(hours)
                         if len(hours) < remaining:
                             hours_label += f' · Faltan {remaining - len(hours)} horarios por publicar'
+                    if rival.get('pair_cancelled'):
+                        hours_label += f' · {rival["pair_cancelled"]} cancelado(s); {effective_total} partidos efectivos'
                     stats = rival.get('pair_stats', {})
                     sample, failures = stats.get('complete_series', 0), stats.get('zero_win_series', 0)
                     row = [league, a, b, fmt_pct(wins * 100 / total), fmt_pct(losses * 100 / total),
@@ -1578,6 +1583,8 @@ def render_underdog_matchups(data):
         'en las últimas 8 horas. La pareja desaparece en la siguiente actualización cuando A gana. '
         'Se muestran todos los horarios publicados pendientes hasta completar seis partidos, en Madrid; '
         'los partidos iniciados sin resultado confirmado siguen pendientes. No se inventan horarios ausentes.</p>'
+        '<p class="section-subtitle">Los cancelados no cuentan en SEC ni en la numeración y se descuentan '
+        'del total disponible de seis. Los porcentajes históricos V≤4/5/6 mantienen sus horizontes originales.</p>'
         '<p class="section-subtitle">Sin V en 6: número de series históricas completas de esta pareja '
         'en las que A no ganó ninguno de los seis encuentros, sobre el total de series completas. '
         'Cada dirección se analiza por separado, sin agrupar otras parejas ni condicionar el histórico '

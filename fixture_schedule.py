@@ -43,7 +43,8 @@ def parse_gt_fixtures(matches):
                 "player_team": teams[index][0], "rival_team": teams[1-index][0],
                 "player_team_id": teams[index][1], "rival_team_id": teams[1-index][1],
                 "timestamp_utc": stamp, "result": None,
-                "fixture_status": "scheduled" if match.get("status") == 0 else "unknown",
+                "fixture_status": ("cancelled" if match.get("status") == 4 else
+                                   "scheduled" if match.get("status") == 0 else "unknown"),
             })
     return records
 

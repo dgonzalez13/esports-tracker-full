@@ -6,6 +6,22 @@ from current_streaks_v2 import _record_time
 from match_history import name_key
 
 
+def cancelled_pair_counts(schedule, reference):
+    """Cancelled slots among the first six published encounters in this window."""
+    pairs = defaultdict(dict)
+    for league, source in (schedule or {}).get('sources', {}).items():
+        for row in source.get('records', []):
+            stamp = _record_time(row)
+            if stamp is None or stamp < reference - timedelta(hours=8):
+                continue
+            a, b = row.get('player_key'), row.get('rival_key')
+            if not a or not b:
+                continue
+            pairs[(league, tuple(sorted((a, b))))][stamp] = row.get('fixture_status')
+    return {key: sum(status == 'cancelled' for _, status in sorted(slots.items())[:6])
+            for key, slots in pairs.items()}
+
+
 def pair_series_schedule(records, schedule, reference):
     start = reference - timedelta(hours=8)
     finalized, sequences, pending = set(), defaultdict(list), {}
@@ -24,11 +40,15 @@ def pair_series_schedule(records, schedule, reference):
     # when the calendar has a confirmed result not collected by the history yet.
     calendar = [(league, row) for league, source in (schedule or {}).get('sources', {}).items()
                 for row in source.get('records', [])]
+    cancelled = {identity(row, league)[0] for league, row in calendar
+                 if row.get('fixture_status') == 'cancelled' and identity(row, league)}
     for league, row in [(r.get('league'), r) for r in records] + calendar:
         item = identity(row, league)
         if not item or row.get('result') not in {'V', 'E', 'D'}:
             continue
         key, player, rival = item
+        if key in cancelled:
+            continue
         stamp = key[2]
         if stamp > reference or key in finalized:
             continue
