@@ -63,4 +63,4 @@ jobs:
           git config user.email "github-actions@github.com"
           git add tracked_players.txt group_analysis.json docs/index.html
           git diff --cached --quiet || git commit -m "Update tracked players"
-          git push
+          python push_tracker_changes.py

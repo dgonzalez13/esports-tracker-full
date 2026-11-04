@@ -82,6 +82,7 @@ jobs:
         run: python web_tracker/generate_site.py
 
       - name: Commit changes
+        id: commit_changes
         if: steps.schedule_guard.outputs.run == 'true'
         run: |
           git config user.name "github-actions"
@@ -91,4 +92,21 @@ jobs:
 
           git diff --cached --quiet || git commit -m "Auto update"
 
-          git push
+          python push_tracker_changes.py
+
+      - name: Keep generated data after push failure
+        if: failure() && steps.commit_changes.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tracker-unpublished-data-${{ github.run_id }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            gt/data/match_history.jsonl
+            gt/data/*_player_stats.txt
+            eadriatic/data/match_history.jsonl
+            eadriatic/data/*_eadriatic_player_stats.txt
+            group_analysis.json
+            fixture_schedule.json
+            docs/index.html
+            tracked_players.txt
