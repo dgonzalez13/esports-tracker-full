@@ -24,7 +24,7 @@ from current_streaks_v2 import _record_time
 from fixture_schedule import load_schedule
 from web_tracker.upcoming_matches import render_upcoming_matches, upcoming_fixtures
 from web_tracker.pair_series_schedule import pair_series_schedule, cancelled_pair_counts
-from web_tracker.bet_candidates import candidate, six_rating
+from web_tracker.bet_candidates import candidate, six_rating, repeat_candidate
 from web_tracker.historical_pair_series import load_daily_pair_sequences, enrich_pair_stats
 from selected_players import (
     bettable_player_keys, excluded_player_keys, is_operational_record,
@@ -304,6 +304,7 @@ def render_page(data, current_streaks, current_streaks_v2=None, schedule=None):
     {render_bet_candidates(data)}
     {render_underdog_matchups(data)}
     {render_active_repeat_matches(data)}
+    {render_repeat_candidates(data)}
     {render_team_statistics(data.get("team_stats", []))}
     {render_group_dashboard(data, current_streaks)}
 </main>
@@ -1829,6 +1830,39 @@ def render_active_repeat_matches(data):
             + '<script>' + (BASE / 'web_tracker' / 'h2h_repeat_samples.js').read_text(encoding='utf-8') + '</script>')
 
 
+
+
+def render_repeat_candidates(data):
+    excluded = {tuple(item) for item in data.get('h2h_exclusions', [])}
+    bettable = {tuple(item) for item in data.get('bettable_keys', [])}
+    selected = {}
+    for league, payload in data.get('leagues', {}).items():
+        for group in payload.get('groups', []):
+            for player in group.get('recent_h2h', {}).get('players', []):
+                for rival in player.get('rivals', []):
+                    a, b = player['player'], rival['rival']
+                    identity = (league, name_key(a), name_key(b))
+                    if identity in excluded or not new_table_pair_allowed(data, league, a, b):
+                        continue
+                    if 'bettable_keys' in data and (identity[:2] not in bettable or (league, identity[2]) not in bettable):
+                        continue
+                    result = repeat_candidate(rival, league, data.get('six_match_stats', {}).get('minimum_prior', 20))
+                    if result:
+                        order, stars, line = result
+                        selected[identity] = (order, f'{stars}{league} {a} - {b} {line}')
+    lines = [line for _, line in sorted(selected.values())]
+    return ('<section class="dashboard-section" id="repeat-candidates">'
+            '<h2>Candidatos a 3 partidos · repetir victoria</h2>'
+            '<p class="section-subtitle">Parejas de Repetir victoria con exactamente tres partidos disputados. '
+            'Media de V% y V%20 superior al 40% (ambos porcentajes previos a SEC) y V≤6 ≥85% '
+            'en la muestra ampliada de la pareja. Si falta V%20 o muestra de V≤6, no se incluye. '
+            'Un * si V% o V%20 es inferior al 40%; otro * si V≤6 está entre 85% y 90%, incluidos. '
+            'Las marcas se acumulan al inicio de la línea y no indican coincidencia con otras listas. '
+            '[4] es el siguiente encuentro; horarios de Madrid, sin fecha. '
+            'Tres apuestas: 20, 40 y 80.</p>'
+            + ('<pre class="candidate-list">' + text('\n'.join(lines)) + '</pre>' if lines
+               else '<p>No hay candidatos que cumplan estos criterios con horarios publicados.</p>')
+            + '</section>')
 
 
 def render_team_statistics(stats):

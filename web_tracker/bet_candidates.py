@@ -58,3 +58,41 @@ def candidate(rival, horizon):
     if missing:
         line += f' --- Faltan {missing} horarios por publicar'
     return fixtures[0]['timestamp'], line
+
+
+def repeat_candidate(rival, league, minimum_prior=20, initial_stake=20):
+    """Three remaining games, using the percentages displayed in Repeat Victory."""
+    sequence = rival.get('sequence', '')
+    if len(sequence) != 3 or sequence.count('V') != 1 or sequence.index('V') not in (0, 1):
+        return None
+    prior = rival.get('historical_played', 0) - 3
+    wins = rival.get('historical_wins', 0) - 1
+    recent = rival.get('prior20', {})
+    if prior < minimum_prior or wins < 0 or recent.get('available') != 20 or recent.get('win_pct') is None:
+        return None
+    pct, pct20 = wins*100/prior, recent['win_pct']
+    if pct < 30 or (pct+pct20)/2 <= 40:
+        return None
+    position = sequence.index('V') + 1
+    sample = next((r for r in rival.get('pair_stats', {}).get('pair_repeat_rows', [])
+                   if r['league'] == league and r['win_position'] == position and r['played'] == 3), None)
+    pct6 = sample.get('repeat_by_6_pct') if sample else None
+    if (pct6 is None or pct6 < 85
+            or sample.get('repeat_by_6_sample', sample.get('sample', 0)) <= 0):
+        return None
+    total = max(0, 6-rival.get('pair_cancelled', 0))
+    remaining = max(0, total-3)
+    fixtures = rival.get('pair_fixtures', [])[:remaining]
+    if not fixtures:
+        return None
+    stars = int(pct < 40 or pct20 < 40) + int(85 <= pct6 <= 90)
+    hours = [datetime.fromisoformat(f['timestamp']).astimezone(ZoneInfo('Europe/Madrid'))
+             .strftime('%H:%M') for f in fixtures]
+    line = f'[4] {initial_stake} ' + ' --- '.join(hours)
+    if fixtures[0].get('started'):
+        line += ' [Iniciado: pendiente de resultado; número provisional]'
+    if remaining < 3:
+        line += f' [Solo {remaining} partidos efectivos pendientes por cancelación]'
+    if len(fixtures) < remaining:
+        line += f' [Faltan {remaining-len(fixtures)} horarios por publicar]'
+    return fixtures[0]['timestamp'], '*'*stars, line
