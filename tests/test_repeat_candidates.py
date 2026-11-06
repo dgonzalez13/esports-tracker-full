@@ -29,8 +29,8 @@ class RepeatCandidateTests(unittest.TestCase):
         result = repeat_candidate(self.rival(), 'GT')
         self.assertEqual(result[2], '[4] 20 11:00 --- 12:00 --- 13:00')
 
-    def test_requires_exactly_three_and_single_initial_win(self):
-        for sequence in ['VD', 'VDDD', 'VVD', 'DDV', 'DDD']:
+    def test_requires_at_least_three_and_single_initial_win(self):
+        for sequence in ['VD', 'VDDDDD', 'VVD', 'DDV', 'DDD']:
             rival = self.rival()
             rival['sequence'] = sequence
             self.assertIsNone(repeat_candidate(rival, 'GT'))
@@ -38,6 +38,19 @@ class RepeatCandidateTests(unittest.TestCase):
         rival['sequence'] = 'DVD'
         rival['pair_stats']['pair_repeat_rows'][0]['win_position'] = 2
         self.assertIsNotNone(repeat_candidate(rival, 'GT'))
+
+    def test_later_steps_use_current_sample_number_stake_and_remaining_hours(self):
+        for played, stake in [(3, 20), (4, 40), (5, 80)]:
+            rival = self.rival()
+            rival['sequence'] = 'V' + 'D'*(played-1)
+            rival['historical_played'] = 100+played
+            rival['pair_stats']['pair_repeat_rows'][0]['played'] = played
+            line = repeat_candidate(rival, 'GT')[2]
+            self.assertTrue(line.startswith(f'[{played+1}] {stake} '))
+            self.assertEqual(line.count(' --- '), 5-played)
+            self.assertNotIn('cancelación', line)
+        rival['pair_stats']['pair_repeat_rows'][0]['played'] = 3
+        self.assertIsNone(repeat_candidate(rival, 'GT'))
 
     def test_no_guessing_missing_percentages_or_samples(self):
         for changes in [dict(prior20={}), dict(prior20={'available': 19, 'win_pct': 90}),

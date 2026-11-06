@@ -1853,13 +1853,13 @@ def render_repeat_candidates(data):
     lines = [line for _, line in sorted(selected.values())]
     return ('<section class="dashboard-section" id="repeat-candidates">'
             '<h2>Candidatos a 3 partidos · repetir victoria</h2>'
-            '<p class="section-subtitle">Parejas de Repetir victoria con exactamente tres partidos disputados. '
+            '<p class="section-subtitle">Parejas de Repetir victoria con al menos tres partidos disputados '
+            'y alguno pendiente hasta completar seis. '
             'Media de V% y V%20 superior al 40% (ambos porcentajes previos a SEC) y V≤6 ≥85% '
             'en la muestra ampliada de la pareja. Si falta V%20 o muestra de V≤6, no se incluye. '
             'Un * si V% o V%20 es inferior al 40%; otro * si V≤6 está entre 85% y 90%, incluidos. '
             'Las marcas se acumulan al inicio de la línea y no indican coincidencia con otras listas. '
-            '[4] es el siguiente encuentro; horarios de Madrid, sin fecha. '
-            'Tres apuestas: 20, 40 y 80.</p>'
+            'Siguiente encuentro e importe: [4] 20, [5] 40 o [6] 80. Horarios de Madrid, sin fecha.</p>'
             + ('<pre class="candidate-list">' + text('\n'.join(lines)) + '</pre>' if lines
                else '<p>No hay candidatos que cumplan estos criterios con horarios publicados.</p>')
             + '</section>')
