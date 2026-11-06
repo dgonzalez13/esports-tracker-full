@@ -1763,6 +1763,9 @@ def render_active_repeat_matches(data):
                     band = REPEAT_BANDS[0 if pct > 40 else 1 if pct >= 35 else 2]
                     position = sequence.index('V') + 1
                     individual = rival.get('pair_stats', {})
+                    pair_lookup = {(r['league'], r['win_position'], r['played']): r
+                                   for r in individual.get('pair_repeat_rows', [])}
+                    pair_sample = pair_lookup.get((league, position, played))
                     lookup = {(r['league'], r['band'], r['win_position'], r['played']): r
                               for r in individual.get('active_repeat_rows', [])}
                     gap_lookup = {(r['league'], r['band'], r['gap_threshold'], r['win_position'], r['played']): r
@@ -1776,33 +1779,46 @@ def render_active_repeat_matches(data):
                                   for field in ('next_win_pct', 'repeat_by_4_pct', 'repeat_by_5_pct', 'repeat_by_6_pct')]
                     values = [pair_repeat_cell(sample, field)
                               for field in ('next_win_pct', 'repeat_by_4_pct', 'repeat_by_5_pct', 'repeat_by_6_pct')]
+                    filtered_values = [
+                        {'>40%': '>40', '35–40% (incluidos)': '35–40', '30–<35%': '30–<35'}[band],
+                        sample['sample'] if sample else 0, *values]
+                    values = [pair_repeat_cell(pair_sample, field)
+                              for field in ('next_win_pct', 'repeat_by_4_pct', 'repeat_by_5_pct', 'repeat_by_6_pct')]
                     selected.append((rival.get('next_match'), [league, player['player'], rival['rival'], fmt_pct(pct),
                         prior_gap, *last20_cells(rival.get('prior20', {})),
-                        {'>40%': '>40', '35–40% (incluidos)': '35–40', '30–<35%': '30–<35'}[band],
-                        sequence, position, next_group_match_label(rival), sample['sample'] if sample else 0, *values],
+                        'Pareja',
+                        sequence, position, next_group_match_label(rival), pair_sample['sample'] if pair_sample else 0, *values],
                         [f'{">" + str(threshold) if threshold is not None else "—"}',
-                         gap_sample['sample'] if gap_sample else 0, *gap_values]))
+                         gap_sample['sample'] if gap_sample else 0, *gap_values], filtered_values))
     selected.sort(key=lambda r: (datetime.fromisoformat(r[0]) if r[0] else datetime.max.replace(tzinfo=timezone.utc), r[1][:3]))
     variants = {(index, column): value for index, row in enumerate(selected)
                 for column, value in zip((7, 11, 12, 13, 14, 15), row[2])}
+    filtered_variants = {(index, column): value for index, row in enumerate(selected)
+                         for column, value in zip((7, 11, 12, 13, 14, 15), row[3])}
     return ('<section class="dashboard-section" id="active-repeat-matches">'
             '<h2>Repetir victoria · parejas de los grupos actuales</h2>'
             '<p class="section-subtitle">Una única victoria, en el primer o segundo encuentro, y entre dos y cinco '
             'partidos disputados. Se asume que la secuencia de las últimas 8 horas es el inicio de la serie. '
             'V% previo descuenta del histórico los partidos de esa secuencia. Las muestras comparables tienen '
-            'la misma pareja (A frente a B), rango previo, posición de la victoria y número de partidos disputados, '
+            'la misma pareja (A frente a B), posición de la victoria y número de partidos disputados, '
             'sin ninguna segunda victoria hasta ese momento. Los porcentajes corresponden a partidos posteriores '
             'al último disputado. — indica horizonte agotado o sin muestra. Horario de Madrid.</p>'
+            '<p class="section-subtitle">Muestra ampliada: todas las series ordenadas de esta pareja, '
+            'incluidas las secuencias de los TXT, sin exigir rango previo de V% ni 20 partidos anteriores. '
+            'Las fechas ya cubiertas no se duplican. Los totales sin orden no permiten calcular una segunda victoria. '
+            'V% y V% + Dif. conservan las muestras filtradas del histórico detallado.</p>'
             '<p class="section-subtitle">V%20 y Dif.20 usan los últimos 20 enfrentamientos anteriores a la secuencia (— si faltan registros). '
             'Muestra V% + Dif.: añade al rango de V% la mayor diferencia aplicable: >10, >5 o >0 pp. '
             'Son umbrales acumulativos, estrictos y medidos antes de la serie; para Dif.≤0 no hay muestra agrupada. '
             'Rng muestra el rango de V% o el umbral de Dif. según la muestra seleccionada. Cada porcentaje incluye su propio n de series de esta pareja con resultado conocido para ese plazo. La columna n corresponde al siguiente partido; sin muestra individual se muestra —.</p>'
             '<label class="upcoming-filters">Agrupar muestra: <select data-repeat-grouping>'
-            '<option value="original">V%</option><option value="alternative">V% + Dif.</option></select></label>'
+            '<option value="original">Pareja · muestra ampliada</option><option value="filtered">V%</option>'
+            '<option value="alternative">V% + Dif.</option></select></label>'
             + render_gap_filters()
             + (render_table(['Liga', 'Jugador A', 'Rival B', 'V%', 'Dif.', 'V%20', 'Dif.20', 'Rng', 'Sec', 'V1',
                             'Próx.', 'n', 'V sig.', 'V≤4', 'V≤5', 'V≤6'], [r[1] for r in selected],
                            numeric_columns={3, 4, 5, 6, 9, 11, 12, 13, 14, 15}, cell_variants=variants,
+                           cell_filtered_variants=filtered_variants,
                            header_titles={5: 'V% de los 20 enfrentamientos previos a la secuencia',
                                6: 'Diferencia A−B de los 20 enfrentamientos previos (pp)', 7: 'Rango de la muestra seleccionada',
                                9: 'Partido de la primera victoria', 10: 'Próximo partido (Madrid)', 11: 'Series comparables',
@@ -1918,7 +1934,7 @@ def render_extra_details(group):
     )
 
 
-def render_table(headers, rows, numeric_columns=None, seq_columns=None, row_classes=None, cell_notes=None, header_titles=None, cell_variants=None):
+def render_table(headers, rows, numeric_columns=None, seq_columns=None, row_classes=None, cell_notes=None, header_titles=None, cell_variants=None, cell_filtered_variants=None):
     numeric_columns = numeric_columns or set()
     seq_columns = seq_columns or set()
 
@@ -1952,6 +1968,8 @@ def render_table(headers, rows, numeric_columns=None, seq_columns=None, row_clas
             variant = (cell_variants or {}).get((row_index, index))
             variant_attr = (f' data-original="{text(value)}" data-alternative="{text(variant)}"'
                             if variant is not None else '')
+            if (row_index, index) in (cell_filtered_variants or {}):
+                variant_attr += f' data-filtered="{text(cell_filtered_variants[(row_index, index)])}"'
             cells.append(f"<td{class_attr}{variant_attr}>{content}</td>")
 
         row_class = row_classes[row_index] if row_classes and row_index < len(row_classes) else ""

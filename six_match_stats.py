@@ -34,6 +34,33 @@ def failure_series_metrics(failures):
     }
 
 
+def pair_repeat_statistics(sequences):
+    """Ordered same-pair observations; no prior percentage or gap buckets."""
+    counts = defaultdict(lambda: [0] * 8)
+    for league, sequence in sequences:
+        sequence = sequence[:6]
+        for played in range(1, min(6, len(sequence))):
+            prefix = sequence[:played]
+            if prefix.count('V') != 1 or prefix.index('V') not in (0, 1):
+                continue
+            sample = counts[(league, prefix.index('V')+1, played)]
+            sample[0] += 1
+            sample[1] += sequence[played] == 'V'
+            for index, horizon in enumerate((4, 5, 6), 1):
+                if horizon_observed(sequence, played, horizon):
+                    sample[index*2] += 1
+                    sample[index*2+1] += 'V' in sequence[played:horizon]
+    result = []
+    for (league, position, played), sample in sorted(counts.items()):
+        row = dict(league=league, win_position=position, played=played,
+                   sample=sample[0], next_win_sample=sample[0], next_win_pct=sample[1]*100/sample[0])
+        for index, horizon in enumerate((4, 5, 6), 1):
+            row[f'repeat_by_{horizon}_sample'] = sample[index*2]
+            row[f'repeat_by_{horizon}_pct'] = sample[index*2+1]*100/sample[index*2] if sample[index*2] else None
+        result.append(row)
+    return result
+
+
 def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=None):
     # Keep all opponents when splitting player sessions, even for a single pair.
     players = defaultdict(list)
@@ -64,6 +91,7 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=No
     complete = 0
     zero_win_series = 0
     complete_events = defaultdict(list)
+    repeat_sequences = []
     for (league, player), history in players.items():
         prior = defaultdict(list)
         for session in split_player_sessions(history):
@@ -79,6 +107,7 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=No
                 # Count each session once; never manufacture extra sliding series.
                 if matches and closed:
                     sequence = ''.join(r["result"] for r in matches[:6])
+                    repeat_sequences.append((league, sequence))
                     for k in range(6):
                         if 'V' not in sequence[:k]:
                             for horizon in (4, 5, 6):
@@ -167,7 +196,8 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=No
                                     sample[1] += "V" not in sequence
                 prior[rival].extend(matches)
     intervals = failure_series_metrics(next(iter(complete_events.values()), []) if len(complete_events) <= 1 else [])
-    return {**intervals, "minimum_prior": minimum_prior, "complete_series": complete,
+    return {**intervals, "pair_repeat_rows": pair_repeat_statistics(repeat_sequences),
+            "minimum_prior": minimum_prior, "complete_series": complete,
             "zero_win_series": zero_win_series,
             "pair_horizons": [
                 {"league": league, "initial_without_win": k, "horizon": horizon,

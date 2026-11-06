@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 from group_analysis import parse_vs_rivals
 from match_history import name_key
 from current_streaks_v2 import split_player_sessions, _record_time
-from six_match_stats import horizon_observed, failure_series_metrics
+from six_match_stats import horizon_observed, failure_series_metrics, pair_repeat_statistics
 
 
 def load_daily_pair_sequences(base, reference):
@@ -107,6 +107,7 @@ def enrich_pair_stats(stats, player_records, reference, pair, daily):
     events.sort(key=lambda item: item[0])
     intervals = failure_series_metrics(failed for _, failed in events)
     return {**stats, 'pair_horizons': horizons, 'complete_series': len(complete) + len(aggregate_complete),
+            'pair_repeat_rows': pair_repeat_statistics((pair[0], seq) for _, seq in observations),
             **intervals,
             'zero_win_series': sum('V' not in seq for seq in complete) + sum(not win for _, win, _ in aggregate_complete),
             'daily_sequences_used': used}
