@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "analysis_scope": "historical TXT; h2h_alerts are operational JSONL-filtered",
-  "generated_at": "08/11/2026 06:52:50 CET",
+  "generated_at": "08/11/2026 07:01:35 CET",
   "league": "EADRIATIC",
   "files_count": 177,
   "data_from": "20260516",
@@ -574,10 +574,10 @@
         "Cezar",
         "Bruno"
       ],
-      "target_repr": "{'Bruno', 'Nathan', 'VanGogh', 'Haidan', 'Cezar'}",
+      "target_repr": "{'VanGogh', 'Haidan', 'Nathan', 'Bruno', 'Cezar'}",
       "h2h_keys": [
-        "Nathan",
         "Haidan",
+        "Nathan",
         "VanGogh",
         "Bruno",
         "Cezar"
@@ -700,8 +700,13 @@
       ],
       "dominance": [
         {
-          "player": "Bruno",
-          "wins": 3,
+          "player": "VanGogh",
+          "wins": 0,
+          "rivals": 4
+        },
+        {
+          "player": "Haidan",
+          "wins": 0,
           "rivals": 4
         },
         {
@@ -710,13 +715,8 @@
           "rivals": 4
         },
         {
-          "player": "VanGogh",
-          "wins": 0,
-          "rivals": 4
-        },
-        {
-          "player": "Haidan",
-          "wins": 0,
+          "player": "Bruno",
+          "wins": 3,
           "rivals": 4
         },
         {
@@ -1384,12 +1384,12 @@
         "Eric",
         "Eduardo"
       ],
-      "target_repr": "{'Logan', 'Luigi', 'Eric', 'Eduardo', 'Alexander'}",
+      "target_repr": "{'Eduardo', 'Logan', 'Alexander', 'Luigi', 'Eric'}",
       "h2h_keys": [
         "Logan",
         "Alexander",
-        "Eric",
         "Eduardo",
+        "Eric",
         "Luigi"
       ],
       "coincidencias_5": 0,
@@ -1428,8 +1428,18 @@
       ],
       "dominance": [
         {
+          "player": "Eduardo",
+          "wins": 0,
+          "rivals": 4
+        },
+        {
           "player": "Logan",
           "wins": 0,
+          "rivals": 4
+        },
+        {
+          "player": "Alexander",
+          "wins": 1,
           "rivals": 4
         },
         {
@@ -1441,16 +1451,6 @@
           "player": "Eric",
           "wins": 1,
           "rivals": 3
-        },
-        {
-          "player": "Eduardo",
-          "wins": 0,
-          "rivals": 4
-        },
-        {
-          "player": "Alexander",
-          "wins": 1,
-          "rivals": 4
         }
       ],
       "h2h_ranking": [
@@ -2435,7 +2435,75 @@
           "group_id": "delpiero-hulk-totti-eminem-rossi",
           "group": "Delpiero / Hulk / Totti / Eminem / Rossi",
           "player": "Eminem",
+          "rival": "Delpiero",
+          "W": 1,
+          "D": 0,
+          "L": 0,
+          "matches": 1,
+          "win_pct": 100.0,
+          "draw_pct": 0.0,
+          "loss_pct": 0.0,
+          "seq": "V",
+          "last5": "V",
+          "last10": "V",
+          "stk_win": 1,
+          "stk_lose": 1,
+          "signal": "STRONG",
+          "confidence": "LOW SAMPLE",
+          "low_sample": true,
+          "recent_window": 20,
+          "recent_available": 1,
+          "recent_sequence": "V",
+          "recent_wins": 1,
+          "recent_draws": 0,
+          "recent_losses": 0,
+          "recent_win_pct": 100.0,
+          "recent_draw_pct": 0.0,
+          "recent_loss_pct": 0.0,
+          "recent_win_pct_delta": 0.0,
+          "recent_trend": "STABLE",
+          "recent_sample_status": "LOW_SAMPLE",
+          "recent_window_complete": false
+        },
+        {
+          "group_id": "delpiero-hulk-totti-eminem-rossi",
+          "group": "Delpiero / Hulk / Totti / Eminem / Rossi",
+          "player": "Eminem",
           "rival": "Totti",
+          "W": 1,
+          "D": 0,
+          "L": 0,
+          "matches": 1,
+          "win_pct": 100.0,
+          "draw_pct": 0.0,
+          "loss_pct": 0.0,
+          "seq": "V",
+          "last5": "V",
+          "last10": "V",
+          "stk_win": 1,
+          "stk_lose": 1,
+          "signal": "STRONG",
+          "confidence": "LOW SAMPLE",
+          "low_sample": true,
+          "recent_window": 20,
+          "recent_available": 1,
+          "recent_sequence": "V",
+          "recent_wins": 1,
+          "recent_draws": 0,
+          "recent_losses": 0,
+          "recent_win_pct": 100.0,
+          "recent_draw_pct": 0.0,
+          "recent_loss_pct": 0.0,
+          "recent_win_pct_delta": 0.0,
+          "recent_trend": "STABLE",
+          "recent_sample_status": "LOW_SAMPLE",
+          "recent_window_complete": false
+        },
+        {
+          "group_id": "delpiero-hulk-totti-eminem-rossi",
+          "group": "Delpiero / Hulk / Totti / Eminem / Rossi",
+          "player": "Totti",
+          "rival": "Rossi",
           "W": 1,
           "D": 0,
           "L": 0,
@@ -2511,7 +2579,7 @@
             "Lawyer",
             "Monster"
           ],
-          "target_repr": "{'Thunder', 'Lost', 'Lawyer', 'Monster', 'Acid'}",
+          "target_repr": "{'Thunder', 'Acid', 'Lost', 'Monster', 'Lawyer'}",
           "h2h_keys": [
             "Lost",
             "Lawyer",
@@ -2528,11 +2596,11 @@
           "totals_4": [
             {
               "player": "Acid",
-              "W": 28,
+              "W": 29,
               "D": 19,
               "L": 30,
-              "win_pct": 36.36363636363637,
-              "loss_pct": 38.961038961038966
+              "win_pct": 37.17948717948718,
+              "loss_pct": 38.46153846153847
             },
             {
               "player": "Lawyer",
@@ -2562,9 +2630,9 @@
               "player": "Thunder",
               "W": 16,
               "D": 14,
-              "L": 30,
-              "win_pct": 26.666666666666668,
-              "loss_pct": 50.0
+              "L": 31,
+              "win_pct": 26.229508196721312,
+              "loss_pct": 50.81967213114754
             }
           ],
           "power_ranking": [
@@ -2580,18 +2648,18 @@
             },
             {
               "position": 3,
-              "player": "Thunder",
-              "score": -55.238832375055296
+              "player": "Acid",
+              "score": -53.0952380952381
             },
             {
               "position": 4,
-              "player": "Acid",
-              "score": -55.98997493734337
+              "player": "Thunder",
+              "score": -56.5546218487395
             },
             {
               "position": 5,
               "player": "Lost",
-              "score": -98.62410635896148
+              "score": -98.6241063589615
             }
           ],
           "dominance": [
@@ -2601,13 +2669,13 @@
               "rivals": 4
             },
             {
-              "player": "Lost",
+              "player": "Acid",
               "wins": 0,
               "rivals": 4
             },
             {
-              "player": "Lawyer",
-              "wins": 2,
+              "player": "Lost",
+              "wins": 0,
               "rivals": 4
             },
             {
@@ -2616,16 +2684,16 @@
               "rivals": 4
             },
             {
-              "player": "Acid",
-              "wins": 0,
+              "player": "Lawyer",
+              "wins": 2,
               "rivals": 4
             }
           ],
           "h2h_ranking": [
             {
               "player": "Thunder",
-              "score": 44.01544401544402,
-              "matches": 259,
+              "score": 43.84615384615385,
+              "matches": 260,
               "weighted_score": 11400.0
             },
             {
@@ -2648,9 +2716,9 @@
             },
             {
               "player": "Acid",
-              "score": 36.36363636363637,
-              "matches": 77,
-              "weighted_score": 2800.0000000000005
+              "score": 37.17948717948718,
+              "matches": 78,
+              "weighted_score": 2900.0
             }
           ],
           "betting": {
@@ -2819,9 +2887,9 @@
                 },
                 {
                   "rival": "Thunder",
-                  "win_pct": 42.10526315789473,
-                  "loss_pct": 26.31578947368421,
-                  "matches": 19
+                  "win_pct": 45.0,
+                  "loss_pct": 25.0,
+                  "matches": 20
                 }
               ]
             },
@@ -2917,9 +2985,9 @@
               "rivals": [
                 {
                   "rival": "Acid",
-                  "win_pct": 26.31578947368421,
-                  "loss_pct": 42.10526315789473,
-                  "matches": 19
+                  "win_pct": 25.0,
+                  "loss_pct": 45.0,
+                  "matches": 20
                 },
                 {
                   "rival": "Lawyer",
@@ -2993,18 +3061,18 @@
                 },
                 {
                   "rival": "Thunder",
-                  "W": 8,
+                  "W": 9,
                   "D": 6,
                   "L": 5,
-                  "matches": 19,
-                  "win_pct": 42.10526315789473,
-                  "draw_pct": 31.57894736842105,
-                  "loss_pct": 26.31578947368421,
-                  "seq": "EEVDVVVVDEVDEEDVDVE",
-                  "last5": "DVDVE",
-                  "last10": "EVDEEDVDVE",
-                  "stk_win": 0,
-                  "stk_lose": 2
+                  "matches": 20,
+                  "win_pct": 45.0,
+                  "draw_pct": 30.0,
+                  "loss_pct": 25.0,
+                  "seq": "EEVDVVVVDEVDEEDVDVEV",
+                  "last5": "VDVEV",
+                  "last10": "VDEEDVDVEV",
+                  "stk_win": 1,
+                  "stk_lose": 3
                 }
               ]
             },
@@ -3210,16 +3278,16 @@
                   "rival": "Acid",
                   "W": 5,
                   "D": 6,
-                  "L": 8,
-                  "matches": 19,
-                  "win_pct": 26.31578947368421,
-                  "draw_pct": 31.57894736842105,
-                  "loss_pct": 42.10526315789473,
-                  "seq": "EEDVDDDDVEDVEEVDVDE",
-                  "last5": "VDVDE",
-                  "last10": "EDVEEVDVDE",
+                  "L": 9,
+                  "matches": 20,
+                  "win_pct": 25.0,
+                  "draw_pct": 30.0,
+                  "loss_pct": 45.0,
+                  "seq": "EEDVDDDDVEDVEEVDVDED",
+                  "last5": "DVDED",
+                  "last10": "DVEEVDVDED",
                   "stk_win": 0,
-                  "stk_lose": 1
+                  "stk_lose": 0
                 },
                 {
                   "rival": "Lawyer",
@@ -3280,10 +3348,10 @@
             "Eminem",
             "Rossi"
           ],
-          "target_repr": "{'Eminem', 'Totti', 'Delpiero', 'Rossi', 'Hulk'}",
+          "target_repr": "{'Hulk', 'Rossi', 'Delpiero', 'Totti', 'Eminem'}",
           "h2h_keys": [
-            "Eminem",
             "Hulk",
+            "Eminem",
             "Rossi",
             "Delpiero",
             "Totti"
@@ -3299,62 +3367,62 @@
             {
               "position": 1,
               "player": "Eminem",
-              "score": 14.63166463166463
+              "score": 64.63166463166463
             },
             {
               "position": 2,
-              "player": "Rossi",
-              "score": -14.102564102564102
+              "player": "Totti",
+              "score": -41.81818181818181
             },
             {
               "position": 3,
-              "player": "Delpiero",
-              "score": -44.344857020913366
-            },
-            {
-              "position": 4,
               "player": "Hulk",
               "score": -46.78028283662087
             },
             {
+              "position": 4,
+              "player": "Rossi",
+              "score": -64.1025641025641
+            },
+            {
               "position": 5,
-              "player": "Totti",
-              "score": -91.81818181818181
+              "player": "Delpiero",
+              "score": -94.34485702091337
             }
           ],
           "dominance": [
             {
-              "player": "Eminem",
+              "player": "Hulk",
               "wins": 1,
-              "rivals": 3
-            },
-            {
-              "player": "Totti",
-              "wins": 0,
-              "rivals": 3
-            },
-            {
-              "player": "Delpiero",
-              "wins": 1,
-              "rivals": 3
+              "rivals": 4
             },
             {
               "player": "Rossi",
               "wins": 0,
-              "rivals": 3
+              "rivals": 4
             },
             {
-              "player": "Hulk",
+              "player": "Delpiero",
               "wins": 1,
+              "rivals": 4
+            },
+            {
+              "player": "Totti",
+              "wins": 1,
+              "rivals": 4
+            },
+            {
+              "player": "Eminem",
+              "wins": 2,
               "rivals": 4
             }
           ],
           "h2h_ranking": [
             {
               "player": "Rossi",
-              "score": 44.18604651162791,
-              "matches": 688,
-              "weighted_score": 30400.0
+              "score": 44.12191582002903,
+              "matches": 689,
+              "weighted_score": 30400.000000000004
             },
             {
               "player": "Hulk",
@@ -3364,29 +3432,29 @@
             },
             {
               "player": "Eminem",
-              "score": 32.732732732732735,
-              "matches": 333,
-              "weighted_score": 10900.0
+              "score": 32.93413173652694,
+              "matches": 334,
+              "weighted_score": 10999.999999999998
             },
             {
               "player": "Delpiero",
-              "score": 23.25581395348837,
-              "matches": 172,
+              "score": 23.121387283236995,
+              "matches": 173,
               "weighted_score": 4000.0
             },
             {
               "player": "Totti",
-              "score": 23.52941176470588,
-              "matches": 17,
-              "weighted_score": 399.99999999999994
+              "score": 27.77777777777778,
+              "matches": 18,
+              "weighted_score": 500.0
             }
           ],
           "betting": {
             "back": {
               "player": "Rossi",
-              "score": 44.18604651162791,
-              "matches": 688,
-              "weighted_score": 30400.0,
+              "score": 44.12191582002903,
+              "matches": 689,
+              "weighted_score": 30400.000000000004,
               "best_matchups": [
                 {
                   "rival": "Delpiero",
@@ -3454,10 +3522,15 @@
             },
             "lay": {
               "player": "Delpiero",
-              "score": 23.25581395348837,
-              "matches": 172,
+              "score": 23.121387283236995,
+              "matches": 173,
               "weighted_score": 4000.0,
               "worst_matchups": [
+                {
+                  "rival": "Eminem",
+                  "win_pct": 0.0,
+                  "matches": 1
+                },
                 {
                   "rival": "Rossi",
                   "win_pct": 16.666666666666664,
@@ -3467,14 +3540,24 @@
                   "rival": "Hulk",
                   "win_pct": 25.352112676056336,
                   "matches": 71
-                },
-                {
-                  "rival": "Totti",
-                  "win_pct": 63.63636363636363,
-                  "matches": 11
                 }
               ],
               "worst_matchup_details": [
+                {
+                  "rival": "Eminem",
+                  "W": 0,
+                  "D": 0,
+                  "L": 1,
+                  "matches": 1,
+                  "win_pct": 0.0,
+                  "draw_pct": 0.0,
+                  "loss_pct": 100.0,
+                  "seq": "D",
+                  "last5": "D",
+                  "last10": "D",
+                  "stk_win": 0,
+                  "stk_lose": 0
+                },
                 {
                   "rival": "Rossi",
                   "W": 15,
@@ -3504,21 +3587,6 @@
                   "last10": "DVDEDEVVVD",
                   "stk_win": 0,
                   "stk_lose": 0
-                },
-                {
-                  "rival": "Totti",
-                  "W": 7,
-                  "D": 2,
-                  "L": 2,
-                  "matches": 11,
-                  "win_pct": 63.63636363636363,
-                  "draw_pct": 18.181818181818183,
-                  "loss_pct": 18.181818181818183,
-                  "seq": "DVVVDEVVVVE",
-                  "last5": "VVVVE",
-                  "last10": "VVVDEVVVVE",
-                  "stk_win": 0,
-                  "stk_lose": 6
                 }
               ]
             }
@@ -3527,6 +3595,12 @@
             {
               "player": "Delpiero",
               "rivals": [
+                {
+                  "rival": "Eminem",
+                  "win_pct": 0.0,
+                  "loss_pct": 100.0,
+                  "matches": 1
+                },
                 {
                   "rival": "Hulk",
                   "win_pct": 25.352112676056336,
@@ -3550,6 +3624,12 @@
             {
               "player": "Eminem",
               "rivals": [
+                {
+                  "rival": "Delpiero",
+                  "win_pct": 100.0,
+                  "loss_pct": 0.0,
+                  "matches": 1
+                },
                 {
                   "rival": "Hulk",
                   "win_pct": 33.86243386243386,
@@ -3619,6 +3699,12 @@
                   "win_pct": 43.07692307692308,
                   "loss_pct": 35.604395604395606,
                   "matches": 455
+                },
+                {
+                  "rival": "Totti",
+                  "win_pct": 0.0,
+                  "loss_pct": 100.0,
+                  "matches": 1
                 }
               ]
             },
@@ -3642,6 +3728,12 @@
                   "win_pct": 40.0,
                   "loss_pct": 20.0,
                   "matches": 5
+                },
+                {
+                  "rival": "Rossi",
+                  "win_pct": 100.0,
+                  "loss_pct": 0.0,
+                  "matches": 1
                 }
               ]
             }
@@ -3650,6 +3742,21 @@
             {
               "player": "Delpiero",
               "rivals": [
+                {
+                  "rival": "Eminem",
+                  "W": 0,
+                  "D": 0,
+                  "L": 1,
+                  "matches": 1,
+                  "win_pct": 0.0,
+                  "draw_pct": 0.0,
+                  "loss_pct": 100.0,
+                  "seq": "D",
+                  "last5": "D",
+                  "last10": "D",
+                  "stk_win": 0,
+                  "stk_lose": 0
+                },
                 {
                   "rival": "Hulk",
                   "W": 18,
@@ -3700,6 +3807,21 @@
             {
               "player": "Eminem",
               "rivals": [
+                {
+                  "rival": "Delpiero",
+                  "W": 1,
+                  "D": 0,
+                  "L": 0,
+                  "matches": 1,
+                  "win_pct": 100.0,
+                  "draw_pct": 0.0,
+                  "loss_pct": 0.0,
+                  "seq": "V",
+                  "last5": "V",
+                  "last10": "V",
+                  "stk_win": 1,
+                  "stk_lose": 1
+                },
                 {
                   "rival": "Hulk",
                   "W": 64,
@@ -3859,6 +3981,21 @@
                   "last10": "EEDVDEVEDD",
                   "stk_win": 0,
                   "stk_lose": 0
+                },
+                {
+                  "rival": "Totti",
+                  "W": 0,
+                  "D": 0,
+                  "L": 1,
+                  "matches": 1,
+                  "win_pct": 0.0,
+                  "draw_pct": 0.0,
+                  "loss_pct": 100.0,
+                  "seq": "D",
+                  "last5": "D",
+                  "last10": "D",
+                  "stk_win": 0,
+                  "stk_lose": 0
                 }
               ]
             },
@@ -3909,6 +4046,21 @@
                   "last10": "EEDVV",
                   "stk_win": 2,
                   "stk_lose": 2
+                },
+                {
+                  "rival": "Rossi",
+                  "W": 1,
+                  "D": 0,
+                  "L": 0,
+                  "matches": 1,
+                  "win_pct": 100.0,
+                  "draw_pct": 0.0,
+                  "loss_pct": 0.0,
+                  "seq": "V",
+                  "last5": "V",
+                  "last10": "V",
+                  "stk_win": 1,
+                  "stk_lose": 1
                 }
               ]
             }
@@ -4490,10 +4642,10 @@
             "Cezar",
             "Bruno"
           ],
-          "target_repr": "{'Bruno', 'Nathan', 'VanGogh', 'Haidan', 'Cezar'}",
+          "target_repr": "{'VanGogh', 'Haidan', 'Nathan', 'Bruno', 'Cezar'}",
           "h2h_keys": [
-            "Nathan",
             "Haidan",
+            "Nathan",
             "VanGogh",
             "Bruno",
             "Cezar"
@@ -4616,8 +4768,13 @@
           ],
           "dominance": [
             {
-              "player": "Bruno",
-              "wins": 3,
+              "player": "VanGogh",
+              "wins": 0,
+              "rivals": 4
+            },
+            {
+              "player": "Haidan",
+              "wins": 0,
               "rivals": 4
             },
             {
@@ -4626,13 +4783,8 @@
               "rivals": 4
             },
             {
-              "player": "VanGogh",
-              "wins": 0,
-              "rivals": 4
-            },
-            {
-              "player": "Haidan",
-              "wins": 0,
+              "player": "Bruno",
+              "wins": 3,
               "rivals": 4
             },
             {
@@ -5300,12 +5452,12 @@
             "Eric",
             "Eduardo"
           ],
-          "target_repr": "{'Logan', 'Luigi', 'Eric', 'Eduardo', 'Alexander'}",
+          "target_repr": "{'Eduardo', 'Logan', 'Alexander', 'Luigi', 'Eric'}",
           "h2h_keys": [
             "Logan",
             "Alexander",
-            "Eric",
             "Eduardo",
+            "Eric",
             "Luigi"
           ],
           "coincidencias_5": 0,
@@ -5344,8 +5496,18 @@
           ],
           "dominance": [
             {
+              "player": "Eduardo",
+              "wins": 0,
+              "rivals": 4
+            },
+            {
               "player": "Logan",
               "wins": 0,
+              "rivals": 4
+            },
+            {
+              "player": "Alexander",
+              "wins": 1,
               "rivals": 4
             },
             {
@@ -5357,16 +5519,6 @@
               "player": "Eric",
               "wins": 1,
               "rivals": 3
-            },
-            {
-              "player": "Eduardo",
-              "wins": 0,
-              "rivals": 4
-            },
-            {
-              "player": "Alexander",
-              "wins": 1,
-              "rivals": 4
             }
           ],
           "h2h_ranking": [
