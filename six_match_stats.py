@@ -61,6 +61,37 @@ def pair_repeat_statistics(sequences):
     return result
 
 
+def first_win_followups(sequences):
+    """Follow-ups by first-win position, bounded by the sixth encounter."""
+    counts = defaultdict(lambda: [0, 0])
+    starts = defaultdict(int)
+    leagues = set()
+    for league, sequence in sequences:
+        leagues.add(league)
+        sequence = sequence[:6]
+        if 'V' not in sequence:
+            continue
+        start = sequence.index('V') + 1
+        starts[(league, start)] += 1
+        for window in (3, 4, 5, 0):
+            if window == 0:
+                if not 3 < start < 6:
+                    continue
+                horizon = 6
+            else:
+                horizon = start + window
+                if horizon > 6:
+                    continue
+            if horizon_observed(sequence, start, horizon):
+                counts[(league, start, window)][0] += 1
+                counts[(league, start, window)][1] += 'V' in sequence[start:horizon]
+    return [dict(league=league, first_win_position=position, window=window,
+                 first_win_series=starts[(league, position)],
+                 sample=sample, win_pct=wins*100/sample if sample else None)
+            for league in sorted(leagues) for position in range(1, 7) for window in (3, 4, 5, 0)
+            for sample, wins in [counts[(league, position, window)]]]
+
+
 def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=None):
     # Keep all opponents when splitting player sessions, even for a single pair.
     players = defaultdict(list)
@@ -92,6 +123,7 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=No
     zero_win_series = 0
     complete_events = defaultdict(list)
     repeat_sequences = []
+    followup_sequences = []
     for (league, player), history in players.items():
         prior = defaultdict(list)
         for session in split_player_sessions(history):
@@ -106,6 +138,7 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=No
                 # Longer sessions still have an observed first-four/five/six.
                 # Count each session once; never manufacture extra sliding series.
                 if matches and closed:
+                    followup_sequences.append((league, ''.join(r['result'] for r in matches)))
                     sequence = ''.join(r["result"] for r in matches[:6])
                     repeat_sequences.append((league, sequence))
                     for k in range(6):
@@ -197,6 +230,7 @@ def calculate_six_match_stats(records, reference_time, minimum_prior=20, pair=No
                 prior[rival].extend(matches)
     intervals = failure_series_metrics(next(iter(complete_events.values()), []) if len(complete_events) <= 1 else [])
     return {**intervals, "pair_repeat_rows": pair_repeat_statistics(repeat_sequences),
+            "first_win_followups": first_win_followups(followup_sequences),
             "minimum_prior": minimum_prior, "complete_series": complete,
             "zero_win_series": zero_win_series,
             "pair_horizons": [

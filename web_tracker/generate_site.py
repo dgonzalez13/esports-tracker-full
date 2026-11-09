@@ -304,6 +304,7 @@ def render_page(data, current_streaks, current_streaks_v2=None, schedule=None):
     {render_bet_candidates(data)}
     {render_underdog_matchups(data)}
     {render_active_repeat_matches(data)}
+    {render_first_win_followups(data)}
     {render_repeat_candidates(data)}
     {render_team_statistics(data.get("team_stats", []))}
     {render_group_dashboard(data, current_streaks)}
@@ -748,14 +749,17 @@ summary {
 .upcoming-filters { display: flex; flex-wrap: wrap; gap: 8px 12px; font-size: 12px; }
 .upcoming-filters label { display: flex; align-items: center; gap: 5px; }
 .upcoming-filters select { font: inherit; padding: 5px 8px; max-width: 100%; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); }
-#recent-group-h2h > .table-wrap table, #active-repeat-matches > .table-wrap table {
+#recent-group-h2h > .table-wrap table, #active-repeat-matches > .table-wrap table,
+#first-win-followups > .table-wrap table {
     width: 100%; min-width: 0; table-layout: fixed; font-size: 12px;
 }
 #recent-group-h2h > .table-wrap th, #recent-group-h2h > .table-wrap td,
-#active-repeat-matches > .table-wrap th, #active-repeat-matches > .table-wrap td {
+#active-repeat-matches > .table-wrap th, #active-repeat-matches > .table-wrap td,
+#first-win-followups > .table-wrap th, #first-win-followups > .table-wrap td {
     padding: 6px 4px; white-space: normal; overflow-wrap: anywhere;
 }
-#recent-group-h2h > .table-wrap abbr, #active-repeat-matches > .table-wrap abbr {
+#recent-group-h2h > .table-wrap abbr, #active-repeat-matches > .table-wrap abbr,
+#first-win-followups > .table-wrap abbr {
     text-decoration: none; cursor: help;
 }
 #upcoming-status { margin: 6px 0; font-size: 12px; }
@@ -1832,6 +1836,62 @@ def render_active_repeat_matches(data):
             + '<script>' + (BASE / 'web_tracker' / 'h2h_repeat_samples.js').read_text(encoding='utf-8') + '</script>')
 
 
+
+
+def render_first_win_followups(data):
+    excluded = {tuple(item) for item in data.get('h2h_exclusions', [])}
+    selected = {}
+    for league, payload in data.get('leagues', {}).items():
+        for group in payload.get('groups', []):
+            for player in group.get('recent_h2h', {}).get('players', []):
+                for rival in player.get('rivals', []):
+                    a, b = player['player'], rival['rival']
+                    identity = (league, name_key(a), name_key(b))
+                    if identity in excluded or not new_table_pair_allowed(data, league, a, b):
+                        continue
+                    sequence = rival.get('current_pair_sequence', rival.get('sequence', ''))
+                    first = sequence.index('V')+1 if 'V' in sequence else '—'
+                    lookup = {r['window']: r for r in rival.get('pair_stats', {}).get('first_win_followups', [])
+                              if r['league'] == league and r['first_win_position'] == first}
+                    values = []
+                    for window in (3, 4, 5, 0):
+                        sample = lookup.get(window, {})
+                        values.append(f'{fmt_pct(sample["win_pct"])} (n={sample["sample"]})'
+                                      if sample.get('sample') and sample.get('win_pct') is not None else '—')
+                    row = [league, a, b, fmt_pct(rival.get('historical_win_pct')), matchup_gap(rival),
+                           *last20_cells(rival.get('last20', {})), sequence or 'Sin partidos', first,
+                           next_group_match_label(rival), max((r['first_win_series'] for r in lookup.values()), default=0)
+                           if first != '—' else '—',
+                           *values]
+                    selected[identity] = (rival.get('next_match') or '9999', row)
+    rows = [row for _, row in sorted(selected.values(), key=lambda item: (item[0], item[1][:3]))]
+    return ('<section class="dashboard-section" id="first-win-followups">'
+            '<h2>Repetir victoria · ventanas según la primera victoria</h2>'
+            '<p class="section-subtitle">Todas las parejas de los grupos actuales, en ambas direcciones. '
+            'Frecuencia histórica de al menos otra victoria de A en los 3, 4 o 5 encuentros posteriores '
+            'a la primera victoria de A de cada serie histórica. Esa primera victoria no se cuenta como repetición '
+            'y se compara solo con series de esta pareja cuya primera victoria llegó en el mismo partido que V1 actual. '
+            'No se filtra por rango de V% ni por el resto de SEC.</p>'
+            '<p class="section-subtitle">La serie termina en el sexto partido: V1=1 permite +3/+4/+5; '
+            'V1=2 permite +3/+4; V1=3 solo +3. Si V1=4 o 5, Otra V en restantes mide otra victoria '
+            'hasta el sexto (quedan 2 o 1 partidos). Con V1=6 no queda ningún encuentro. '
+            'Sin primera victoria actual, la pareja sigue visible con — en las frecuencias.</p>'
+            '<p class="section-subtitle">Series con igual V1: series ordenadas cuya primera victoria llegó en esa posición. '
+            'Cada porcentaje tiene su propio n: la ventana debe estar observada completa o contener ya otra victoria. '
+            'Si falta el resto y no se ha observado otra victoria, no se cuenta como fallo. '
+            'Se usan sesiones cerradas y secuencias de los TXT sin duplicarlas; los totales sin orden no se utilizan. '
+            'Las ventanas no superan el sexto encuentro ni cruzan sesiones. V%20 y Dif.20 son los últimos 20 '
+            'enfrentamientos disponibles. Los porcentajes se anclan a V1, no al siguiente partido pendiente.</p>'
+            + (render_table(['Liga', 'Jugador A', 'Rival B', 'V%', 'Dif.', 'V%20', 'Dif.20', 'SEC', 'V1',
+                             'Próx.', 'Series con igual V1', 'Otra V en +3', 'Otra V en +4', 'Otra V en +5',
+                             'Otra V en restantes'], rows,
+                            numeric_columns={3,4,5,6,8,10,11,12,13,14}, seq_columns={7},
+                            header_titles={11: 'Al menos otra victoria en los 3 partidos posteriores a la primera victoria',
+                                           12: 'Al menos otra victoria en los 4 partidos posteriores a la primera victoria',
+                                           13: 'Al menos otra victoria en los 5 partidos posteriores a la primera victoria',
+                                           14: 'V1 en el cuarto o quinto: otra victoria en los 2 o 1 encuentros que quedan hasta el sexto'})
+               if rows else '<p>No hay parejas actuales disponibles.</p>')
+            + '</section>')
 
 
 def render_repeat_candidates(data):
