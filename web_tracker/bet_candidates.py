@@ -111,3 +111,39 @@ def repeat_candidate(rival, league, minimum_prior=20, initial_stake=20):
     if len(fixtures) < remaining:
         line += f' [Faltan {remaining-len(fixtures)} horarios por publicar]'
     return fixtures[0]['timestamp'], '*'*stars, line
+
+
+def first_win_window_candidate(rival, league):
+    sequence = rival.get('current_pair_sequence', rival.get('sequence', ''))
+    if sequence.count('V') != 1:
+        return None
+    first, played = sequence.index('V')+1, len(sequence)
+    effective_total = max(0, 6-rival.get('pair_cancelled', 0))
+    targets = []
+    for row in rival.get('pair_stats', {}).get('first_win_followups', []):
+        if (row['league'] != league or row['first_win_position'] != first
+                or row.get('win_pct') is None or row['win_pct'] <= 90 or not row.get('sample')):
+            continue
+        window = row['window']
+        if window not in (1, 3, 4, 5, 0) or (window == 0 and first not in (4, 5)):
+            continue
+        deadline = 6 if window == 0 else first+window
+        if played < deadline <= min(6, effective_total) and deadline-played <= 5:
+            targets.append((deadline, row))
+    if not targets:
+        return None
+    deadline, row = min(targets, key=lambda item: item[0])
+    remaining = deadline-played
+    fixtures = rival.get('pair_fixtures', [])[:remaining]
+    if not fixtures:
+        return None
+    stake = 80 // 2**(remaining-1)
+    hours = [datetime.fromisoformat(f['timestamp']).astimezone(ZoneInfo('Europe/Madrid'))
+             .strftime('%H:%M') for f in fixtures]
+    line = f'[{played+1}] {stake} ' + ' --- '.join(hours)
+    line += f' [Hasta partido {deadline}: {row["win_pct"]:.2f}% (n={row["sample"]})]'
+    if fixtures[0].get('started'):
+        line += ' [Iniciado: pendiente de resultado; número provisional]'
+    if len(fixtures) < remaining:
+        line += f' [Faltan {remaining-len(fixtures)} horarios por publicar]'
+    return fixtures[0]['timestamp'], line

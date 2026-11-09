@@ -24,7 +24,7 @@ from current_streaks_v2 import _record_time
 from fixture_schedule import load_schedule
 from web_tracker.upcoming_matches import render_upcoming_matches, upcoming_fixtures
 from web_tracker.pair_series_schedule import pair_series_schedule, cancelled_pair_counts
-from web_tracker.bet_candidates import candidate, six_rating, repeat_candidate
+from web_tracker.bet_candidates import candidate, six_rating, repeat_candidate, first_win_window_candidate
 from web_tracker.historical_pair_series import load_daily_pair_sequences, enrich_pair_stats
 from selected_players import (
     bettable_player_keys, excluded_player_keys, is_operational_record,
@@ -305,6 +305,7 @@ def render_page(data, current_streaks, current_streaks_v2=None, schedule=None):
     {render_underdog_matchups(data)}
     {render_active_repeat_matches(data)}
     {render_first_win_followups(data)}
+    {render_first_win_window_candidates(data)}
     {render_repeat_candidates(data)}
     {render_team_statistics(data.get("team_stats", []))}
     {render_group_dashboard(data, current_streaks)}
@@ -1898,6 +1899,39 @@ def render_first_win_followups(data):
                                            14: 'Al menos otra victoria en los 5 partidos posteriores a la primera victoria',
                                            15: 'V1 en el cuarto o quinto: otra victoria en los 2 o 1 encuentros que quedan hasta el sexto'})
                if rows else '<p>No hay parejas actuales disponibles.</p>')
+            + '</section>')
+
+
+def render_first_win_window_candidates(data):
+    excluded = {tuple(item) for item in data.get('h2h_exclusions', [])}
+    selected = {}
+    for league, payload in data.get('leagues', {}).items():
+        for group in payload.get('groups', []):
+            for player in group.get('recent_h2h', {}).get('players', []):
+                for rival in player.get('rivals', []):
+                    a, b = player['player'], rival['rival']
+                    identity = (league, name_key(a), name_key(b))
+                    if identity in excluded or not new_table_pair_allowed(data, league, a, b):
+                        continue
+                    result = first_win_window_candidate(rival, league)
+                    if result:
+                        order, line = result
+                        selected[identity] = (order, f'{league} {a} - {b} {line}')
+    lines = [line for _, line in sorted(selected.values())]
+    return ('<section class="dashboard-section" id="first-win-window-candidates">'
+            '<h2>Candidatos a repetir victoria · primer plazo &gt;90% · máximo 5 apuestas</h2>'
+            '<p class="section-subtitle">Parte de Ventanas según la primera victoria: exactamente una victoria '
+            'actual y muestra de la misma pareja con igual V1. Se elige el primer plazo todavía pendiente '
+            'con porcentaje estrictamente superior al 90%: V1–V2 consecutivas, +3, +4, +5 o restantes, '
+            'según corresponda. Un 90% exacto no cumple. No se usan plazos ya agotados ni posteriores al sexto '
+            'encuentro o al total efectivo tras cancelaciones.</p>'
+            '<p class="section-subtitle">Hasta cinco apuestas. Se utiliza el tramo final de 5, 10, 20, 40, 80: '
+            'si quedan tres son 20, 40, 80; si quedan dos, 40, 80; si queda una, 80. '
+            '[n] es el próximo partido y el importe corresponde al primer paso pendiente. '
+            'Se muestran solo los horarios hasta el plazo elegido, su porcentaje y su muestra. '
+            'Son las frecuencias ancladas a V1 de la tabla anterior; no se recalculan según los resultados posteriores de SEC.</p>'
+            + ('<pre class="candidate-list">' + text('\n'.join(lines)) + '</pre>' if lines
+               else '<p>No hay candidatos con un plazo pendiente superior al 90% y horarios publicados.</p>')
             + '</section>')
 
 
