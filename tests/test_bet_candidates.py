@@ -89,7 +89,7 @@ class CandidateTests(unittest.TestCase):
                 row['win_pct'] = 80
         html = render_bet_candidates(data)
         self.assertIn('Candidatos a 5 partidos', html)
-        self.assertEqual(html.count('GT David - Fox'), 2)  # Five and six, not four.
+        self.assertEqual(html.count('GT David - Fox'), 1)  # Only five, ahead of six.
         self.assertNotIn('*<span class="candidate-level', html)
 
     def test_six_sample_and_failure_boundaries(self):
@@ -119,7 +119,7 @@ class CandidateTests(unittest.TestCase):
         rival.update(self.rival())
         data['leagues']['GT']['groups'] *= 2
         html = render_bet_candidates(data)
-        self.assertEqual(html.count('GT David - Fox'), 2)  # Once per horizon.
+        self.assertEqual(html.count('GT David - Fox'), 1)  # Only four, ahead of six.
         data['h2h_exclusions'] = [('GT', 'david', 'fox')]
         self.assertNotIn('GT David - Fox', render_bet_candidates(data))
 
