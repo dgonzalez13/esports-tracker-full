@@ -21,7 +21,7 @@ class CandidateTests(unittest.TestCase):
                                    for i in range(6)])
 
     def test_number_and_stake_for_both_progressions(self):
-        for horizon, initial in [(4, 10), (5, 10), (6, 3)]:
+        for horizon, initial in [(4, 10), (5, 5), (6, 3)]:
             for played in range(horizon):
                 rival = self.rival()
                 rival['current_pair_sequence'] = 'D' * played

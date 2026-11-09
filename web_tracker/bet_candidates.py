@@ -59,7 +59,7 @@ def candidate(rival, horizon):
     if not fixtures:
         return None
     number = len(sequence) + 1
-    stake = (10 if horizon in (4, 5) else 3) * 2 ** (number - 1)
+    stake = {4: 10, 5: 5, 6: 3}[horizon] * 2 ** (number - 1)
     hours = [datetime.fromisoformat(f['timestamp']).astimezone(ZoneInfo('Europe/Madrid'))
              .strftime('%H:%M') for f in fixtures]
     line = f'[{number}] {stake} ' + ' --- '.join(hours)

@@ -1509,7 +1509,7 @@ def render_bet_candidates(data):
     sections = []
     for horizon in (4, 5, 6):
         lines = [line for _, line in sorted(lists[horizon].values())]
-        stakes = {4: '10, 20, 40, 80', 5: '10, 20, 40, 80, 160', 6: '3, 6, 12, 24, 48, 96'}[horizon]
+        stakes = {4: '10, 20, 40, 80', 5: '5, 10, 20, 40, 80', 6: '3, 6, 12, 24, 48, 96'}[horizon]
         sections.append(f'<h3>Candidatos a {horizon} partidos · {stakes}</h3>'
                         + ('<pre class="candidate-list">' + '\n'.join(lines) + '</pre>'
                            if lines else '<p>No hay candidatos con horarios confirmados.</p>'))
