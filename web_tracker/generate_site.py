@@ -1856,7 +1856,7 @@ def render_first_win_followups(data):
                     lookup = {r['window']: r for r in rival.get('pair_stats', {}).get('first_win_followups', [])
                               if r['league'] == league and r['first_win_position'] == first}
                     values = []
-                    for window in (3, 4, 5, 0):
+                    for window in (1, 3, 4, 5, 0):
                         sample = lookup.get(window, {})
                         values.append(f'{fmt_pct(sample["win_pct"])} (n={sample["sample"]})'
                                       if sample.get('sample') and sample.get('win_pct') is not None else '—')
@@ -1879,6 +1879,9 @@ def render_first_win_followups(data):
             'V1=2 permite +3/+4; V1=3 solo +3. Si V1=4 o 5, Otra V en restantes mide otra victoria '
             'hasta el sexto (quedan 2 o 1 partidos). Con V1=6 no queda ningún encuentro. '
             'Las parejas desaparecen cuando A obtiene su segunda victoria.</p>'
+            '<p class="section-subtitle">V1–V2 consecutivas: porcentaje de series en las que la segunda victoria '
+            'llegó justo en el encuentro siguiente a la primera, con su propio n. No cuenta una racha posterior '
+            'si las dos primeras victorias estuvieron separadas. Se compara la misma posición de V1.</p>'
             '<p class="section-subtitle">Series con igual V1: series ordenadas cuya primera victoria llegó en esa posición. '
             'Cada porcentaje tiene su propio n: la ventana debe estar observada completa o contener ya otra victoria. '
             'Si falta el resto y no se ha observado otra victoria, no se cuenta como fallo. '
@@ -1886,13 +1889,14 @@ def render_first_win_followups(data):
             'Las ventanas no superan el sexto encuentro ni cruzan sesiones. V%20 y Dif.20 son los últimos 20 '
             'enfrentamientos disponibles. Los porcentajes se anclan a V1, no al siguiente partido pendiente.</p>'
             + (render_table(['Liga', 'Jugador A', 'Rival B', 'V%', 'Dif.', 'V%20', 'Dif.20', 'SEC', 'V1',
-                             'Próx.', 'Series con igual V1', 'Otra V en +3', 'Otra V en +4', 'Otra V en +5',
+                             'Próx.', 'Series con igual V1', 'V1–V2 consecutivas', 'Otra V en +3', 'Otra V en +4', 'Otra V en +5',
                              'Otra V en restantes'], rows,
-                            numeric_columns={3,4,5,6,8,10,11,12,13,14}, seq_columns={7},
-                            header_titles={11: 'Al menos otra victoria en los 3 partidos posteriores a la primera victoria',
-                                           12: 'Al menos otra victoria en los 4 partidos posteriores a la primera victoria',
-                                           13: 'Al menos otra victoria en los 5 partidos posteriores a la primera victoria',
-                                           14: 'V1 en el cuarto o quinto: otra victoria en los 2 o 1 encuentros que quedan hasta el sexto'})
+                            numeric_columns={3,4,5,6,8,10,11,12,13,14,15}, seq_columns={7},
+                            header_titles={11: 'La segunda victoria llegó justo en el partido siguiente a la primera',
+                                           12: 'Al menos otra victoria en los 3 partidos posteriores a la primera victoria',
+                                           13: 'Al menos otra victoria en los 4 partidos posteriores a la primera victoria',
+                                           14: 'Al menos otra victoria en los 5 partidos posteriores a la primera victoria',
+                                           15: 'V1 en el cuarto o quinto: otra victoria en los 2 o 1 encuentros que quedan hasta el sexto'})
                if rows else '<p>No hay parejas actuales disponibles.</p>')
             + '</section>')
 

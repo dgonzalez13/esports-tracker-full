@@ -73,7 +73,7 @@ def first_win_followups(sequences):
             continue
         start = sequence.index('V') + 1
         starts[(league, start)] += 1
-        for window in (3, 4, 5, 0):
+        for window in (1, 3, 4, 5, 0):
             if window == 0:
                 if not 3 < start < 6:
                     continue
@@ -88,7 +88,7 @@ def first_win_followups(sequences):
     return [dict(league=league, first_win_position=position, window=window,
                  first_win_series=starts[(league, position)],
                  sample=sample, win_pct=wins*100/sample if sample else None)
-            for league in sorted(leagues) for position in range(1, 7) for window in (3, 4, 5, 0)
+            for league in sorted(leagues) for position in range(1, 7) for window in (1, 3, 4, 5, 0)
             for sample, wins in [counts[(league, position, window)]]]
 
 

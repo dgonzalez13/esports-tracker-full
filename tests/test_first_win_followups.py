@@ -9,7 +9,25 @@ from tests import test_six_match_stats
 
 class FirstWinFollowupTests(unittest.TestCase):
     def windows(self, rows, position=1):
-        return [r for r in rows if r['first_win_position'] == position and r['window'] != 0]
+        return [r for r in rows if r['first_win_position'] == position and r['window'] in (3, 4, 5)]
+
+    def test_first_two_wins_must_be_adjacent_not_just_any_later_pair(self):
+        for sequence, position, expected in [('VVDDDD', 1, 100), ('VDVVDD', 1, 0),
+                                             ('DVVDDD', 2, 100), ('DDVDVV', 3, 0),
+                                             ('DDDDVV', 5, 100)]:
+            rows = first_win_followups([('GT', sequence)])
+            row = next(r for r in rows if r['first_win_position'] == position and r['window'] == 1)
+            self.assertEqual(row['sample'], 1)
+            self.assertEqual(row['win_pct'], expected, sequence)
+
+    def test_consecutive_metric_requires_next_game_and_stops_at_six(self):
+        rows = first_win_followups([('GT', 'VV'), ('GT', 'VD'), ('GT', 'V'), ('GT', 'DDDDDVV')])
+        row = next(r for r in rows if r['first_win_position'] == 1 and r['window'] == 1)
+        self.assertEqual(row['sample'], 2)
+        self.assertEqual(row['win_pct'], 50)
+        last = next(r for r in rows if r['first_win_position'] == 6 and r['window'] == 1)
+        self.assertEqual(last['sample'], 0)
+        self.assertIsNone(last['win_pct'])
 
     def test_initial_win_is_excluded_and_windows_start_after_it(self):
         rows = self.windows(first_win_followups([('GT', 'VDDDDV')]))
