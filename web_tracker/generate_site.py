@@ -1850,6 +1850,8 @@ def render_first_win_followups(data):
                     if identity in excluded or not new_table_pair_allowed(data, league, a, b):
                         continue
                     sequence = rival.get('current_pair_sequence', rival.get('sequence', ''))
+                    if sequence.count('V') != 1:
+                        continue
                     first = sequence.index('V')+1 if 'V' in sequence else '—'
                     lookup = {r['window']: r for r in rival.get('pair_stats', {}).get('first_win_followups', [])
                               if r['league'] == league and r['first_win_position'] == first}
@@ -1867,7 +1869,8 @@ def render_first_win_followups(data):
     rows = [row for _, row in sorted(selected.values(), key=lambda item: (item[0], item[1][:3]))]
     return ('<section class="dashboard-section" id="first-win-followups">'
             '<h2>Repetir victoria · ventanas según la primera victoria</h2>'
-            '<p class="section-subtitle">Todas las parejas de los grupos actuales, en ambas direcciones. '
+            '<p class="section-subtitle">Parejas de los grupos actuales con exactamente una victoria de A en SEC: '
+            'ya consiguieron la primera, pero todavía no la segunda. '
             'Frecuencia histórica de al menos otra victoria de A en los 3, 4 o 5 encuentros posteriores '
             'a la primera victoria de A de cada serie histórica. Esa primera victoria no se cuenta como repetición '
             'y se compara solo con series de esta pareja cuya primera victoria llegó en el mismo partido que V1 actual. '
@@ -1875,7 +1878,7 @@ def render_first_win_followups(data):
             '<p class="section-subtitle">La serie termina en el sexto partido: V1=1 permite +3/+4/+5; '
             'V1=2 permite +3/+4; V1=3 solo +3. Si V1=4 o 5, Otra V en restantes mide otra victoria '
             'hasta el sexto (quedan 2 o 1 partidos). Con V1=6 no queda ningún encuentro. '
-            'Sin primera victoria actual, la pareja sigue visible con — en las frecuencias.</p>'
+            'Las parejas desaparecen cuando A obtiene su segunda victoria.</p>'
             '<p class="section-subtitle">Series con igual V1: series ordenadas cuya primera victoria llegó en esa posición. '
             'Cada porcentaje tiene su propio n: la ventana debe estar observada completa o contener ya otra victoria. '
             'Si falta el resto y no se ha observado otra victoria, no se cuenta como fallo. '

@@ -57,16 +57,20 @@ class FirstWinFollowupTests(unittest.TestCase):
         self.assertEqual(row['win_pct'], 0)
         self.assertEqual(row['sample'], 1)
 
-    def test_table_includes_all_current_pairs_independent_of_current_win_count(self):
+    def test_table_only_includes_pairs_with_first_but_not_second_win(self):
         rivals = [dict(rival=f'B{i}', sequence=sequence, historical_played=3,
                        historical_wins=0, historical_losses=3, historical_win_pct=0,
                        pair_stats={'first_win_followups': first_win_followups([('GT', 'VDVDDD')])})
-                  for i, sequence in enumerate(('', 'DDD', 'VV', 'DDV'))]
+                  for i, sequence in enumerate(('', 'DDD', 'VV', 'DDV', 'VDD', 'DVDD', 'DDDDV'))]
         data = {'bettable_keys': [], 'leagues': {'GT': {'groups': [
             {'recent_h2h': {'players': [{'player': 'A', 'rivals': rivals}]}}]*2}}}
         html = render_first_win_followups(data)
         self.assertEqual(html.count('<td>A</td>'), 4)
         self.assertIn('Otra V en +3', html)
-        data['h2h_exclusions'] = [('GT', 'a', 'b0')]
-        self.assertNotIn('<td>B0</td>', render_first_win_followups(data))
+        for i in (0, 1, 2):
+            self.assertNotIn(f'<td>B{i}</td>', html)
+        for i in (3, 4, 5, 6):
+            self.assertIn(f'<td>B{i}</td>', html)
+        data['h2h_exclusions'] = [('GT', 'a', 'b3')]
+        self.assertNotIn('<td>B3</td>', render_first_win_followups(data))
         self.assertEqual(html.count('100.00% (n=1)'), 3)
