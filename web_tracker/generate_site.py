@@ -1481,7 +1481,7 @@ def attach_recent_group_h2h(data, records, reference_time, schedule=None, daily_
 
 def render_bet_candidates(data):
     excluded = {tuple(item) for item in data.get('h2h_exclusions', [])}
-    lists = {4: {}, 6: {}}
+    lists = {4: {}, 5: {}, 6: {}}
     for league, payload in data.get('leagues', {}).items():
         for group in payload.get('groups', []):
             for player in group.get('recent_h2h', {}).get('players', []):
@@ -1490,8 +1490,8 @@ def render_bet_candidates(data):
                     identity = (league, name_key(a), name_key(b))
                     if identity in excluded or not new_table_pair_allowed(data, league, a, b):
                         continue
-                    for horizon in (4, 6):
-                        if horizon == 4 and not recent_h2h_row_class(rival, data.get('h2h_min_gap', -10)):
+                    for horizon in (4, 5, 6):
+                        if horizon in (4, 5) and not recent_h2h_row_class(rival, data.get('h2h_min_gap', -10), inclusive=True):
                             continue
                         result = candidate(rival, horizon)
                         if result:
@@ -1507,16 +1507,17 @@ def render_bet_candidates(data):
         order, line = lists[6][identity]
         lists[6][identity] = (order, '*' + line)
     sections = []
-    for horizon in (4, 6):
+    for horizon in (4, 5, 6):
         lines = [line for _, line in sorted(lists[horizon].values())]
-        stakes = '10, 20, 40, 80' if horizon == 4 else '3, 6, 12, 24, 48, 96'
+        stakes = {4: '10, 20, 40, 80', 5: '10, 20, 40, 80, 160', 6: '3, 6, 12, 24, 48, 96'}[horizon]
         sections.append(f'<h3>Candidatos a {horizon} partidos · {stakes}</h3>'
                         + ('<pre class="candidate-list">' + '\n'.join(lines) + '</pre>'
                            if lines else '<p>No hay candidatos con horarios confirmados.</p>'))
     return ('<section class="dashboard-section" id="bet-candidates">'
             '<h2>Posibles candidatos</h2>'
-            '<p class="section-subtitle">4 partidos: V% A &gt;37%, V% A &gt; V% B, Dif. &gt;0 y Dif.20 &gt;0 '
-            '(si falta Dif.20 se admite con advertencia; si existe, debe ser positiva). '
+            '<p class="section-subtitle">4 y 5 partidos: media de V% y V%20 ≥40%, ambos ≥35%. '
+            'Se requiere V%20 disponible. 4 partidos: V≤4 ≥90%. 5 partidos: no cumple V≤4 ≥90% '
+            '(inferior, sin muestra o plazo agotado), pero V≤5 ≥90%. Las listas de cuatro y cinco no se duplican. '
             '6 partidos: V% A &gt;30%, Dif. ≥−10 pp, '
             'al menos 8 series de 6 y como máximo 10% sin V. No se exige Dif.20. '
             'Nivel 1 (verde): Dif. &gt;0; nivel 2 (amarillo): −5 ≤ Dif. ≤0; '
@@ -1903,7 +1904,7 @@ def render_team_statistics(stats):
     )
 
 
-def recent_h2h_row_class(rival, minimum_gap=-10):
+def recent_h2h_row_class(rival, minimum_gap=-10, inclusive=False):
     pct = rival["historical_win_pct"]
     total = rival.get("historical_played", 0)
     if total <= 20:
@@ -1912,7 +1913,7 @@ def recent_h2h_row_class(rival, minimum_gap=-10):
         if (rival["historical_wins"] - rival["historical_losses"]) * 100 < minimum_gap * total:
             return ""
     if rival["wins"] == 0:
-        if pct > 35:
+        if pct > 35 or (inclusive and pct == 35):
             return "recent-h2h-green"
     return ""
 

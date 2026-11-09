@@ -23,20 +23,35 @@ def six_rating(rival):
     return level, warnings
 
 
-def candidate(rival, horizon):
+def first_victory_horizon(rival):
     total = rival.get('historical_played', 0)
-    wins = rival.get('historical_wins', 0)
-    losses = rival.get('historical_losses', 0)
     recent = rival.get('last20', {})
+    if not total or recent.get('available') != 20 or recent.get('win_pct') is None:
+        return None
+    pct = rival.get('historical_wins', 0)*100/total
+    pct20 = recent['win_pct']
+    if pct < 35 or pct20 < 35 or (pct+pct20)/2 < 40:
+        return None
+    played = len(rival.get('current_pair_sequence', rival.get('sequence', '')))
+    rows = rival.get('pair_stats', {}).get('pair_horizons', [])
+    def probability(horizon):
+        row = next((r for r in rows if r['initial_without_win'] == played and r['horizon'] == horizon), None)
+        return row.get('win_pct') if row and row.get('sample', 0) > 0 and played < horizon else None
+    four = probability(4)
+    if four is not None and four >= 90:
+        return 4
+    five = probability(5)
+    return 5 if five is not None and five >= 90 else None
+
+
+def candidate(rival, horizon):
     sequence = rival.get('current_pair_sequence', rival.get('sequence', ''))
     effective_total = max(0, 6 - rival.get('pair_cancelled', 0))
     target = min(horizon, effective_total)
     if horizon == 6:
         if six_rating(rival) is None:
             return None
-    elif (not total or wins * 100 <= 37 * total or wins <= losses
-            or (recent.get('available') == 20 and recent.get('gap', 0) <= 0)
-            ):
+    elif horizon in (4, 5) and first_victory_horizon(rival) != horizon:
         return None
     if 'V' in sequence or len(sequence) >= target:
         return None
@@ -44,7 +59,7 @@ def candidate(rival, horizon):
     if not fixtures:
         return None
     number = len(sequence) + 1
-    stake = (10 if horizon == 4 else 3) * 2 ** (number - 1)
+    stake = (10 if horizon in (4, 5) else 3) * 2 ** (number - 1)
     hours = [datetime.fromisoformat(f['timestamp']).astimezone(ZoneInfo('Europe/Madrid'))
              .strftime('%H:%M') for f in fixtures]
     line = f'[{number}] {stake} ' + ' --- '.join(hours)
@@ -52,8 +67,6 @@ def candidate(rival, horizon):
         line += f' [{rival["pair_cancelled"]} cancelado(s); máximo {effective_total} partidos efectivos]'
     if fixtures[0].get('started'):
         line += ' [Iniciado: pendiente de resultado; número provisional]'
-    if horizon == 4 and recent.get('available') != 20:
-        line += ' [Sin Dif.20: histórico detallado insuficiente]'
     missing = target - len(sequence) - len(fixtures)
     if missing:
         line += f' --- Faltan {missing} horarios por publicar'
