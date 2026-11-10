@@ -1916,7 +1916,9 @@ def render_first_win_window_candidates(data):
                     result = first_win_window_candidate(rival, league)
                     if result:
                         order, line = result
-                        selected[identity] = (order, f'{league} {a} - {b} {line}')
+                        sequence = rival.get('current_pair_sequence', rival.get('sequence', ''))
+                        mark = '*' if sequence.endswith('V') else ''
+                        selected[identity] = (order, f'{mark}{league} {a} - {b} {line}')
     lines = [line for _, line in sorted(selected.values())]
     return ('<section class="dashboard-section" id="first-win-window-candidates">'
             '<h2>Candidatos a repetir victoria · primer plazo &gt;90% · máximo 5 apuestas</h2>'
@@ -1925,6 +1927,10 @@ def render_first_win_window_candidates(data):
             'con porcentaje estrictamente superior al 90%: V1–V2 consecutivas, +3, +4, +5 o restantes, '
             'según corresponda. Un 90% exacto no cumple. No se usan plazos ya agotados ni posteriores al sexto '
             'encuentro o al total efectivo tras cancelaciones.</p>'
+            '<p class="section-subtitle">Si el último partido fue victoria, solo se incluye cuando V1–V2 '
+            'consecutivas supera el 50% con muestra disponible, y se marca con * al inicio. '
+            'Con 50% exacto, inferior o sin muestra, se excluye ese caso. Si el último fue empate o derrota, '
+            'no se aplica este filtro.</p>'
             '<p class="section-subtitle">Hasta cinco apuestas. Se utiliza el tramo final de 5, 10, 20, 40, 80: '
             'si quedan tres son 20, 40, 80; si quedan dos, 40, 80; si queda una, 80. '
             '[n] es el próximo partido y el importe corresponde al primer paso pendiente. '

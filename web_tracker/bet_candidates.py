@@ -118,9 +118,16 @@ def first_win_window_candidate(rival, league):
     if sequence.count('V') != 1:
         return None
     first, played = sequence.index('V')+1, len(sequence)
+    rows = rival.get('pair_stats', {}).get('first_win_followups', [])
+    if sequence.endswith('V'):
+        consecutive = next((r for r in rows if r['league'] == league
+                            and r['first_win_position'] == first and r['window'] == 1), None)
+        if (not consecutive or not consecutive.get('sample') or consecutive.get('win_pct') is None
+                or consecutive['win_pct'] <= 50):
+            return None
     effective_total = max(0, 6-rival.get('pair_cancelled', 0))
     targets = []
-    for row in rival.get('pair_stats', {}).get('first_win_followups', []):
+    for row in rows:
         if (row['league'] != league or row['first_win_position'] != first
                 or row.get('win_pct') is None or row['win_pct'] <= 90 or not row.get('sample')):
             continue

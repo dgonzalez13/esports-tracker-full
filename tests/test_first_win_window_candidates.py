@@ -7,7 +7,7 @@ from web_tracker.generate_site import render_first_win_window_candidates
 class WindowCandidateTests(unittest.TestCase):
     def rival(self, sequence='V', probabilities=None):
         first = sequence.index('V')+1 if 'V' in sequence else 1
-        probabilities = probabilities or {1: 0, 3: 0, 4: 0, 5: 95, 0: 0}
+        probabilities = probabilities or {1: 60, 3: 0, 4: 0, 5: 95, 0: 0}
         return dict(rival='B', current_pair_sequence=sequence,
                     pair_stats={'first_win_followups': [dict(league='GT', first_win_position=first,
                         window=window, sample=20, win_pct=pct) for window, pct in probabilities.items()]},
@@ -23,7 +23,7 @@ class WindowCandidateTests(unittest.TestCase):
             self.assertIn('Hasta partido 6: 95.00% (n=20)', line)
 
     def test_first_qualifying_horizon_not_highest_percentage(self):
-        rival = self.rival('DV', {1: 20, 3: 91, 4: 100})
+        rival = self.rival('DV', {1: 60, 3: 91, 4: 100})
         line = first_win_window_candidate(rival, 'GT')[1]
         self.assertTrue(line.startswith('[3] 20 '))
         self.assertIn('Hasta partido 5: 91.00%', line)
@@ -39,17 +39,17 @@ class WindowCandidateTests(unittest.TestCase):
     def test_strict_threshold_samples_and_single_victory(self):
         for sequence in ('DDD', 'VV', 'VDDDDD'):
             self.assertIsNone(first_win_window_candidate(self.rival(sequence), 'GT'))
-        rival = self.rival('V', {5: 90})
+        rival = self.rival('V', {1: 60, 5: 90})
         self.assertIsNone(first_win_window_candidate(rival, 'GT'))
-        rival['pair_stats']['first_win_followups'][0].update(win_pct=95, sample=0)
+        rival['pair_stats']['first_win_followups'][1].update(win_pct=95, sample=0)
         self.assertIsNone(first_win_window_candidate(rival, 'GT'))
 
     def test_late_first_win_and_cancellations(self):
-        rival = self.rival('DDDV', {0: 95})
+        rival = self.rival('DDDV', {1: 60, 0: 95})
         self.assertTrue(first_win_window_candidate(rival, 'GT')[1].startswith('[5] 40 '))
         rival['pair_cancelled'] = 1
         self.assertIsNone(first_win_window_candidate(rival, 'GT'))
-        rival = self.rival('V', {5: 100})
+        rival = self.rival('V', {1: 60, 5: 100})
         rival['pair_cancelled'] = 1
         self.assertIsNone(first_win_window_candidate(rival, 'GT'))
 
@@ -63,3 +63,25 @@ class WindowCandidateTests(unittest.TestCase):
         self.assertEqual(html.count('GT A - B [2] 5'), 1)
         data['h2h_exclusions'] = [('GT', 'a', 'b')]
         self.assertNotIn('GT A - B', render_first_win_window_candidates(data))
+
+    def test_latest_win_requires_strictly_more_than_fifty_and_known_sample(self):
+        for pct, included in [(49.99, False), (50, False), (50.01, True), (80, True)]:
+            rival = self.rival('DV', {1: pct, 3: 95})
+            self.assertEqual(first_win_window_candidate(rival, 'GT') is not None, included)
+            rival['current_pair_sequence'] = 'DVD'
+            self.assertIsNotNone(first_win_window_candidate(rival, 'GT'))
+        rival = self.rival('DV', {3: 95})
+        self.assertIsNone(first_win_window_candidate(rival, 'GT'))
+        rival = self.rival('DV', {1: 80, 3: 95})
+        rival['pair_stats']['first_win_followups'][0]['sample'] = 0
+        self.assertIsNone(first_win_window_candidate(rival, 'GT'))
+
+    def test_latest_win_candidate_has_leading_star_only_when_retained(self):
+        rival = self.rival('DV', {1: 60, 3: 95})
+        data = {'leagues': {'GT': {'groups': [{'recent_h2h': {'players': [
+            {'player': 'A', 'rivals': [rival]}]}}]}}}
+        self.assertIn('*GT A - B', render_first_win_window_candidates(data))
+        rival['current_pair_sequence'] = 'DVD'
+        html = render_first_win_window_candidates(data)
+        self.assertIn('GT A - B', html)
+        self.assertNotIn('*GT A - B', html)
