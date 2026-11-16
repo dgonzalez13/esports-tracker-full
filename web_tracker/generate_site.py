@@ -1499,6 +1499,7 @@ def render_bet_candidates(data):
                         result = candidate(rival, horizon)
                         if result:
                             order, line = result
+                            first_match = line.startswith('[1] ')
                             line = text(f'{league} {a} - {b} {line}')
                             if horizon == 6:
                                 level, warnings = six_rating(rival) or (None, [])
@@ -1506,6 +1507,7 @@ def render_bet_candidates(data):
                                            + text(' · '.join(warnings)) + '</span>') if warnings else ''
                                 if level is not None:
                                     line = f'<span class="candidate-level-{level}">Nivel {level} · {warning} {line}</span>'
+                            line = f'<span class="candidate-entry" data-first-match="{str(first_match).lower()}">{line}</span>'
                             lists[horizon][identity] = (order, line)
     seen = set()
     for horizon in (4, 5, 6):
@@ -1515,9 +1517,11 @@ def render_bet_candidates(data):
     for horizon in (4, 5, 6):
         lines = [line for _, line in sorted(lists[horizon].values())]
         stakes = {4: '10, 20, 40, 80', 5: '5, 10, 20, 40, 80', 6: '3, 6, 12, 24, 48, 96'}[horizon]
-        sections.append(f'<h3>Candidatos a {horizon} partidos · {stakes}</h3>'
-                        + ('<pre class="candidate-list">' + '\n'.join(lines) + '</pre>'
-                           if lines else '<p>No hay candidatos con horarios confirmados.</p>'))
+        sections.append(f'<div class="candidate-horizon" data-horizon="{horizon}"><h3>Candidatos a {horizon} partidos · {stakes}</h3>'
+                        + '<label><input type="checkbox" class="hide-first-match"> Ocultar candidatos con [1]</label>'
+                        + ('<pre class="candidate-list">' + ''.join(lines) + '</pre>'
+                           if lines else '<p>No hay candidatos con horarios confirmados.</p>')
+                        + '<p class="candidate-filter-empty" hidden>No hay candidatos visibles con este filtro.</p></div>')
     return ('<section class="dashboard-section" id="bet-candidates">'
             '<h2>Posibles candidatos</h2>'
             '<p class="section-subtitle">4 y 5 partidos: media de V% y V%20 ≥40%, ambos ≥35%. '
@@ -1533,7 +1537,12 @@ def render_bet_candidates(data):
             'se conserva con advertencia y número provisional hasta confirmar su resultado; '
             'los horarios que faltan se indican. Cada pareja aparece una sola vez, '
             'con prioridad de cuatro partidos, después cinco y finalmente seis.</p>'
-            + ''.join(sections) + '</section>')
+            + '<style>#bet-candidates .candidate-list > .candidate-entry {display:block;} '
+            '#bet-candidates .candidate-list > .candidate-entry[hidden], '
+            '#bet-candidates .candidate-filter-empty[hidden] {display:none;}</style>'
+            + ''.join(sections) + '</section><script>'
+            + (BASE / 'web_tracker' / 'candidate_start_filter.js').read_text(encoding='utf-8')
+            + '</script>')
 
 
 def render_underdog_matchups(data):
