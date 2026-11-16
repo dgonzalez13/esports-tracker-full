@@ -44,14 +44,23 @@ def first_victory_horizon(rival):
     return 5 if five is not None and five >= 90 else None
 
 
+def first_victory_sample(rival, horizon):
+    played = len(rival.get('current_pair_sequence', rival.get('sequence', '')))
+    return next((row for row in rival.get('pair_stats', {}).get('pair_horizons', [])
+                 if row['initial_without_win'] == played and row['horizon'] == horizon), {})
+
+
 def candidate(rival, horizon):
     sequence = rival.get('current_pair_sequence', rival.get('sequence', ''))
     effective_total = max(0, 6 - rival.get('pair_cancelled', 0))
     target = min(horizon, effective_total)
+    original_horizon = first_victory_horizon(rival)
+    small_sample = (original_horizon is not None
+                    and first_victory_sample(rival, original_horizon).get('sample', 0) < 10)
     if horizon == 6:
-        if six_rating(rival) is None:
+        if not small_sample and six_rating(rival) is None:
             return None
-    elif horizon in (4, 5) and first_victory_horizon(rival) != horizon:
+    elif horizon in (4, 5) and (original_horizon != horizon or small_sample):
         return None
     if 'V' in sequence or len(sequence) >= target:
         return None
@@ -63,6 +72,9 @@ def candidate(rival, horizon):
     hours = [datetime.fromisoformat(f['timestamp']).astimezone(ZoneInfo('Europe/Madrid'))
              .strftime('%H:%M') for f in fixtures]
     line = f'[{number}] {stake} ' + ' --- '.join(hours)
+    if horizon in (4, 5):
+        row = first_victory_sample(rival, horizon)
+        line += f' [{row["win_pct"]:.2f}% (n={row["sample"]})]'
     if rival.get('pair_cancelled'):
         line += f' [{rival["pair_cancelled"]} cancelado(s); máximo {effective_total} partidos efectivos]'
     if fixtures[0].get('started'):

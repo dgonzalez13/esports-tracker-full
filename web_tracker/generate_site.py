@@ -1503,10 +1503,11 @@ def render_bet_candidates(data):
                             order, line = result
                             line = text(f'{league} {a} - {b} {line}')
                             if horizon == 6:
-                                level, warnings = six_rating(rival)
+                                level, warnings = six_rating(rival) or (None, [])
                                 warning = (' <span class="candidate-warning">⚠ '
                                            + text(' · '.join(warnings)) + '</span>') if warnings else ''
-                                line = f'<span class="candidate-level-{level}">Nivel {level} · {line}{warning}</span>'
+                                if level is not None:
+                                    line = f'<span class="candidate-level-{level}">Nivel {level} · {line}{warning}</span>'
                             lists[horizon][identity] = (order, line)
     seen = set()
     for horizon in (4, 5, 6):
@@ -1523,8 +1524,8 @@ def render_bet_candidates(data):
             '<h2>Posibles candidatos</h2>'
             '<p class="section-subtitle">4 y 5 partidos: media de V% y V%20 ≥40%, ambos ≥35%. '
             'Se requiere V%20 disponible. 4 partidos: V≤4 ≥90%. 5 partidos: no cumple V≤4 ≥90% '
-            '(inferior, sin muestra o plazo agotado), pero V≤5 ≥90%. Las listas de cuatro y cinco no se duplican. '
-            '6 partidos: V% A &gt;30%, Dif. ≥−10 pp, '
+            '(inferior, sin muestra o plazo agotado), pero V≤5 ≥90%. Las listas de cuatro y cinco no se duplican. n y % corresponden al plazo seleccionado. Los candidatos de 4 o 5 con n &lt;10 pasan directamente a 6 partidos. '
+            '6 partidos (criterio habitual, salvo los trasladados por n &lt;10): V% A &gt;30%, Dif. ≥−10 pp, '
             'al menos 8 series de 6 y como máximo 10% sin V. No se exige Dif.20. '
             'Nivel 1 (verde): Dif. &gt;0; nivel 2 (amarillo): −5 ≤ Dif. ≤0; '
             'nivel 3 (naranja): −10 ≤ Dif. &lt;−5. Advertencias: 8–9 series o 5–10% sin V. '

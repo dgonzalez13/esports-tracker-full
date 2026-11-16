@@ -92,6 +92,30 @@ class CandidateTests(unittest.TestCase):
         self.assertEqual(html.count('GT David - Fox'), 1)  # Only five, ahead of six.
         self.assertNotIn('*<span class="candidate-level', html)
 
+    def test_small_samples_move_directly_to_six(self):
+        for horizon in (4, 5):
+            for sample in (1, 9, 10):
+                data, rival = UnderdogMatchupTests().data()
+                rival.update(self.rival())
+                rival['pair_stats']['complete_series'] = 0
+                for row in rival['pair_stats']['pair_horizons']:
+                    if horizon == 5 and row['horizon'] == 4:
+                        row['win_pct'] = 80
+                    if row['horizon'] == horizon:
+                        row['sample'] = sample
+                self.assertEqual(candidate(rival, horizon) is not None, sample >= 10)
+                self.assertIsNone(candidate(rival, 5 if horizon == 4 else 4))
+                self.assertEqual(candidate(rival, 6) is not None, sample < 10)
+                html = render_bet_candidates(data)
+                self.assertEqual(html.count('GT David - Fox'), 1)
+                section = html.split(f'Candidatos a {6 if sample < 10 else horizon} partidos')[1].split('<h3>')[0]
+                self.assertIn('GT David - Fox', section)
+                self.assertNotIn('Nivel None', html)
+                if sample >= 10:
+                    self.assertIn('95.00% (n=10)', section)
+                else:
+                    self.assertTrue(candidate(rival, 6)[1].startswith('[1] 3 '))
+
     def test_six_sample_and_failure_boundaries(self):
         for sample, failures, accepted, warnings in [(7, 0, False, 0), (8, 0, True, 1),
                 (9, 0, True, 1), (10, 0, True, 0), (20, 1, True, 1),
