@@ -14,6 +14,24 @@ class WindowCandidateTests(unittest.TestCase):
                     pair_fixtures=[dict(timestamp=f'2026-11-09T{hour}:00:00+00:00', started=False)
                                    for hour in range(10, 15)])
 
+    def test_sample_thresholds_and_optional_rows(self):
+        for sample in (0, 4, 5, 9, 10, 11):
+            rival = self.rival('V', {1: 60, 5: 95})
+            rival['pair_stats']['first_win_followups'][1]['sample'] = sample
+            self.assertEqual(first_win_window_candidate(rival, 'GT') is not None, sample >= 10)
+            self.assertEqual(first_win_window_candidate(rival, 'GT', minimum_sample=5) is not None, sample >= 5)
+            data = {'leagues': {'GT': {'groups': [{'recent_h2h': {'players': [
+                {'player': 'A', 'rivals': [rival]}]}}]}}}
+            html = render_first_win_window_candidates(data)
+            self.assertEqual('GT A - B' in html, sample >= 5)
+            self.assertEqual('<span class="repeat-low-sample" hidden>' in html, 5 <= sample < 10)
+            self.assertIn('id="repeat-show-small-samples"', html)
+
+    def test_small_first_horizon_does_not_select_later_larger_sample(self):
+        rival = self.rival('V', {1: 95, 3: 99})
+        rival['pair_stats']['first_win_followups'][0]['sample'] = 4
+        self.assertIsNone(first_win_window_candidate(rival, 'GT', minimum_sample=5))
+
     def test_tail_aligned_stakes_for_one_to_five_remaining(self):
         for played in range(1, 6):
             rival = self.rival('V'+'D'*(played-1))

@@ -138,7 +138,7 @@ def repeat_candidate(rival, league, minimum_prior=20, initial_stake=20):
     return fixtures[0]['timestamp'], '*'*stars, line
 
 
-def first_win_window_candidate(rival, league):
+def first_win_window_candidate(rival, league, minimum_sample=10):
     sequence = rival.get('current_pair_sequence', rival.get('sequence', ''))
     if sequence.count('V') != 1:
         return None
@@ -165,6 +165,8 @@ def first_win_window_candidate(rival, league):
     if not targets:
         return None
     deadline, row = min(targets, key=lambda item: item[0])
+    if row['sample'] < minimum_sample:
+        return None
     remaining = deadline-played
     fixtures = rival.get('pair_fixtures', [])[:remaining]
     if not fixtures:

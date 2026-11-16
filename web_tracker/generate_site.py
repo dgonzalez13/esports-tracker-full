@@ -303,10 +303,8 @@ def render_page(data, current_streaks, current_streaks_v2=None, schedule=None):
     {render_recent_group_h2h_dashboard(data)}
     {render_bet_candidates(data)}
     {render_underdog_matchups(data)}
-    {render_active_repeat_matches(data)}
     {render_first_win_followups(data)}
     {render_first_win_window_candidates(data)}
-    {render_repeat_candidates(data)}
     {render_team_statistics(data.get("team_stats", []))}
     {render_group_dashboard(data, current_streaks)}
 </main>
@@ -1914,13 +1912,16 @@ def render_first_win_window_candidates(data):
                     identity = (league, name_key(a), name_key(b))
                     if identity in excluded or not new_table_pair_allowed(data, league, a, b):
                         continue
-                    result = first_win_window_candidate(rival, league)
+                    result = first_win_window_candidate(rival, league, minimum_sample=5)
                     if result:
                         order, line = result
                         sequence = rival.get('current_pair_sequence', rival.get('sequence', ''))
                         mark = '*' if sequence.endswith('V') else ''
-                        selected[identity] = (order, f'{mark}{league} {a} - {b} {line}')
-    lines = [line for _, line in sorted(selected.values())]
+                        low_sample = first_win_window_candidate(rival, league) is None
+                        selected[identity] = (order, low_sample, f'{mark}{league} {a} - {b} {line}')
+    lines = [f'<span class="repeat-low-sample" hidden>{text(line)}</span>' if low_sample
+             else f'<span>{text(line)}</span>'
+             for _, low_sample, line in sorted(selected.values())]
     return ('<section class="dashboard-section" id="first-win-window-candidates">'
             '<h2>Candidatos a repetir victoria · primer plazo &gt;90% · máximo 5 apuestas</h2>'
             '<p class="section-subtitle">Parte de Ventanas según la primera victoria: exactamente una victoria '
@@ -1935,11 +1936,17 @@ def render_first_win_window_candidates(data):
             '<p class="section-subtitle">Hasta cinco apuestas. Se utiliza el tramo final de 5, 10, 20, 40, 80: '
             'si quedan tres son 20, 40, 80; si quedan dos, 40, 80; si queda una, 80. '
             '[n] es el próximo partido y el importe corresponde al primer paso pendiente. '
-            'Se muestran solo los horarios hasta el plazo elegido, su porcentaje y su muestra. '
+            'Por defecto se muestran candidatos con n &ge;10. El check permite incluir muestras de 5 a 9 en naranja; con n &lt;5 no se muestran. Se muestran solo los horarios hasta el plazo elegido, su porcentaje y su muestra. '
             'Son las frecuencias ancladas a V1 de la tabla anterior; no se recalculan según los resultados posteriores de SEC.</p>'
-            + ('<pre class="candidate-list">' + text('\n'.join(lines)) + '</pre>' if lines
+            + '<label><input type="checkbox" id="repeat-show-small-samples"> Mostrar candidatos con 5 &le; n &lt; 10 (en naranja)</label>'
+            + '<style>#first-win-window-candidates .candidate-list > span {display:block;} #first-win-window-candidates .repeat-low-sample {color:#9a3412;background:#ffedd5;} '
+            '#first-win-window-candidates [hidden] {display:none;}</style>'
+            + ('<pre class="candidate-list">' + ''.join(lines) + '</pre>' if lines
                else '<p>No hay candidatos con un plazo pendiente superior al 90% y horarios publicados.</p>')
-            + '</section>')
+            + '<p id="repeat-candidates-empty" hidden>No hay candidatos con n &ge; 10. Activa el check para ver muestras de 5 a 9.</p>'
+            + '</section><script>'
+            + (BASE / 'web_tracker' / 'first_win_candidate_filter.js').read_text(encoding='utf-8')
+            + '</script>')
 
 
 def render_repeat_candidates(data):
