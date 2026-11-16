@@ -1,5 +1,8 @@
 import unittest
 import uuid
+import json
+from unittest.mock import Mock, patch
+import requests
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -7,6 +10,7 @@ from zoneinfo import ZoneInfo
 from update_tracked_players import (
     FixtureGroup, parse_eadriatic_fixture_groups, parse_gt_fixture_groups,
     gt_target_start, rewrite_tracked_players, select_gt_group, select_stream_group,
+    fetch_gt_groups, update_groups,
 )
 
 
@@ -98,6 +102,58 @@ class ParserTests(unittest.TestCase):
         groups = parse_eadriatic_fixture_groups(html, datetime(2026, 8, 29, tzinfo=timezone.utc))
         self.assertEqual(len(groups), 1)
         self.assertEqual(groups[0].players, ("Alpha", "Beta", "Gamma", "Delta", "Epsilon"))
+
+
+class GTRequestTests(unittest.TestCase):
+    def response(self, status, data=None):
+        response = requests.Response()
+        response.status_code = status
+        response.url = 'https://api.gtleagues.com/api/fixtures'
+        response._content = json.dumps(data or []).encode()
+        return response
+
+    def test_transient_forbidden_retries_same_page_then_completes(self):
+        get = Mock(side_effect=[self.response(200, [{}] * 50),
+                                self.response(403), self.response(200)])
+        sleep = Mock()
+        self.assertEqual(fetch_gt_groups([datetime.now(timezone.utc)], get=get, sleep=sleep), [])
+        self.assertEqual([call.kwargs['params']['offset'] for call in get.call_args_list], [0, 50, 50])
+        sleep.assert_called_once_with(2)
+
+    def test_persistent_forbidden_is_bounded_and_preserves_file(self):
+        get = Mock(return_value=self.response(403))
+        sleep = Mock()
+        path = Path(__file__).parent / '.tmp' / f'gt-retry-{uuid.uuid4().hex}.txt'
+        path.parent.mkdir(exist_ok=True)
+        try:
+            path.write_text('original selections', encoding='utf-8')
+            with patch('update_tracked_players.fetch_gt_groups', side_effect=lambda targets:
+                       fetch_gt_groups(targets, get=get, sleep=sleep)):
+                with self.assertRaisesRegex(RuntimeError, 'HTTP 403'):
+                    update_groups({('GT', 1): 'C'}, path=path)
+            self.assertEqual(path.read_text(encoding='utf-8'), 'original selections')
+        finally:
+            path.unlink(missing_ok=True)
+        self.assertEqual(get.call_count, 3)
+        self.assertEqual([call.args[0] for call in sleep.call_args_list], [2, 5])
+
+    def test_connection_timeout_and_server_errors_retry(self):
+        for error in (requests.Timeout('timeout'), requests.ConnectionError('connection'), self.response(503)):
+            get = Mock(side_effect=[error, self.response(200)])
+            self.assertEqual(fetch_gt_groups([datetime.now(timezone.utc)], get=get, sleep=Mock()), [])
+            self.assertEqual(get.call_count, 2)
+
+    def test_other_client_errors_fail_without_retry(self):
+        get, sleep = Mock(return_value=self.response(400)), Mock()
+        with self.assertRaises(requests.HTTPError):
+            fetch_gt_groups([datetime.now(timezone.utc)], get=get, sleep=sleep)
+        get.assert_called_once()
+        sleep.assert_not_called()
+
+    def test_invalid_payload_is_not_accepted(self):
+        with self.assertRaisesRegex(RuntimeError, 'non-list'):
+            fetch_gt_groups([datetime.now(timezone.utc)],
+                            get=Mock(return_value=self.response(200, {'error': 'invalid'})), sleep=Mock())
 
 
 class RewriteTests(unittest.TestCase):

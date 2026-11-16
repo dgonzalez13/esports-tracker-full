@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -177,7 +178,35 @@ def select_stream_group(groups: Iterable[FixtureGroup], group_index: int, mode: 
     return chosen
 
 
-def fetch_gt_groups(targets: Iterable[datetime], get: Callable = requests.get) -> list[FixtureGroup]:
+def _get_gt_page(params, get, sleep):
+    retry_statuses = {403, 408, 429, 500, 502, 503, 504}
+    delays = (2, 5)
+    for attempt in range(len(delays) + 1):
+        try:
+            response = get(GT_FIXTURES_URL, params=dict(params), headers=GT_HEADERS, timeout=30)
+            response.raise_for_status()
+            return response
+        except requests.RequestException as error:
+            response = getattr(error, 'response', None)
+            status = response.status_code if response is not None else None
+            retryable = (status in retry_statuses
+                         or isinstance(error, (requests.Timeout, requests.ConnectionError)))
+            if not retryable or attempt == len(delays):
+                if status == 403:
+                    raise RuntimeError(
+                        "GT fixtures API denied access (HTTP 403) after retries. "
+                        "Tracked players have not been changed. Retry the workflow later; "
+                        "if it persists, check access to GT from the GitHub runner."
+                    ) from error
+                raise
+            delay = delays[attempt]
+            print(f"GT fixtures request failed ({status or type(error).__name__}); "
+                  f"retrying in {delay}s ({attempt + 2}/{len(delays) + 1})", flush=True)
+            sleep(delay)
+
+
+def fetch_gt_groups(targets: Iterable[datetime], get: Callable = requests.get,
+                    sleep: Callable = time.sleep) -> list[FixtureGroup]:
     targets = list(targets)
     start = min(targets) - timedelta(minutes=30)
     end = max(targets) + timedelta(hours=2)
@@ -188,8 +217,7 @@ def fetch_gt_groups(targets: Iterable[datetime], get: Callable = requests.get) -
     }
     fixtures = []
     while True:
-        response = get(GT_FIXTURES_URL, params=params, headers=GT_HEADERS, timeout=30)
-        response.raise_for_status()
+        response = _get_gt_page(params, get, sleep)
         page = response.json()
         if not isinstance(page, list):
             raise RuntimeError("GT fixtures API returned a non-list response")
