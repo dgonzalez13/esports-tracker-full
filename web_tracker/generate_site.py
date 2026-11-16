@@ -1940,7 +1940,7 @@ def render_first_win_window_candidates(data):
             'Son las frecuencias ancladas a V1 de la tabla anterior; no se recalculan según los resultados posteriores de SEC.</p>'
             + '<label><input type="checkbox" id="repeat-show-small-samples"> Mostrar candidatos con 5 &le; n &lt; 10 (en naranja)</label>'
             + '<style>#first-win-window-candidates .candidate-list > span {display:block;} #first-win-window-candidates .repeat-low-sample {color:#9a3412;background:#ffedd5;} '
-            '#first-win-window-candidates [hidden] {display:none;}</style>'
+            '#first-win-window-candidates [hidden], #first-win-window-candidates .candidate-list > span[hidden] {display:none;}</style>'
             + ('<pre class="candidate-list">' + ''.join(lines) + '</pre>' if lines
                else '<p>No hay candidatos con un plazo pendiente superior al 90% y horarios publicados.</p>')
             + '<p id="repeat-candidates-empty" hidden>No hay candidatos con n &ge; 10. Activa el check para ver muestras de 5 a 9.</p>'
