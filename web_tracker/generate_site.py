@@ -1507,7 +1507,7 @@ def render_bet_candidates(data):
                                 warning = (' <span class="candidate-warning">⚠ '
                                            + text(' · '.join(warnings)) + '</span>') if warnings else ''
                                 if level is not None:
-                                    line = f'<span class="candidate-level-{level}">Nivel {level} · {line}{warning}</span>'
+                                    line = f'<span class="candidate-level-{level}">Nivel {level} · {warning} {line}</span>'
                             lists[horizon][identity] = (order, line)
     seen = set()
     for horizon in (4, 5, 6):
@@ -1524,11 +1524,11 @@ def render_bet_candidates(data):
             '<h2>Posibles candidatos</h2>'
             '<p class="section-subtitle">4 y 5 partidos: media de V% y V%20 ≥40%, ambos ≥35%. '
             'Se requiere V%20 disponible. 4 partidos: V≤4 ≥90%. 5 partidos: no cumple V≤4 ≥90% '
-            '(inferior, sin muestra o plazo agotado), pero V≤5 ≥90%. Las listas de cuatro y cinco no se duplican. n y % corresponden al plazo seleccionado. Los candidatos de 4 o 5 con n &lt;10 pasan directamente a 6 partidos. '
+            '(inferior, sin muestra o plazo agotado), pero V≤5 ≥90%. Las listas de cuatro y cinco no se duplican. n y % corresponden al plazo seleccionado. Los candidatos de 4 o 5 con n &lt;10 pasan a 6 partidos solo si tienen al menos 8 series completas de 6; en caso contrario se omiten. '
             '6 partidos (criterio habitual, salvo los trasladados por n &lt;10): V% A &gt;30%, Dif. ≥−10 pp, '
-            'al menos 8 series de 6 y como máximo 10% sin V. No se exige Dif.20. '
+            'al menos 8 series de 6 y como máximo 5% sin V (también para los trasladados desde 4 o 5). No se exige Dif.20. '
             'Nivel 1 (verde): Dif. &gt;0; nivel 2 (amarillo): −5 ≤ Dif. ≤0; '
-            'nivel 3 (naranja): −10 ≤ Dif. &lt;−5. Advertencias: 8–9 series o 5–10% sin V. '
+            'nivel 3 (naranja): −10 ≤ Dif. &lt;−5. Advertencias: 8–9 series o 5% sin V. Cada línea de 6 termina con n y el porcentaje de series sin victoria. '
             'Sin victorias de A en SEC. '
             '[n] indica el siguiente partido y el importe corresponde a ese paso de la progresión. '
             'Horarios de Madrid. Se omiten parejas sin horario. Un partido iniciado sin resultado '

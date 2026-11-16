@@ -97,7 +97,8 @@ class CandidateTests(unittest.TestCase):
             for sample in (1, 9, 10):
                 data, rival = UnderdogMatchupTests().data()
                 rival.update(self.rival())
-                rival['pair_stats']['complete_series'] = 0
+                rival['pair_stats']['complete_series'] = 8
+                rival['pair_stats']['zero_win_series'] = 0
                 for row in rival['pair_stats']['pair_horizons']:
                     if horizon == 5 and row['horizon'] == 4:
                         row['win_pct'] = 80
@@ -105,7 +106,7 @@ class CandidateTests(unittest.TestCase):
                         row['sample'] = sample
                 self.assertEqual(candidate(rival, horizon) is not None, sample >= 10)
                 self.assertIsNone(candidate(rival, 5 if horizon == 4 else 4))
-                self.assertEqual(candidate(rival, 6) is not None, sample < 10)
+                self.assertEqual(candidate(rival, 6) is not None, True)
                 html = render_bet_candidates(data)
                 self.assertEqual(html.count('GT David - Fox'), 1)
                 section = html.split(f'Candidatos a {6 if sample < 10 else horizon} partidos')[1].split('<h3>')[0]
@@ -116,16 +117,47 @@ class CandidateTests(unittest.TestCase):
                 else:
                     self.assertTrue(candidate(rival, 6)[1].startswith('[1] 3 '))
 
+    def test_transferred_candidates_require_eight_complete_series(self):
+        for horizon in (4, 5):
+            for complete_series in (0, 6, 7, 8, 9):
+                data, rival = UnderdogMatchupTests().data()
+                rival.update(self.rival())
+                rival['pair_stats']['complete_series'] = complete_series
+                for row in rival['pair_stats']['pair_horizons']:
+                    row['sample'] = 9
+                    if horizon == 5 and row['horizon'] == 4:
+                        row['win_pct'] = 80
+                self.assertIsNone(candidate(rival, 4))
+                self.assertIsNone(candidate(rival, 5))
+                self.assertEqual(candidate(rival, 6) is not None, complete_series >= 8)
+                self.assertEqual('GT David - Fox' in render_bet_candidates(data), complete_series >= 8)
+
     def test_six_sample_and_failure_boundaries(self):
         for sample, failures, accepted, warnings in [(7, 0, False, 0), (8, 0, True, 1),
                 (9, 0, True, 1), (10, 0, True, 0), (20, 1, True, 1),
-                (10, 1, True, 1), (9, 1, False, 0), (8, 1, False, 0), (100, 11, False, 0)]:
+                (10, 1, False, 0), (9, 1, False, 0), (8, 1, False, 0), (100, 11, False, 0), (100, 5, True, 1), (100, 6, False, 0)]:
             rival = self.rival()
             rival['pair_stats'] = {'complete_series': sample, 'zero_win_series': failures}
             rating = six_rating(rival)
             self.assertEqual(rating is not None, accepted, (sample, failures))
             if rating:
                 self.assertEqual(len(rating[1]), warnings)
+
+    def test_six_limit_applies_to_transfers_and_statistics_end_line(self):
+        for sample, failures, accepted in [(8, 0, True), (20, 1, True),
+                                            (19, 1, False), (100, 6, False)]:
+            data, rival = UnderdogMatchupTests().data()
+            rival.update(self.rival())
+            rival['pair_stats'].update(complete_series=sample, zero_win_series=failures)
+            for row in rival['pair_stats']['pair_horizons']:
+                row['sample'] = 9
+            result = candidate(rival, 6)
+            self.assertEqual(result is not None, accepted)
+            self.assertEqual('GT David - Fox' in render_bet_candidates(data), accepted)
+            if accepted:
+                suffix = f'[n={sample}; Sin V={failures * 100 / sample:.2f}%]'
+                self.assertTrue(result[1].endswith(suffix))
+                self.assertIn(suffix + '</span>', render_bet_candidates(data))
 
     def test_six_color_label_and_warning_rendered(self):
         data, rival = UnderdogMatchupTests().data()

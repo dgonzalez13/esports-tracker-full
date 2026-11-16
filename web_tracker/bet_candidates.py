@@ -3,6 +3,14 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 
+def six_sample_allowed(rival):
+    stats = rival.get('pair_stats', {})
+    sample = stats.get('complete_series', 0)
+    failures = stats.get('zero_win_series')
+    return (sample >= 8 and failures is not None and 0 <= failures <= sample
+            and failures * 100 <= 5 * sample)
+
+
 def six_rating(rival):
     total = rival.get('historical_played', 0)
     wins = rival.get('historical_wins', 0)
@@ -11,8 +19,7 @@ def six_rating(rival):
     sample = stats.get('complete_series', 0)
     failures = stats.get('zero_win_series')
     if (not total or wins * 100 <= 30 * total or (wins-losses)*100 < -10*total
-            or sample < 8 or failures is None or not 0 <= failures <= sample
-            or failures * 100 > 10 * sample):
+            or not six_sample_allowed(rival)):
         return None
     level = 1 if wins > losses else 2 if (wins-losses)*100 >= -5*total else 3
     warnings = []
@@ -58,6 +65,8 @@ def candidate(rival, horizon):
     small_sample = (original_horizon is not None
                     and first_victory_sample(rival, original_horizon).get('sample', 0) < 10)
     if horizon == 6:
+        if not six_sample_allowed(rival):
+            return None
         if not small_sample and six_rating(rival) is None:
             return None
     elif horizon in (4, 5) and (original_horizon != horizon or small_sample):
@@ -82,6 +91,10 @@ def candidate(rival, horizon):
     missing = target - len(sequence) - len(fixtures)
     if missing:
         line += f' --- Faltan {missing} horarios por publicar'
+    if horizon == 6:
+        stats = rival['pair_stats']
+        sample = stats['complete_series']
+        line += f' [n={sample}; Sin V={stats["zero_win_series"] * 100 / sample:.2f}%]'
     return fixtures[0]['timestamp'], line
 
 
