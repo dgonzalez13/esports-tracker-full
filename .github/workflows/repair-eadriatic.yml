@@ -1,0 +1,79 @@
+name: Repair Eadriatic Day
+
+on:
+  workflow_dispatch:
+    inputs:
+      repair_date:
+        description: 'Fecha YYYYMMDD (vacio: ayer en Madrid; admite DDMMYYYY)'
+        required: false
+        type: string
+        default: ''
+
+concurrency:
+  group: tracker-data-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    env:
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+      - name: Resolve Madrid repair date
+        env:
+          REQUESTED_DATE: ${{ inputs.repair_date }}
+        run: |
+          python - <<'PY'
+          import os
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          from repair_eadriatic_day import parse_target_date
+          target = parse_target_date(os.environ['REQUESTED_DATE'], now=datetime.now(ZoneInfo('Europe/Madrid')))
+          canonical = target.strftime('%Y%m%d')
+          with open(os.environ['GITHUB_ENV'], 'a') as output:
+              output.write(f'REPAIR_DATE={canonical}\n')
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as output:
+              output.write(f'Fecha de reparacion (Madrid): **{target:%d/%m/%Y}**\n')
+          PY
+      - name: Download and repair selected day
+        run: xvfb-run -a python repair_eadriatic_day.py "$REPAIR_DATE"
+      - name: Recalculate Eadriatic analysis
+        run: |
+          python analyze_eadriatic.py
+          python group_analysis.py EADRIATIC
+      - name: Regenerate dashboard
+        run: python web_tracker/generate_site.py
+      - name: Commit repaired results and dashboard
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add docs/index.html group_analysis.json eadriatic/data/*_eadriatic_player_stats.txt eadriatic/data/match_history.jsonl eadriatic/output/*.csv
+          git diff --cached --quiet || git commit -m "Repair Eadriatic $REPAIR_DATE"
+          python push_tracker_changes.py
+      - name: Keep repair source and results for inspection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eadriatic-repair-${{ github.run_id }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            eadriatic/data/*_eadriatic_repair_downloaded.html
+            eadriatic/data/*.before_*
+            eadriatic/data/match_history.jsonl
+            eadriatic/data/*_eadriatic_player_stats.txt
+            group_analysis.json
+            docs/index.html
