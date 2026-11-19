@@ -29,6 +29,21 @@ class InferenceTests(unittest.TestCase):
         self.assertNotIn('next_match', result[0])
         self.assertNotIn('timestamp', result[0])
 
+    def test_shared_player_publishes_more_estimates_without_crossing_groups(self):
+        offsets = [0, 75, 165]
+        rows = [self.record(i, minutes=-200+m) for i, m in enumerate(offsets)]
+        for i, offset in enumerate([15, 90]):
+            rows.append(self.record(10+i, minutes=-200+offset, player='David',
+                                    rival='Other', rival_key='other'))
+            rows.append(self.record(20+i, minutes=-200+offset, player='Unrelated',
+                                    player_key='unrelated', rival='Unknown', rival_key='unknown'))
+        pairs = infer_eadriatic_pairs(rows, self.reference, {})
+        shared = next(pair for pair in pairs if pair['rival_key'] == 'other')
+        unrelated = next(pair for pair in pairs if pair['player_key'] == 'unknown')
+        self.assertEqual(len(shared['estimated_fixtures']), 4)
+        self.assertIn('compartida', shared['estimate_status'])
+        self.assertEqual(unrelated['estimated_fixtures'], [])
+
     def test_stale_future_other_league_and_official_only_not_projected(self):
         for row in (self.record(minutes=-481), self.record(minutes=1),
                     self.record(league='GT'), self.record(source_type='eadriatic_html')):

@@ -29,6 +29,22 @@ class EstimatedScheduleTests(unittest.TestCase):
         self.assertEqual([f['timestamp'] for f in result['estimated_fixtures']],
                          [(self.first + timedelta(minutes=m)).isoformat() for m in [240, 315, 390]])
 
+    def test_shared_pair_anchor_resolves_two_results_but_not_one(self):
+        peers = [self.first - timedelta(minutes=15)]
+        stamps = [self.first, self.first + timedelta(minutes=75)]
+        result = estimate_pair_schedule(stamps, self.first + timedelta(minutes=90), self.pair, (), peers)
+        self.assertIn('compartida', result['estimate_status'])
+        self.assertEqual(result['estimated_fixtures'][0]['match_number'], 3)
+        self.assertEqual(datetime.fromisoformat(result['estimated_fixtures'][0]['timestamp']), self.first + timedelta(minutes=165))
+        single = estimate_pair_schedule(stamps[:1], self.first, self.pair, (), peers)
+        self.assertEqual(single['estimated_fixtures'], [])
+
+    def test_distant_peer_does_not_override_ambiguous_or_incomplete_data(self):
+        for offsets in ([0, 75], [75, 165]):
+            stamps = [self.first + timedelta(minutes=m) for m in offsets]
+            result = estimate_pair_schedule(stamps, stamps[-1], self.pair, (), [self.first - timedelta(hours=4)])
+            self.assertEqual(result['estimated_fixtures'], [])
+
     def test_one_or_two_observations_do_not_assume_first_match(self):
         for offsets in ([0], [0, 75]):
             self.assertEqual(self.estimate(offsets)['estimated_fixtures'], [])

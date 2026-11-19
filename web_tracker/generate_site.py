@@ -1401,6 +1401,13 @@ def attach_recent_group_h2h(data, records, reference_time, schedule=None, daily_
     start = reference_time - timedelta(hours=8)
     recent = filter_by_time(records, start=start, end=reference_time)
     history = filter_by_time(records, end=reference_time)
+    form_players = {(row.get('league'), row.get('player_key')): {
+        'league': row.get('league'), 'player_key': row.get('player_key'),
+        'player': row.get('player'), 'tracked': True, 'bettable': True}
+        for row in recent if row.get('result') in {'V', 'E', 'D'}}
+    data['candidate_form'] = calculate_operational_snapshot(
+        recent, form_players.values(), reference_time=reference_time,
+        excluded_keys={tuple(key) for key in data.get('excluded_player_keys', [])})
     last20 = build_last20_lookup(history, reference_time)
     prior20 = build_last20_lookup(history, start, exclusive=True)
     next_matches = {}
@@ -1545,6 +1552,18 @@ def render_eadriatic_possible_pairs(data):
             + '</section>')
 
 
+def candidate_form_warning(data, league, player, rival):
+    lookup = {(row['league'], row['player_key']): row for row in data.get('candidate_form', [])}
+    a, b = lookup.get((league, name_key(player))), lookup.get((league, name_key(rival)))
+    if not a or not b or a.get('indicator') != 'RED' or b.get('indicator') != 'GREEN':
+        return ''
+    return ('<strong class="candidate-form-warning">'
+            + text(f'ALERTA: evitar apostar por {player}. '
+                   f'Rojo: {a["losses"]}/{a["played"]} derrotas ({a["loss_pct"]:.2f}%). '
+                   f'{rival} verde: {b["wins"]}/{b["played"]} victorias ({b["win_pct"]:.2f}%). '
+                   'Forma de las ultimas 8 h.') + '</strong> ')
+
+
 def render_bet_candidates(data):
     excluded = {tuple(item) for item in data.get('h2h_exclusions', [])}
     lists = {4: {}, 5: {}, 6: {}}
@@ -1570,7 +1589,8 @@ def render_bet_candidates(data):
                                            + text(' · '.join(warnings)) + '</span>') if warnings else ''
                                 if level is not None:
                                     line = f'<span class="candidate-level-{level}">Nivel {level} · {warning} {line}</span>'
-                            line = f'<span class="candidate-entry" data-first-match="{str(first_match).lower()}">{line}</span>'
+                            warning = candidate_form_warning(data, league, a, b)
+                            line = f'<span class="candidate-entry" data-first-match="{str(first_match).lower()}">{warning}{line}</span>'
                             lists[horizon][identity] = (order, line)
     seen = set()
     for horizon in (4, 5, 6):
@@ -1594,13 +1614,13 @@ def render_bet_candidates(data):
             'al menos 8 series de 6 y como máximo 5% sin V (también para los trasladados desde 4 o 5). No se exige Dif.20. '
             'Nivel 1 (verde): Dif. &gt;0; nivel 2 (amarillo): −5 ≤ Dif. ≤0; '
             'nivel 3 (naranja): −10 ≤ Dif. &lt;−5. Advertencias: 8–9 series o 5% sin V. Cada línea de 6 termina con n y el porcentaje de series sin victoria. '
-            'Sin victorias de A en SEC. '
+            'Sin victorias de A en SEC. ALERTA de forma: candidato rojo y rival verde segun los indicadores de las ultimas 8 horas; se recomienda evitar la apuesta. '
             '[n] indica el siguiente partido y el importe corresponde a ese paso de la progresión. '
             'Horarios de Madrid. En Eadriatic se incluyen candidatos sin calendario para revisar manualmente horarios y resultados; los pasos e importes se basan en los resultados registrados y pueden estar desactualizados. En GT se omiten parejas sin horario. Un partido iniciado sin resultado '
             'se conserva con advertencia y número provisional hasta confirmar su resultado; '
             'los horarios que faltan se indican. Cada pareja aparece una sola vez, '
             'con prioridad de cuatro partidos, después cinco y finalmente seis.</p>'
-            + '<style>#bet-candidates .candidate-list > .candidate-entry {display:block;} '
+            + '<style>#bet-candidates .candidate-form-warning {color:#991b1b;background:#fee2e2;white-space:normal;} #bet-candidates .candidate-list > .candidate-entry {display:block;} '
             '#bet-candidates .candidate-list > .candidate-entry[hidden], '
             '#bet-candidates .candidate-filter-empty[hidden] {display:none;}</style>'
             + ''.join(sections) + '</section><script>'

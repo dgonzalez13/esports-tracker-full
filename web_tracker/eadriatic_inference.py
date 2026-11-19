@@ -65,7 +65,7 @@ def save_starts(entries, path=STARTS_PATH, *, apply=False):
     return changed
 
 
-def estimate_pair_schedule(stamps, reference, pair, starts):
+def estimate_pair_schedule(stamps, reference, pair, starts, peer_starts=()):
     stamps = sorted(set(stamps))
     first = stamps[0]
     anchors = {first - timedelta(minutes=offset) for offset in OFFSETS}
@@ -77,6 +77,13 @@ def estimate_pair_schedule(stamps, reference, pair, starts):
     manual = bool(matching)
     if manual:
         anchors = set(matching) & anchors
+    shared = False
+    if not manual and len(anchors) > 1 and len(stamps) >= 2 and peer_starts:
+        compatible = {anchor for anchor in anchors
+                      if all(abs(anchor-peer) < timedelta(minutes=75) for peer in peer_starts)}
+        if len(compatible) == 1:
+            anchors = compatible
+            shared = True
     if len(anchors) != 1:
         return dict(estimated_fixtures=[], estimate_status='Indicar primera hora o importar mas resultados')
     anchor = next(iter(anchors))
@@ -84,7 +91,8 @@ def estimate_pair_schedule(stamps, reference, pair, starts):
     if stamps != slots[:len(stamps)]:
         return dict(estimated_fixtures=[], estimate_status='Faltan resultados anteriores: completar importacion')
     return dict(first_estimated=anchor.isoformat(),
-                estimate_status='Estimado: inicio manual' if manual else 'Estimado: pauta observada',
+                estimate_status=('Estimado: inicio manual' if manual else
+                                 'Estimado: pauta compartida (comprobar)' if shared else 'Estimado: pauta observada'),
                 estimated_fixtures=[dict(timestamp=stamp.isoformat(), started=stamp <= reference,
                                          estimated=True, match_number=i+1)
                                     for i, stamp in enumerate(slots) if stamp not in stamps])
@@ -119,4 +127,16 @@ def infer_eadriatic_pairs(records, reference, published_fixtures, starts=()):
                            observed=played, possible_remaining=6-played,
                            last_result=latest[(a, b)].isoformat(),
                            **estimate_pair_schedule(times[(a, b)], reference, (a, b), starts)))
+    # Only independently anchored pairs can resolve a neighbour's ambiguity.
+    seeds = [row for row in result if row.get('first_estimated')]
+    for row in result:
+        pair = (row['player_key'], row['rival_key'])
+        if row.get('estimated_fixtures'):
+            continue
+        first = min(times[pair])
+        peers = [datetime.fromisoformat(seed['first_estimated']) for seed in seeds
+                 if set(pair) & {seed['player_key'], seed['rival_key']}
+                 and abs(first-datetime.fromisoformat(seed['first_estimated'])) < timedelta(minutes=75)]
+        if peers:
+            row.update(estimate_pair_schedule(times[pair], reference, pair, starts, peers))
     return sorted(result, key=lambda row: row['last_result'], reverse=True)

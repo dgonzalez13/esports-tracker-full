@@ -151,3 +151,21 @@ mezclan con el calendario publicado ni se guardan como partidos oficiales.
 El calendario oficial tiene prioridad. Pasar una hora prevista no cuenta como
 resultado ni adelanta la progresion: solo un resultado importado puede hacerlo.
 Si una hora prevista ya ha pasado, la linea avisa de que falta el resultado.
+
+
+### Pauta compartida y alerta de forma
+
+Si una pareja tiene al menos dos resultados pero su inicio es ambiguo, se pueden
+usar como referencia parejas que compartan jugador y tengan un inicio ya resuelto
+independientemente, a menos de 75 minutos del primer resultado observado. Solo
+se genera horario si queda una unica alineacion compatible y no faltan resultados
+desde el inicio. Se identifica como **pauta compartida (comprobar)**. No se encadenan
+estimaciones de unas parejas a otras ni se extrapolan grupos nuevos por un solo
+resultado. El inicio manual y las horas oficiales mantienen prioridad.
+
+Los candidatos de 4, 5 y 6 partidos muestran una alerta si su indicador operativo
+es rojo y el del rival verde, usando los mismos criterios de colores de las ultimas
+8 horas. El aviso incluye derrotas/partidos del candidato y victorias/partidos del
+rival. No elimina al candidato ni modifica la muestra historica o la progresion.
+El rojo del indicador actual incluye el 50% de derrotas, salvo que corresponda
+verde por el criterio de victorias. La alerta sigue esos mismos colores.
