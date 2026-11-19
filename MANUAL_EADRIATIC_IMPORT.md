@@ -95,3 +95,27 @@ python web_tracker/generate_site.py
 15:45 y 17:45 de Madrid (13:45–15:45 UTC). Permite la importación, pero no permite
 reconstruir el día entero ni los grupos oficiales. La demostración se mantiene en
 `artifacts/eadriatic_manual_example`, separada del historial real.
+
+
+## Candidatos y posibles partidos a partir de resultados importados
+
+Al aplicar una importacion con cambios se regenera la web. El bloque
+**Eadriatic: posibles partidos pendientes** detecta parejas con resultados
+importados en las ultimas 8 horas y sin encuentros publicados en el calendario.
+Muestra los partidos registrados, los posibles pendientes hasta seis y la hora
+del ultimo resultado (Madrid). No predice horarios ni confirma que haya otro
+partido: presupone una serie de seis y que la muestra reciente este completa.
+
+Las parejas detectadas se evaluan en los candidatos de 4, 5 y 6 partidos y en la
+nueva lista de repetir victoria, incluso si no pertenecen a los grupos configurados.
+Los grupos guardados no se modifican. Se conservan los filtros, las exclusiones,
+los minimos de muestra y los checks. Registrar una pareja no basta para que sea
+candidata: debe tener estadisticas suficientes y cumplir los requisitos.
+
+Importa resultados recientes durante la jornada. Las parejas sin nuevos
+resultados dejan de inferirse al salir de la ventana de ocho horas en la siguiente
+generacion de la web. Los partidos con hora publicada mantienen su calendario
+normal; no se sustituyen por una prediccion. En las lineas sin calendario se indica
+el numero registrado y el posible resto, siempre para comprobacion manual.
+Una pagina incompleta puede omitir partidos ya disputados; no se puede demostrar
+que los encuentros estimados esten realmente pendientes.

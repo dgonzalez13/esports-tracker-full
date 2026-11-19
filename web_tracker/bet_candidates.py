@@ -57,6 +57,15 @@ def first_victory_sample(rival, horizon):
                  if row['initial_without_win'] == played and row['horizon'] == horizon), {})
 
 
+def missing_schedule_text(rival):
+    message = 'Sin calendario: comprobar horarios y resultados manualmente'
+    inferred = rival.get('inferred_pair')
+    if inferred:
+        message += (f' [Registrados: {inferred["observed"]}; '
+                    f'posibles pendientes hasta 6: {inferred["possible_remaining"]}]')
+    return message
+
+
 def candidate(rival, horizon, league=None):
     sequence = rival.get('current_pair_sequence', rival.get('sequence', ''))
     effective_total = max(0, 6 - rival.get('pair_cancelled', 0))
@@ -80,7 +89,7 @@ def candidate(rival, horizon, league=None):
     stake = {4: 10, 5: 5, 6: 3}[horizon] * 2 ** (number - 1)
     hours = [datetime.fromisoformat(f['timestamp']).astimezone(ZoneInfo('Europe/Madrid'))
              .strftime('%H:%M') for f in fixtures]
-    schedule_text = ' --- '.join(hours) if fixtures else 'Sin calendario: comprobar horarios y resultados manualmente'
+    schedule_text = ' --- '.join(hours) if fixtures else missing_schedule_text(rival)
     line = f'[{number}] {stake} ' + schedule_text
     if horizon in (4, 5):
         row = first_victory_sample(rival, horizon)
@@ -175,7 +184,7 @@ def first_win_window_candidate(rival, league, minimum_sample=10):
     stake = 80 // 2**(remaining-1)
     hours = [datetime.fromisoformat(f['timestamp']).astimezone(ZoneInfo('Europe/Madrid'))
              .strftime('%H:%M') for f in fixtures]
-    schedule_text = ' --- '.join(hours) if fixtures else 'Sin calendario: comprobar horarios y resultados manualmente'
+    schedule_text = ' --- '.join(hours) if fixtures else missing_schedule_text(rival)
     line = f'[{played+1}] {stake} ' + schedule_text
     line += f' [Hasta partido {deadline}: {row["win_pct"]:.2f}% (n={row["sample"]})]'
     if fixtures and fixtures[0].get('started'):

@@ -24,6 +24,7 @@ from current_streaks_v2 import _record_time
 from fixture_schedule import load_schedule
 from web_tracker.upcoming_matches import render_upcoming_matches, upcoming_fixtures
 from web_tracker.pair_series_schedule import pair_series_schedule, cancelled_pair_counts
+from web_tracker.eadriatic_inference import infer_eadriatic_pairs
 from web_tracker.bet_candidates import candidate, six_rating, repeat_candidate, first_win_window_candidate
 from web_tracker.historical_pair_series import load_daily_pair_sequences, enrich_pair_stats
 from selected_players import (
@@ -300,6 +301,7 @@ def render_page(data, current_streaks, current_streaks_v2=None, schedule=None):
 <main>
     {render_current_streaks_v2(current_streaks_v2 or {})}
     {render_upcoming_matches(schedule or {})}
+    {render_eadriatic_possible_pairs(data)}
     {render_recent_group_h2h_dashboard(data)}
     {render_bet_candidates(data)}
     {render_underdog_matchups(data)}
@@ -1481,12 +1483,70 @@ def attach_recent_group_h2h(data, records, reference_time, schedule=None, daily_
                 ],
             }
 
+    # Keep detected pairs separate from the user's configured groups.
+    inferred = infer_eadriatic_pairs(
+        new_statistics_records(records, set(tuple(k) for k in data.get('excluded_player_keys', []))),
+        reference_time, pair_fixtures)
+    data['eadriatic_possible_pairs'] = inferred
+    supplemental = []
+    known_rows = {
+        (name_key(player['player']), name_key(row['rival'])): row
+        for group in data.get('leagues', {}).get('EADRIATIC', {}).get('groups', [])
+        for player in group.get('recent_h2h', {}).get('players', [])
+        for row in player.get('rivals', [])
+    }
+    for pair in inferred:
+        for a, b in ((pair['player'], pair['rival']), (pair['rival'], pair['player'])):
+            existing = known_rows.get((name_key(a), name_key(b)))
+            if existing is not None:
+                existing['inferred_pair'] = pair
+                continue
+            row = matchup(a, b, 'EADRIATIC', {})
+            row['inferred_pair'] = pair
+            supplemental.append({'player': a, 'rivals': [row]})
+    data['inferred_eadriatic_players'] = supplemental
+    if supplemental:
+        data.setdefault('leagues', {}).setdefault('EADRIATIC', {'groups': []})
+
+
+def candidate_groups(data, league, payload):
+    groups = list(payload.get('groups', []))
+    if league == 'EADRIATIC':
+        groups.append({'recent_h2h': {'players': data.get('inferred_eadriatic_players', [])}})
+    return groups
+
+
+def render_eadriatic_possible_pairs(data):
+    excluded = {tuple(item) for item in data.get('h2h_exclusions', [])}
+    rows = []
+    for pair in data.get('eadriatic_possible_pairs', []):
+        a, b = pair['player'], pair['rival']
+        if (not new_table_pair_allowed(data, 'EADRIATIC', a, b)
+                or ('EADRIATIC', name_key(a), name_key(b)) in excluded
+                or ('EADRIATIC', name_key(b), name_key(a)) in excluded):
+            continue
+        stamp = datetime.fromisoformat(pair['last_result']).astimezone(ZoneInfo('Europe/Madrid'))
+        rows.append([a, b, pair['observed'], pair['possible_remaining'],
+                     stamp.strftime('%d/%m %H:%M'), 'Por confirmar manualmente'])
+    return ('<section class="dashboard-section" id="eadriatic-possible-pairs">'
+            '<h2>Eadriatic: posibles partidos pendientes</h2>'
+            '<p class="section-subtitle">Parejas observadas en resultados importados de las '
+            'últimas 8 horas, sin horarios publicados. Se estima lo que falta hasta 6 '
+            'encuentros, suponiendo que la serie continúe y que no falten resultados. '
+            'No es un calendario confirmado: puede haber partidos ya jugados, cancelaciones '
+            'o cambios de grupo. No se inventan horas. Se evalúan estas parejas como '
+            'candidatos aunque no estén en los grupos configurados; se conservan los filtros estadísticos.</p>'
+            + (render_table(['Jugador', 'Rival', 'Registrados (8 h)', 'Posibles pendientes hasta 6',
+                             'Último resultado (Madrid)', 'Estado'], rows, numeric_columns={2, 3})
+               if rows else '<p>No hay parejas recientes importadas con posibles partidos pendientes sin calendario.</p>')
+            + '</section>')
+
 
 def render_bet_candidates(data):
     excluded = {tuple(item) for item in data.get('h2h_exclusions', [])}
     lists = {4: {}, 5: {}, 6: {}}
     for league, payload in data.get('leagues', {}).items():
-        for group in payload.get('groups', []):
+        for group in candidate_groups(data, league, payload):
             for player in group.get('recent_h2h', {}).get('players', []):
                 for rival in player.get('rivals', []):
                     a, b = player['player'], rival['rival']
@@ -1914,7 +1974,7 @@ def render_first_win_window_candidates(data):
     excluded = {tuple(item) for item in data.get('h2h_exclusions', [])}
     selected = {}
     for league, payload in data.get('leagues', {}).items():
-        for group in payload.get('groups', []):
+        for group in candidate_groups(data, league, payload):
             for player in group.get('recent_h2h', {}).get('players', []):
                 for rival in player.get('rivals', []):
                     a, b = player['player'], rival['rival']
