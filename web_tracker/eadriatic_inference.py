@@ -98,6 +98,21 @@ def estimate_pair_schedule(stamps, reference, pair, starts, peer_starts=()):
                                     for i, stamp in enumerate(slots) if stamp not in stamps])
 
 
+def official_eadriatic_available(schedule, reference):
+    source = (schedule or {}).get('sources', {}).get('EADRIATIC', {})
+    if source.get('error'):
+        return False
+    try:
+        stamp = datetime.fromisoformat(source['updated_at'].replace('Z', '+00:00'))
+        if stamp.tzinfo is None or not timedelta(0) <= reference-stamp <= timedelta(hours=8):
+            return False
+    except (KeyError, TypeError, ValueError, AttributeError):
+        return False
+    return any(row.get('fixture_status') == 'scheduled' and not row.get('result')
+               and _record_time(row) is not None and _record_time(row) >= reference
+               for row in source.get('records', []))
+
+
 def infer_eadriatic_pairs(records, reference, published_fixtures, starts=()):
     recent = [row for row in records if row.get('league') == 'EADRIATIC'
               and row.get('result') in {'V', 'E', 'D'}

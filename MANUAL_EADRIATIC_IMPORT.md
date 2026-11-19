@@ -177,3 +177,18 @@ de precaucion en naranja. Blanco equivale al indicador neutro NONE; no se asigna
 un aviso por ausencia de resultados. Ambos jugadores deben tener datos recientes.
 Se muestran victorias y derrotas de ambos con sus muestras de partidos. La alerta
 no supone una nueva probabilidad de victoria ni cambia los filtros del candidato.
+
+
+### Recuperacion del calendario oficial
+
+El modo sin calendario solo se activa si no hay un calendario Eadriatic utilizable:
+la ultima actualizacion debe tener como maximo ocho horas, no tener un error de
+captura y contener proximos partidos publicados. Cuando se recupera, se usan
+solo sus horarios: se retiran estimaciones y candidatos de parejas sin partido
+publicado. No se renombra a un jugador ni se sustituye automaticamente en los
+grupos guardados si cambia la composicion del calendario.
+
+Los workflows de importacion manual, reparacion y actualizacion de jugadores
+refrescan tambien el calendario antes de regenerar la web. Si falla la captura,
+se conserva el calendario anterior con el error y se permite de nuevo el modo
+alternativo. Este refresco no modifica por si solo los jugadores configurados.

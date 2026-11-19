@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from tests.test_h2h_analysis import perspective
 from tests.test_bet_candidates import CandidateTests
-from web_tracker.eadriatic_inference import infer_eadriatic_pairs
+from web_tracker.eadriatic_inference import infer_eadriatic_pairs, official_eadriatic_available
 from web_tracker.generate_site import (attach_recent_group_h2h, render_bet_candidates,
                                         render_eadriatic_possible_pairs)
 
@@ -43,6 +43,42 @@ class InferenceTests(unittest.TestCase):
         self.assertEqual(len(shared['estimated_fixtures']), 4)
         self.assertIn('compartida', shared['estimate_status'])
         self.assertEqual(unrelated['estimated_fixtures'], [])
+
+    def healthy_calendar(self, player='David', rival='Fox'):
+        fixture = self.record(99, minutes=30, player=player, player_key=player.lower(),
+                              rival=rival, rival_key=rival.lower(), result=None, fixture_status='scheduled')
+        return {'sources': {'EADRIATIC': {'updated_at': self.reference.isoformat(), 'records': [fixture]}}}
+
+    def test_calendar_availability_rejects_failed_stale_or_empty_sources(self):
+        schedule = self.healthy_calendar()
+        self.assertTrue(official_eadriatic_available(schedule, self.reference))
+        source = schedule['sources']['EADRIATIC']
+        source['error'] = '403'
+        self.assertFalse(official_eadriatic_available(schedule, self.reference))
+        del source['error']
+        source['updated_at'] = (self.reference-timedelta(hours=9)).isoformat()
+        self.assertFalse(official_eadriatic_available(schedule, self.reference))
+        self.assertFalse(official_eadriatic_available({}, self.reference))
+
+    def test_recovered_calendar_suppresses_unpublished_pairs_but_keeps_official_fixtures(self):
+        group = {'target': ['David', 'Fox']}
+        data = {'leagues': {'EADRIATIC': {'groups': [group]}}}
+        attach_recent_group_h2h(data, [self.record()], self.reference, self.healthy_calendar('Other', 'Unknown'))
+        row = group['recent_h2h']['players'][0]['rivals'][0]
+        row.update(CandidateTests().rival())
+        row['pair_fixtures'] = []
+        self.assertFalse(row['calendarless_allowed'])
+        self.assertEqual(data['eadriatic_possible_pairs'], [])
+        self.assertNotIn('EADRIATIC David - Fox', render_bet_candidates(data))
+        attach_recent_group_h2h(data, [self.record()], self.reference, self.healthy_calendar())
+        row = group['recent_h2h']['players'][0]['rivals'][0]
+        fixtures = row['pair_fixtures']
+        row.update(CandidateTests().rival())
+        row['pair_fixtures'] = fixtures
+        html = render_bet_candidates(data)
+        self.assertIn('EADRIATIC David - Fox', html)
+        self.assertNotIn('Sin calendario:', html)
+        self.assertNotIn('Horario estimado;', html)
 
     def test_stale_future_other_league_and_official_only_not_projected(self):
         for row in (self.record(minutes=-481), self.record(minutes=1),

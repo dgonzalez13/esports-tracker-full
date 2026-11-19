@@ -54,13 +54,15 @@ jobs:
         run: |
           python analyze_eadriatic.py
           python group_analysis.py EADRIATIC
+      - name: Refresh fixture calendars
+        run: python fixture_schedule.py
       - name: Regenerate dashboard
         run: python web_tracker/generate_site.py
       - name: Commit repaired results and dashboard
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add docs/index.html group_analysis.json eadriatic/data/*_eadriatic_player_stats.txt eadriatic/data/match_history.jsonl eadriatic/output/*.csv
+          git add fixture_schedule.json docs/index.html group_analysis.json eadriatic/data/*_eadriatic_player_stats.txt eadriatic/data/match_history.jsonl eadriatic/output/*.csv
           git diff --cached --quiet || git commit -m "Repair Eadriatic $REPAIR_DATE"
           python push_tracker_changes.py
       - name: Keep repair source and results for inspection

@@ -31,6 +31,15 @@ class WindowCandidateTests(unittest.TestCase):
         rival['current_pair_sequence'] = ''
         self.assertIsNone(first_win_window_candidate(rival, 'EADRIATIC'))
 
+    def test_recovered_calendar_does_not_keep_repeat_candidate_without_fixture(self):
+        rival = self.rival()
+        for row in rival['pair_stats']['first_win_followups']:
+            row['league'] = 'EADRIATIC'
+        rival.update(pair_fixtures=[], calendarless_allowed=False)
+        self.assertIsNone(first_win_window_candidate(rival, 'EADRIATIC'))
+        rival['calendarless_allowed'] = True
+        self.assertIsNotNone(first_win_window_candidate(rival, 'EADRIATIC'))
+
     def test_sample_thresholds_and_optional_rows(self):
         for sample in (0, 4, 5, 9, 10, 11):
             rival = self.rival('V', {1: 60, 5: 95})

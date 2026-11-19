@@ -46,6 +46,8 @@ jobs:
           python-version: "3.13"
       - name: Install dependencies
         run: pip install -r requirements.txt
+      - name: Refresh fixture calendars
+        run: python fixture_schedule.py
       - name: Update tracked players
         run: >-
           python update_tracked_players.py
@@ -61,6 +63,6 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add tracked_players.txt group_analysis.json docs/index.html
+          git add fixture_schedule.json tracked_players.txt group_analysis.json docs/index.html
           git diff --cached --quiet || git commit -m "Update tracked players"
           python push_tracker_changes.py

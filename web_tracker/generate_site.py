@@ -24,7 +24,7 @@ from current_streaks_v2 import _record_time
 from fixture_schedule import load_schedule
 from web_tracker.upcoming_matches import render_upcoming_matches, upcoming_fixtures
 from web_tracker.pair_series_schedule import pair_series_schedule, cancelled_pair_counts
-from web_tracker.eadriatic_inference import infer_eadriatic_pairs, load_starts
+from web_tracker.eadriatic_inference import infer_eadriatic_pairs, load_starts, official_eadriatic_available
 from web_tracker.bet_candidates import candidate, six_rating, repeat_candidate, first_win_window_candidate
 from web_tracker.historical_pair_series import load_daily_pair_sequences, enrich_pair_stats
 from selected_players import (
@@ -1397,6 +1397,8 @@ def attach_recent_group_h2h(data, records, reference_time, schedule=None, daily_
     """Use the same bounded eight-hour window as the operational dashboard."""
     records = list(records)
     current_sequences, pair_fixtures = pair_series_schedule(records, schedule, reference_time)
+    official_available = official_eadriatic_available(schedule, reference_time)
+    data['eadriatic_calendar_available'] = official_available
     cancellations = cancelled_pair_counts(schedule, reference_time)
     start = reference_time - timedelta(hours=8)
     recent = filter_by_time(records, start=start, end=reference_time)
@@ -1441,6 +1443,7 @@ def attach_recent_group_h2h(data, records, reference_time, schedule=None, daily_
     def matchup(player, rival, league, historical_lookup):
         row = calculate_h2h_stats(recent, player, rival, league=league)
         identity = (league, name_key(player), name_key(rival))
+        row['calendarless_allowed'] = league == 'EADRIATIC' and not official_available
         row['current_pair_sequence'] = current_sequences.get(identity, '')
         row['pair_fixtures'] = pair_fixtures.get((league, tuple(sorted(identity[1:]))), [])
         row['pair_cancelled'] = cancellations.get((league, tuple(sorted(identity[1:]))), 0)
@@ -1493,7 +1496,7 @@ def attach_recent_group_h2h(data, records, reference_time, schedule=None, daily_
     # Keep detected pairs separate from the user's configured groups.
     inferred = infer_eadriatic_pairs(
         new_statistics_records(records, set(tuple(k) for k in data.get('excluded_player_keys', []))),
-        reference_time, pair_fixtures, load_starts() if estimated_starts is None else estimated_starts)
+        reference_time, pair_fixtures, load_starts() if estimated_starts is None else estimated_starts) if not official_available else []
     data['eadriatic_possible_pairs'] = inferred
     supplemental = []
     known_rows = {
@@ -1548,7 +1551,8 @@ def render_eadriatic_possible_pairs(data):
             'candidatos aunque no estén en los grupos configurados; se conservan los filtros estadísticos.</p>'
             + (render_table(['Jugador', 'Rival', 'Registrados (8 h)', 'Posibles pendientes hasta 6',
                              'Último resultado (Madrid)', 'Horarios estimados pendientes (Madrid)', 'Estado'], rows, numeric_columns={2, 3})
-               if rows else '<p>No hay parejas recientes importadas con posibles partidos pendientes sin calendario.</p>')
+               if rows else '<p>Calendario oficial disponible: se utilizan sus horarios.</p>' if data.get('eadriatic_calendar_available')
+               else '<p>No hay parejas recientes importadas con posibles partidos pendientes sin calendario.</p>')
             + '</section>')
 
 
@@ -1626,7 +1630,7 @@ def render_bet_candidates(data):
             'nivel 3 (naranja): −10 ≤ Dif. &lt;−5. Advertencias: 8–9 series o 5% sin V. Cada línea de 6 termina con n y el porcentaje de series sin victoria. '
             'Sin victorias de A en SEC. Avisos de forma (ultimas 8 h): rojo-verde, alerta grave; rojo-blanco y blanco-verde, precaucion. Blanco indica estado neutro, no ausencia de datos. '
             '[n] indica el siguiente partido y el importe corresponde a ese paso de la progresión. '
-            'Horarios de Madrid. En Eadriatic se incluyen candidatos sin calendario para revisar manualmente horarios y resultados; los pasos e importes se basan en los resultados registrados y pueden estar desactualizados. En GT se omiten parejas sin horario. Un partido iniciado sin resultado '
+            'Horarios de Madrid. En Eadriatic, solo si no hay calendario oficial reciente disponible, se incluyen candidatos sin calendario para revisar manualmente horarios y resultados; los pasos e importes se basan en los resultados registrados y pueden estar desactualizados. En GT se omiten parejas sin horario. Un partido iniciado sin resultado '
             'se conserva con advertencia y número provisional hasta confirmar su resultado; '
             'los horarios que faltan se indican. Cada pareja aparece una sola vez, '
             'con prioridad de cuatro partidos, después cinco y finalmente seis.</p>'

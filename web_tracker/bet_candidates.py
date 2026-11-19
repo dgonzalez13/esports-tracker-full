@@ -91,7 +91,7 @@ def candidate(rival, horizon, league=None):
     if 'V' in sequence or len(sequence) >= target:
         return None
     fixtures = candidate_fixtures(rival, league, target - len(sequence))
-    if not fixtures and league != "EADRIATIC":
+    if not fixtures and (league != "EADRIATIC" or not rival.get("calendarless_allowed", True)):
         return None
     number = len(sequence) + 1
     stake = {4: 10, 5: 5, 6: 3}[horizon] * 2 ** (number - 1)
@@ -191,7 +191,7 @@ def first_win_window_candidate(rival, league, minimum_sample=10):
         return None
     remaining = deadline-played
     fixtures = candidate_fixtures(rival, league, remaining)
-    if not fixtures and league != "EADRIATIC":
+    if not fixtures and (league != "EADRIATIC" or not rival.get("calendarless_allowed", True)):
         return None
     stake = 80 // 2**(remaining-1)
     hours = [datetime.fromisoformat(f['timestamp']).astimezone(ZoneInfo('Europe/Madrid'))
