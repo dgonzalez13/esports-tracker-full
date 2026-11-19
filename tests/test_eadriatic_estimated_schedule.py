@@ -5,6 +5,7 @@ import uuid
 import os
 from unittest.mock import patch
 from import_eadriatic_inbox import main as import_main
+from web_tracker.generate_site import render_first_win_followups, render_first_win_window_candidates
 
 from tests.test_bet_candidates import CandidateTests
 from tests.test_first_win_window_candidates import WindowCandidateTests
@@ -85,6 +86,21 @@ class EstimatedScheduleTests(unittest.TestCase):
                     parse_start_inputs(invalid)
         finally:
             path.unlink(missing_ok=True)
+
+    def test_imported_pair_is_in_repeat_table_and_candidates_outside_groups(self):
+        starts = parse_start_inputs('David|Fox|2026-11-19 07:00')
+        rival = WindowCandidateTests().rival()
+        rival.update(pair_fixtures=[], inferred_pair=self.estimate([0], starts),
+                     historical_played=100, historical_wins=50, historical_losses=20)
+        for row in rival['pair_stats']['first_win_followups']:
+            row.update(league='EADRIATIC', first_win_series=20)
+        data = {'leagues': {'EADRIATIC': {'groups': []}},
+                'inferred_eadriatic_players': [{'player': 'David', 'rivals': [rival]}]}
+        table = render_first_win_followups(data)
+        self.assertIn('<td>EADRIATIC</td>', table)
+        self.assertIn('<td>David</td>', table)
+        self.assertIn('Estimado', table)
+        self.assertIn('EADRIATIC David - B', render_first_win_window_candidates(data))
 
     def test_workflow_start_only_change_regenerates_without_new_results(self):
         root = Path(__file__).parent / '.tmp'

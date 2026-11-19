@@ -31,18 +31,38 @@ def upcoming_fixtures(schedule, reference):
     ))
 
 
-def render_upcoming_matches(schedule, reference=None):
+def upcoming_with_estimates(schedule, reference, estimated_pairs=()):
+    rows = upcoming_fixtures(schedule, reference)
+    published_pairs = {(row['league'], tuple(sorted((row['player'].casefold(), row['rival'].casefold()))))
+                       for row in rows}
+    seen = set()
+    for pair in estimated_pairs or ():
+        names = tuple(sorted((pair['player'].casefold(), pair['rival'].casefold())))
+        if ('EADRIATIC', names) in published_pairs:
+            continue
+        for fixture in pair.get('estimated_fixtures', []):
+            stamp = datetime.fromisoformat(fixture['timestamp'])
+            if stamp < reference or (names, stamp) in seen:
+                continue
+            seen.add((names, stamp))
+            rows.append(dict(league='EADRIATIC', player=pair['player'], rival=pair['rival'],
+                             timestamp=stamp, estimated=True))
+    return sorted(rows, key=lambda row: (row['timestamp'], row['league'], row['player'].casefold()))
+
+
+def render_upcoming_matches(schedule, reference=None, estimated_pairs=()):
     reference = reference or datetime.now(timezone.utc)
     rows = []
-    for row in upcoming_fixtures(schedule, reference):
+    for row in upcoming_with_estimates(schedule, reference, estimated_pairs):
         local = row["timestamp"].astimezone(ZoneInfo("Europe/Madrid"))
+        label = ' <span class="estimated-match-label">[Estimado]</span>' if row.get('estimated') else ''
         rows.append(
             f'<tr class="upcoming-match" data-start="{int(row["timestamp"].timestamp() * 1000)}" '
             f'data-league="{escape(row["league"])}" hidden>'
             f'<td><time datetime="{row["timestamp"].isoformat()}" title="{local:%d/%m/%Y %H:%M} (Madrid)">{local:%H:%M}</time></td>'
             f'<td>{escape(row["league"])}</td>'
             f'<td>{escape(row["player"])} <span class="upcoming-vs">vs</span> '
-            f'{escape(row["rival"])}</td></tr>'
+            f'{escape(row["rival"])}{label}</td></tr>'
         )
     updates = []
     for league in ("GT", "EADRIATIC"):
@@ -61,7 +81,7 @@ def render_upcoming_matches(schedule, reference=None):
         '<details class="match-panel upcoming-panel">'
         '<summary><h2>Próximos partidos</h2></summary>'
         '<div class="match-panel-body">'
-        '<p class="section-subtitle">Todos los jugadores · Horario de Madrid · Calendario publicado, no en directo.</p>'
+        '<p class="section-subtitle">Todos los jugadores · Horario de Madrid · Calendario publicado y horarios estimados de Eadriatic (marcados como [Estimado]); no en directo.</p>'
         '<div class="upcoming-filters"><label>Ventana <select id="upcoming-window">'
         '<option value="1">Próxima hora</option><option value="2">Próximas 2 horas</option>'
         '</select></label><label>Liga <select id="upcoming-league">'

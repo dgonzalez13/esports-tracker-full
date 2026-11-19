@@ -300,7 +300,7 @@ def render_page(data, current_streaks, current_streaks_v2=None, schedule=None):
 </header>
 <main>
     {render_current_streaks_v2(current_streaks_v2 or {})}
-    {render_upcoming_matches(schedule or {})}
+    {render_upcoming_matches(schedule or {}, estimated_pairs=data.get('eadriatic_possible_pairs', []))}
     {render_eadriatic_possible_pairs(data)}
     {render_recent_group_h2h_dashboard(data)}
     {render_bet_candidates(data)}
@@ -1914,7 +1914,7 @@ def render_first_win_followups(data):
     excluded = {tuple(item) for item in data.get('h2h_exclusions', [])}
     selected = {}
     for league, payload in data.get('leagues', {}).items():
-        for group in payload.get('groups', []):
+        for group in candidate_groups(data, league, payload):
             for player in group.get('recent_h2h', {}).get('players', []):
                 for rival in player.get('rivals', []):
                     a, b = player['player'], rival['rival']
@@ -2108,6 +2108,10 @@ def recent_h2h_row_class(rival, minimum_gap=-10, inclusive=False):
 
 def next_group_match_label(rival):
     if not rival.get("next_match"):
+        estimates = rival.get('inferred_pair', {}).get('estimated_fixtures', [])
+        if estimates:
+            stamp = datetime.fromisoformat(estimates[0]['timestamp']).astimezone(ZoneInfo('Europe/Madrid'))
+            return stamp.strftime('%d/%m %H:%M') + ' \u00b7 Estimado, pendiente de resultado'
         return "Sin programar"
     label = datetime.fromisoformat(rival["next_match"]).astimezone(ZoneInfo("Europe/Madrid")).strftime("%d/%m %H:%M")
     return label + (" · Iniciado" if rival.get("match_started") else "")

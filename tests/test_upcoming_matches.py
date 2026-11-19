@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 import unittest
 
-from web_tracker.upcoming_matches import upcoming_fixtures, render_upcoming_matches
+from web_tracker.upcoming_matches import upcoming_fixtures, render_upcoming_matches, upcoming_with_estimates
 
 
 class UpcomingMatchesTests(unittest.TestCase):
@@ -27,6 +27,27 @@ class UpcomingMatchesTests(unittest.TestCase):
         rows = upcoming_fixtures(schedule, self.now)
         self.assertEqual([row["league"] for row in rows], ["GT", "EADRIATIC", "GT"])
         self.assertEqual(rows[0]["player"], "Untracked")
+
+    def test_estimates_appear_in_upcoming_list_and_expired_slots_do_not(self):
+        pair = dict(player='David', rival='Fox', estimated_fixtures=[
+            {'timestamp': (self.now + timedelta(minutes=m)).isoformat()} for m in (-5, 20, 95)])
+        rows = upcoming_with_estimates({}, self.now, [pair, pair])
+        self.assertEqual(len(rows), 2)
+        self.assertTrue(all(row['estimated'] for row in rows))
+        html = render_upcoming_matches({}, self.now, [pair])
+        self.assertIn('David', html)
+        self.assertIn('Fox', html)
+        self.assertEqual(html.count('class="estimated-match-label"'), 2)
+        self.assertIn('data-league="EADRIATIC"', html)
+        self.assertNotIn('>13:55</time>', html)
+
+    def test_official_pair_takes_priority_over_estimates(self):
+        schedule = {'sources': {'EADRIATIC': {'records': [self.fixture(player='David', rival='Fox')]}}}
+        pairs = [dict(player='Fox', rival='David', estimated_fixtures=[
+            {'timestamp': (self.now + timedelta(minutes=75)).isoformat()}])]
+        rows = upcoming_with_estimates(schedule, self.now, pairs)
+        self.assertEqual(len(rows), 1)
+        self.assertFalse(rows[0].get('estimated'))
 
     def test_safe_names_updates_and_madrid_midnight(self):
         schedule = {"sources": {"GT": {"records": [self.fixture(
