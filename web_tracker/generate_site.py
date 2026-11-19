@@ -1555,13 +1555,23 @@ def render_eadriatic_possible_pairs(data):
 def candidate_form_warning(data, league, player, rival):
     lookup = {(row['league'], row['player_key']): row for row in data.get('candidate_form', [])}
     a, b = lookup.get((league, name_key(player))), lookup.get((league, name_key(rival)))
-    if not a or not b or a.get('indicator') != 'RED' or b.get('indicator') != 'GREEN':
+    if not a or not b or not a.get('played') or not b.get('played'):
         return ''
-    return ('<strong class="candidate-form-warning">'
-            + text(f'ALERTA: evitar apostar por {player}. '
-                   f'Rojo: {a["losses"]}/{a["played"]} derrotas ({a["loss_pct"]:.2f}%). '
-                   f'{rival} verde: {b["wins"]}/{b["played"]} victorias ({b["win_pct"]:.2f}%). '
-                   'Forma de las ultimas 8 h.') + '</strong> ')
+    colors = {'RED': 'rojo', 'NONE': 'blanco', 'GREEN': 'verde'}
+    combination = (a.get('indicator'), b.get('indicator'))
+    if combination not in {('RED', 'GREEN'), ('RED', 'NONE'), ('NONE', 'GREEN')}:
+        return ''
+    severe = combination == ('RED', 'GREEN')
+    severity = 'severe' if severe else 'caution'
+    headline = (f'ALERTA: evitar apostar por {player}. Gravedad alta. ' if severe else
+                f'AVISO: {player} tiene peor forma que {rival}. Precaucion. ')
+    def details(name, row):
+        return (f'{name} {colors[row["indicator"]]}: '
+                f'{row["wins"]}/{row["played"]} victorias ({row["win_pct"]:.2f}%), '
+                f'{row["losses"]}/{row["played"]} derrotas ({row["loss_pct"]:.2f}%). ')
+    return (f'<strong class="candidate-form-warning candidate-form-{severity}">'
+            + text(headline + details(player, a) + details(rival, b)
+                   + 'Forma de las ultimas 8 h.') + '</strong> ')
 
 
 def render_bet_candidates(data):
@@ -1614,13 +1624,13 @@ def render_bet_candidates(data):
             'al menos 8 series de 6 y como máximo 5% sin V (también para los trasladados desde 4 o 5). No se exige Dif.20. '
             'Nivel 1 (verde): Dif. &gt;0; nivel 2 (amarillo): −5 ≤ Dif. ≤0; '
             'nivel 3 (naranja): −10 ≤ Dif. &lt;−5. Advertencias: 8–9 series o 5% sin V. Cada línea de 6 termina con n y el porcentaje de series sin victoria. '
-            'Sin victorias de A en SEC. ALERTA de forma: candidato rojo y rival verde segun los indicadores de las ultimas 8 horas; se recomienda evitar la apuesta. '
+            'Sin victorias de A en SEC. Avisos de forma (ultimas 8 h): rojo-verde, alerta grave; rojo-blanco y blanco-verde, precaucion. Blanco indica estado neutro, no ausencia de datos. '
             '[n] indica el siguiente partido y el importe corresponde a ese paso de la progresión. '
             'Horarios de Madrid. En Eadriatic se incluyen candidatos sin calendario para revisar manualmente horarios y resultados; los pasos e importes se basan en los resultados registrados y pueden estar desactualizados. En GT se omiten parejas sin horario. Un partido iniciado sin resultado '
             'se conserva con advertencia y número provisional hasta confirmar su resultado; '
             'los horarios que faltan se indican. Cada pareja aparece una sola vez, '
             'con prioridad de cuatro partidos, después cinco y finalmente seis.</p>'
-            + '<style>#bet-candidates .candidate-form-warning {color:#991b1b;background:#fee2e2;white-space:normal;} #bet-candidates .candidate-list > .candidate-entry {display:block;} '
+            + '<style>#bet-candidates .candidate-form-warning {white-space:normal;} #bet-candidates .candidate-form-severe {color:#991b1b;background:#fee2e2;} #bet-candidates .candidate-form-caution {color:#9a3412;background:#ffedd5;} #bet-candidates .candidate-list > .candidate-entry {display:block;} '
             '#bet-candidates .candidate-list > .candidate-entry[hidden], '
             '#bet-candidates .candidate-filter-empty[hidden] {display:none;}</style>'
             + ''.join(sections) + '</section><script>'

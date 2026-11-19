@@ -28,11 +28,24 @@ class FormWarningTests(unittest.TestCase):
             self.assertIn('data-first-match="true"', html)
 
     def test_no_warning_for_other_combinations_missing_form_or_other_league(self):
-        for a, b in [('GREEN', 'RED'), ('RED', 'RED'), ('NONE', 'GREEN'), ('RED', 'NONE')]:
+        for a, b in [('GREEN', 'RED'), ('RED', 'RED'), ('GREEN', 'NONE'), ('NONE', 'NONE'), ('GREEN', 'GREEN'), ('NONE', 'RED'), ('UNKNOWN', 'GREEN')]:
             data = {'candidate_form': [self.form('david', a, 2, 6), self.form('fox', b, 6, 2)]}
             self.assertEqual(candidate_form_warning(data, 'GT', 'David', 'Fox'), '')
         self.assertEqual(candidate_form_warning({}, 'GT', 'David', 'Fox'), '')
         self.assertEqual(candidate_form_warning(data, 'EADRIATIC', 'David', 'Fox'), '')
+
+    def test_warning_severity_for_all_three_unfavorable_combinations(self):
+        for a, b, severity in [('RED', 'GREEN', 'severe'), ('RED', 'NONE', 'caution'), ('NONE', 'GREEN', 'caution')]:
+            data = {'candidate_form': [self.form('david', a, 2, 6), self.form('fox', b, 6, 2)]}
+            html = candidate_form_warning(data, 'GT', 'David', 'Fox')
+            self.assertIn('candidate-form-' + severity, html)
+            self.assertIn('ALERTA:' if severity == 'severe' else 'AVISO:', html)
+            if 'NONE' in (a, b):
+                self.assertIn('blanco:', html)
+            self.assertIn('2/10 victorias', html)
+            self.assertIn('6/10 victorias', html)
+        data['candidate_form'][1]['played'] = 0
+        self.assertEqual(candidate_form_warning(data, 'GT', 'David', 'Fox'), '')
 
     def test_attached_form_uses_all_recent_opponents_and_ignores_old_and_future(self):
         ref = datetime(2026, 11, 19, 12, tzinfo=timezone.utc)

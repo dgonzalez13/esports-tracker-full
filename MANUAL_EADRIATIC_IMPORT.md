@@ -169,3 +169,11 @@ es rojo y el del rival verde, usando los mismos criterios de colores de las ulti
 rival. No elimina al candidato ni modifica la muestra historica o la progresion.
 El rojo del indicador actual incluye el 50% de derrotas, salvo que corresponda
 verde por el criterio de victorias. La alerta sigue esos mismos colores.
+
+
+Los avisos de forma distinguen tres combinaciones desfavorables para el candidato:
+**rojo-verde**, alerta grave en rojo, y **rojo-blanco** / **blanco-verde**, avisos
+de precaucion en naranja. Blanco equivale al indicador neutro NONE; no se asigna
+un aviso por ausencia de resultados. Ambos jugadores deben tener datos recientes.
+Se muestran victorias y derrotas de ambos con sus muestras de partidos. La alerta
+no supone una nueva probabilidad de victoria ni cambia los filtros del candidato.
