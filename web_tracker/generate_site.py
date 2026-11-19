@@ -24,7 +24,7 @@ from current_streaks_v2 import _record_time
 from fixture_schedule import load_schedule
 from web_tracker.upcoming_matches import render_upcoming_matches, upcoming_fixtures
 from web_tracker.pair_series_schedule import pair_series_schedule, cancelled_pair_counts
-from web_tracker.eadriatic_inference import infer_eadriatic_pairs
+from web_tracker.eadriatic_inference import infer_eadriatic_pairs, load_starts
 from web_tracker.bet_candidates import candidate, six_rating, repeat_candidate, first_win_window_candidate
 from web_tracker.historical_pair_series import load_daily_pair_sequences, enrich_pair_stats
 from selected_players import (
@@ -1393,7 +1393,7 @@ def last20_cells(stats):
     return [fmt_pct(stats['win_pct']), f'{stats["gap"]:+.2f}'] if stats.get('available') == 20 else ['—', '—']
 
 
-def attach_recent_group_h2h(data, records, reference_time, schedule=None, daily_sequences=None):
+def attach_recent_group_h2h(data, records, reference_time, schedule=None, daily_sequences=None, estimated_starts=None):
     """Use the same bounded eight-hour window as the operational dashboard."""
     records = list(records)
     current_sequences, pair_fixtures = pair_series_schedule(records, schedule, reference_time)
@@ -1486,7 +1486,7 @@ def attach_recent_group_h2h(data, records, reference_time, schedule=None, daily_
     # Keep detected pairs separate from the user's configured groups.
     inferred = infer_eadriatic_pairs(
         new_statistics_records(records, set(tuple(k) for k in data.get('excluded_player_keys', []))),
-        reference_time, pair_fixtures)
+        reference_time, pair_fixtures, load_starts() if estimated_starts is None else estimated_starts)
     data['eadriatic_possible_pairs'] = inferred
     supplemental = []
     known_rows = {
@@ -1527,17 +1527,20 @@ def render_eadriatic_possible_pairs(data):
             continue
         stamp = datetime.fromisoformat(pair['last_result']).astimezone(ZoneInfo('Europe/Madrid'))
         rows.append([a, b, pair['observed'], pair['possible_remaining'],
-                     stamp.strftime('%d/%m %H:%M'), 'Por confirmar manualmente'])
+                     stamp.strftime('%d/%m %H:%M'),
+                     ' / '.join(datetime.fromisoformat(f['timestamp']).astimezone(ZoneInfo('Europe/Madrid')).strftime('%d/%m %H:%M')
+                                for f in pair.get('estimated_fixtures', [])) or 'Sin estimacion fiable',
+                     pair.get('estimate_status', 'Por confirmar manualmente')])
     return ('<section class="dashboard-section" id="eadriatic-possible-pairs">'
             '<h2>Eadriatic: posibles partidos pendientes</h2>'
             '<p class="section-subtitle">Parejas observadas en resultados importados de las '
             'últimas 8 horas, sin horarios publicados. Se estima lo que falta hasta 6 '
             'encuentros, suponiendo que la serie continúe y que no falten resultados. '
             'No es un calendario confirmado: puede haber partidos ya jugados, cancelaciones '
-            'o cambios de grupo. No se inventan horas. Se evalúan estas parejas como '
+            'o cambios de grupo. Horarios estimados: +75 min entre partidos, excepto del 2 al 3 (+90 min). Se necesita un inicio manual o una pauta no ambigua; el paso del tiempo no cuenta como resultado. Se evalúan estas parejas como '
             'candidatos aunque no estén en los grupos configurados; se conservan los filtros estadísticos.</p>'
             + (render_table(['Jugador', 'Rival', 'Registrados (8 h)', 'Posibles pendientes hasta 6',
-                             'Último resultado (Madrid)', 'Estado'], rows, numeric_columns={2, 3})
+                             'Último resultado (Madrid)', 'Horarios estimados pendientes (Madrid)', 'Estado'], rows, numeric_columns={2, 3})
                if rows else '<p>No hay parejas recientes importadas con posibles partidos pendientes sin calendario.</p>')
             + '</section>')
 

@@ -103,8 +103,8 @@ Al aplicar una importacion con cambios se regenera la web. El bloque
 **Eadriatic: posibles partidos pendientes** detecta parejas con resultados
 importados en las ultimas 8 horas y sin encuentros publicados en el calendario.
 Muestra los partidos registrados, los posibles pendientes hasta seis y la hora
-del ultimo resultado (Madrid). No predice horarios ni confirma que haya otro
-partido: presupone una serie de seis y que la muestra reciente este completa.
+del ultimo resultado (Madrid). Los horarios calculados se identifican como estimados, sin confirmar que haya otro
+partido: se presupone una serie de seis y que la muestra reciente este completa.
 
 Las parejas detectadas se evaluan en los candidatos de 4, 5 y 6 partidos y en la
 nueva lista de repetir victoria, incluso si no pertenecen a los grupos configurados.
@@ -119,3 +119,35 @@ normal; no se sustituyen por una prediccion. En las lineas sin calendario se ind
 el numero registrado y el posible resto, siempre para comprobacion manual.
 Una pagina incompleta puede omitir partidos ya disputados; no se puede demostrar
 que los encuentros estimados esten realmente pendientes.
+
+
+## Horarios estimados por pareja
+
+La pauta configurada es: primer partido, +75, +165, +240, +315 y +390 minutos.
+Por ejemplo: 07:00, 08:15, 09:45, 11:00, 12:15 y 13:30 (Madrid).
+
+Se calcula automaticamente el inicio solo si las horas observadas encajan de forma
+unica y se dispone de todos los resultados desde el primer partido. Una sola
+observacion no permite saber si corresponde al primero, segundo u otro encuentro.
+Si faltan resultados intermedios o la pauta no coincide, no se inventa un horario.
+
+En **Import Eadriatic Manual Results** puedes rellenar **first_games** con:
+
+```
+David|Fox|2026-11-19 07:00
+```
+
+Son los nombres exactos de la pareja y la fecha/hora del primer partido en Madrid.
+Para varias parejas, separalas por punto y coma. Marca **Aplicar importacion** para
+guardar el inicio y regenerar la pagina. Puedes introducirlo aunque los HTML ya se
+hayan procesado; no hace falta cambiar de nombre ni volver a importar los archivos.
+Si dejas el campo vacio, se conservan los inicios guardados para sus fechas.
+Quedan en `eadriatic/estimated_starts.json`. Las fechas anteriores no se reutilizan
+para extrapolar rondas nuevas.
+
+Las estimaciones aparecen en **Eadriatic: posibles partidos pendientes** y en los
+candidatos que cumplan los filtros, con la etiqueta **Horario estimado**. No se
+mezclan con el calendario publicado ni se guardan como partidos oficiales.
+El calendario oficial tiene prioridad. Pasar una hora prevista no cuenta como
+resultado ni adelanta la progresion: solo un resultado importado puede hacerlo.
+Si una hora prevista ya ha pasado, la linea avisa de que falta el resultado.

@@ -57,7 +57,7 @@ class InferenceTests(unittest.TestCase):
         self.assertIn('EADRIATIC David - Fox', html)
         self.assertIn('Registrados: 1; posibles pendientes hasta 6: 5', html)
         table = render_eadriatic_possible_pairs(data)
-        self.assertIn('Por confirmar manualmente', table)
+        self.assertIn('Indicar primera hora o importar mas resultados', table)
         data['h2h_exclusions'] = [('EADRIATIC', 'david', 'fox')]
         self.assertNotIn('EADRIATIC David - Fox', render_bet_candidates(data))
         self.assertNotIn('<td>David</td>', render_eadriatic_possible_pairs(data))

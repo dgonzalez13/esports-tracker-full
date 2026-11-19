@@ -66,6 +66,14 @@ def missing_schedule_text(rival):
     return message
 
 
+def candidate_fixtures(rival, league, remaining):
+    official = rival.get('pair_fixtures', [])
+    if official:
+        return official[:remaining]
+    inferred = rival.get('inferred_pair', {}) if league == 'EADRIATIC' else {}
+    return inferred.get('estimated_fixtures', [])[:remaining]
+
+
 def candidate(rival, horizon, league=None):
     sequence = rival.get('current_pair_sequence', rival.get('sequence', ''))
     effective_total = max(0, 6 - rival.get('pair_cancelled', 0))
@@ -82,7 +90,7 @@ def candidate(rival, horizon, league=None):
         return None
     if 'V' in sequence or len(sequence) >= target:
         return None
-    fixtures = rival.get('pair_fixtures', [])[:target - len(sequence)]
+    fixtures = candidate_fixtures(rival, league, target - len(sequence))
     if not fixtures and league != "EADRIATIC":
         return None
     number = len(sequence) + 1
@@ -91,12 +99,16 @@ def candidate(rival, horizon, league=None):
              .strftime('%H:%M') for f in fixtures]
     schedule_text = ' --- '.join(hours) if fixtures else missing_schedule_text(rival)
     line = f'[{number}] {stake} ' + schedule_text
+    if fixtures and fixtures[0].get('estimated'):
+        line += ' [Horario estimado; validar manualmente]'
     if horizon in (4, 5):
         row = first_victory_sample(rival, horizon)
         line += f' [{row["win_pct"]:.2f}% (n={row["sample"]})]'
     if rival.get('pair_cancelled'):
         line += f' [{rival["pair_cancelled"]} cancelado(s); máximo {effective_total} partidos efectivos]'
-    if fixtures and fixtures[0].get('started'):
+    if fixtures and fixtures[0].get('estimated') and fixtures[0].get('started'):
+        line += ' [Hora estimada pasada: falta resultado, no se avanza el paso]'
+    elif fixtures and fixtures[0].get('started'):
         line += ' [Iniciado: pendiente de resultado; número provisional]'
     missing = target - len(sequence) - len(fixtures)
     if missing and fixtures:
@@ -178,7 +190,7 @@ def first_win_window_candidate(rival, league, minimum_sample=10):
     if row['sample'] < minimum_sample:
         return None
     remaining = deadline-played
-    fixtures = rival.get('pair_fixtures', [])[:remaining]
+    fixtures = candidate_fixtures(rival, league, remaining)
     if not fixtures and league != "EADRIATIC":
         return None
     stake = 80 // 2**(remaining-1)
@@ -186,8 +198,12 @@ def first_win_window_candidate(rival, league, minimum_sample=10):
              .strftime('%H:%M') for f in fixtures]
     schedule_text = ' --- '.join(hours) if fixtures else missing_schedule_text(rival)
     line = f'[{played+1}] {stake} ' + schedule_text
+    if fixtures and fixtures[0].get('estimated'):
+        line += ' [Horario estimado; validar manualmente]'
     line += f' [Hasta partido {deadline}: {row["win_pct"]:.2f}% (n={row["sample"]})]'
-    if fixtures and fixtures[0].get('started'):
+    if fixtures and fixtures[0].get('estimated') and fixtures[0].get('started'):
+        line += ' [Hora estimada pasada: falta resultado, no se avanza el paso]'
+    elif fixtures and fixtures[0].get('started'):
         line += ' [Iniciado: pendiente de resultado; número provisional]'
     if fixtures and len(fixtures) < remaining:
         line += f' [Faltan {remaining-len(fixtures)} horarios por publicar]'

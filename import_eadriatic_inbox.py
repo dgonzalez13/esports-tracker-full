@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 
 from eadriatic_saved_results import import_saved_results
+from web_tracker.eadriatic_inference import parse_start_inputs, save_starts, STARTS_PATH
 
 BASE = Path(__file__).resolve().parent
 INBOX = BASE / 'eadriatic' / 'manual_imports'
@@ -65,11 +66,17 @@ def main():
     parser.add_argument('--apply', action='store_true')
     parser.add_argument('--complete-day', action='append', default=[])
     parser.add_argument('--report', type=Path)
+    parser.add_argument('--estimated-starts-file', type=Path, default=STARTS_PATH)
     args = parser.parse_args()
     # Workflow inputs stay in environment variables; never interpolate them as shell code.
     apply = args.apply or os.environ.get('APPLY_IMPORT', '').lower() == 'true'
     days = args.complete_day + [s.strip() for s in os.environ.get('COMPLETE_DAYS', '').split(',') if s.strip()]
+    starts = parse_start_inputs(os.environ.get('FIRST_GAMES', ''))
     report = import_inbox(args.inbox, args.history, args.ledger, apply=apply, complete_days=days)
+    if starts:
+        starts_changed = save_starts(starts, args.estimated_starts_file, apply=apply)
+        report['estimated_starts_changed'] = starts_changed
+        report['changed'] = report['changed'] or (apply and starts_changed)
     output = json.dumps(report, ensure_ascii=True, indent=2) + '\n'
     print(output)
     if args.report:
