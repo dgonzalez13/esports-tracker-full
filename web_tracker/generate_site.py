@@ -1496,7 +1496,7 @@ def render_bet_candidates(data):
                     for horizon in (4, 5, 6):
                         if horizon in (4, 5) and not recent_h2h_row_class(rival, data.get('h2h_min_gap', -10), inclusive=True):
                             continue
-                        result = candidate(rival, horizon)
+                        result = candidate(rival, horizon, league=league)
                         if result:
                             order, line = result
                             first_match = line.startswith('[1] ')
@@ -1520,7 +1520,7 @@ def render_bet_candidates(data):
         sections.append(f'<div class="candidate-horizon" data-horizon="{horizon}"><h3>Candidatos a {horizon} partidos · {stakes}</h3>'
                         + '<label><input type="checkbox" class="hide-first-match"> Ocultar candidatos con [1]</label>'
                         + ('<pre class="candidate-list">' + ''.join(lines) + '</pre>'
-                           if lines else '<p>No hay candidatos con horarios confirmados.</p>')
+                           if lines else '<p>No hay candidatos que cumplan los requisitos.</p>')
                         + '<p class="candidate-filter-empty" hidden>No hay candidatos visibles con este filtro.</p></div>')
     return ('<section class="dashboard-section" id="bet-candidates">'
             '<h2>Posibles candidatos</h2>'
@@ -1533,7 +1533,7 @@ def render_bet_candidates(data):
             'nivel 3 (naranja): −10 ≤ Dif. &lt;−5. Advertencias: 8–9 series o 5% sin V. Cada línea de 6 termina con n y el porcentaje de series sin victoria. '
             'Sin victorias de A en SEC. '
             '[n] indica el siguiente partido y el importe corresponde a ese paso de la progresión. '
-            'Horarios de Madrid. Se omiten parejas sin horario. Un partido iniciado sin resultado '
+            'Horarios de Madrid. En Eadriatic se incluyen candidatos sin calendario para revisar manualmente horarios y resultados; los pasos e importes se basan en los resultados registrados y pueden estar desactualizados. En GT se omiten parejas sin horario. Un partido iniciado sin resultado '
             'se conserva con advertencia y número provisional hasta confirmar su resultado; '
             'los horarios que faltan se indican. Cada pareja aparece una sola vez, '
             'con prioridad de cuatro partidos, después cinco y finalmente seis.</p>'
@@ -1945,13 +1945,13 @@ def render_first_win_window_candidates(data):
             '<p class="section-subtitle">Hasta cinco apuestas. Se utiliza el tramo final de 5, 10, 20, 40, 80: '
             'si quedan tres son 20, 40, 80; si quedan dos, 40, 80; si queda una, 80. '
             '[n] es el próximo partido y el importe corresponde al primer paso pendiente. '
-            'Por defecto se muestran candidatos con n &ge;10. El check permite incluir muestras de 5 a 9 en naranja; con n &lt;5 no se muestran. Se muestran solo los horarios hasta el plazo elegido, su porcentaje y su muestra. '
+            'En Eadriatic se admiten candidatos sin calendario si los resultados registrados permiten identificar la primera victoria y el plazo pendiente; revisa manualmente los resultados actuales. Por defecto se muestran candidatos con n &ge;10. El check permite incluir muestras de 5 a 9 en naranja; con n &lt;5 no se muestran. Se muestran solo los horarios hasta el plazo elegido, su porcentaje y su muestra. '
             'Son las frecuencias ancladas a V1 de la tabla anterior; no se recalculan según los resultados posteriores de SEC.</p>'
             + '<label><input type="checkbox" id="repeat-show-small-samples"> Mostrar candidatos con 5 &le; n &lt; 10 (en naranja)</label>'
             + '<style>#first-win-window-candidates .candidate-list > span {display:block;} #first-win-window-candidates .repeat-low-sample {color:#9a3412;background:#ffedd5;} '
             '#first-win-window-candidates [hidden], #first-win-window-candidates .candidate-list > span[hidden] {display:none;}</style>'
             + ('<pre class="candidate-list">' + ''.join(lines) + '</pre>' if lines
-               else '<p>No hay candidatos con un plazo pendiente superior al 90% y horarios publicados.</p>')
+               else '<p>No hay candidatos con un plazo pendiente superior al 90% que cumplan los requisitos.</p>')
             + '<p id="repeat-candidates-empty" hidden>No hay candidatos con n &ge; 10. Activa el check para ver muestras de 5 a 9.</p>'
             + '</section><script>'
             + (BASE / 'web_tracker' / 'first_win_candidate_filter.js').read_text(encoding='utf-8')

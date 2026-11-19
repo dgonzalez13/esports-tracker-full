@@ -57,7 +57,7 @@ def first_victory_sample(rival, horizon):
                  if row['initial_without_win'] == played and row['horizon'] == horizon), {})
 
 
-def candidate(rival, horizon):
+def candidate(rival, horizon, league=None):
     sequence = rival.get('current_pair_sequence', rival.get('sequence', ''))
     effective_total = max(0, 6 - rival.get('pair_cancelled', 0))
     target = min(horizon, effective_total)
@@ -74,28 +74,29 @@ def candidate(rival, horizon):
     if 'V' in sequence or len(sequence) >= target:
         return None
     fixtures = rival.get('pair_fixtures', [])[:target - len(sequence)]
-    if not fixtures:
+    if not fixtures and league != "EADRIATIC":
         return None
     number = len(sequence) + 1
     stake = {4: 10, 5: 5, 6: 3}[horizon] * 2 ** (number - 1)
     hours = [datetime.fromisoformat(f['timestamp']).astimezone(ZoneInfo('Europe/Madrid'))
              .strftime('%H:%M') for f in fixtures]
-    line = f'[{number}] {stake} ' + ' --- '.join(hours)
+    schedule_text = ' --- '.join(hours) if fixtures else 'Sin calendario: comprobar horarios y resultados manualmente'
+    line = f'[{number}] {stake} ' + schedule_text
     if horizon in (4, 5):
         row = first_victory_sample(rival, horizon)
         line += f' [{row["win_pct"]:.2f}% (n={row["sample"]})]'
     if rival.get('pair_cancelled'):
         line += f' [{rival["pair_cancelled"]} cancelado(s); máximo {effective_total} partidos efectivos]'
-    if fixtures[0].get('started'):
+    if fixtures and fixtures[0].get('started'):
         line += ' [Iniciado: pendiente de resultado; número provisional]'
     missing = target - len(sequence) - len(fixtures)
-    if missing:
+    if missing and fixtures:
         line += f' --- Faltan {missing} horarios por publicar'
     if horizon == 6:
         stats = rival['pair_stats']
         sample = stats['complete_series']
         line += f' [n={sample}; Sin V={stats["zero_win_series"] * 100 / sample:.2f}%]'
-    return fixtures[0]['timestamp'], line
+    return fixtures[0]['timestamp'] if fixtures else '9999', line
 
 
 def repeat_candidate(rival, league, minimum_prior=20, initial_stake=20):
@@ -169,15 +170,16 @@ def first_win_window_candidate(rival, league, minimum_sample=10):
         return None
     remaining = deadline-played
     fixtures = rival.get('pair_fixtures', [])[:remaining]
-    if not fixtures:
+    if not fixtures and league != "EADRIATIC":
         return None
     stake = 80 // 2**(remaining-1)
     hours = [datetime.fromisoformat(f['timestamp']).astimezone(ZoneInfo('Europe/Madrid'))
              .strftime('%H:%M') for f in fixtures]
-    line = f'[{played+1}] {stake} ' + ' --- '.join(hours)
+    schedule_text = ' --- '.join(hours) if fixtures else 'Sin calendario: comprobar horarios y resultados manualmente'
+    line = f'[{played+1}] {stake} ' + schedule_text
     line += f' [Hasta partido {deadline}: {row["win_pct"]:.2f}% (n={row["sample"]})]'
-    if fixtures[0].get('started'):
+    if fixtures and fixtures[0].get('started'):
         line += ' [Iniciado: pendiente de resultado; número provisional]'
-    if len(fixtures) < remaining:
+    if fixtures and len(fixtures) < remaining:
         line += f' [Faltan {remaining-len(fixtures)} horarios por publicar]'
-    return fixtures[0]['timestamp'], line
+    return fixtures[0]['timestamp'] if fixtures else '9999', line

@@ -20,6 +20,38 @@ class CandidateTests(unittest.TestCase):
                     pair_fixtures=[{'timestamp': f'2026-10-31T{10+i:02}:00:00+00:00', 'started': False}
                                    for i in range(6)])
 
+    def test_eadriatic_candidates_without_calendar_keep_statistics_and_filters(self):
+        for horizon in (4, 5, 6):
+            data, rival = UnderdogMatchupTests().data()
+            data['leagues']['EADRIATIC'] = data['leagues'].pop('GT')
+            rival.update(self.rival())
+            rival['pair_fixtures'] = []
+            for row in rival['pair_stats']['pair_horizons']:
+                if row['horizon'] < horizon:
+                    row['win_pct'] = 80
+            result = candidate(rival, horizon, league='EADRIATIC')
+            self.assertEqual(result[0], '9999')
+            self.assertIn('Sin calendario', result[1])
+            self.assertNotIn('11:00', result[1])
+            self.assertIn('EADRIATIC David - Fox', render_bet_candidates(data))
+            self.assertIsNone(candidate(rival, horizon, league='GT'))
+            rival['current_pair_sequence'] = 'V'
+            self.assertIsNone(candidate(rival, horizon, league='EADRIATIC'))
+
+    def test_calendarless_eadriatic_keeps_samples_and_exclusions(self):
+        data, rival = UnderdogMatchupTests().data()
+        data['leagues']['EADRIATIC'] = data['leagues'].pop('GT')
+        rival.update(self.rival())
+        rival['pair_fixtures'] = []
+        for row in rival['pair_stats']['pair_horizons']:
+            row['sample'] = 9
+        rival['pair_stats']['complete_series'] = 7
+        self.assertNotIn('EADRIATIC David - Fox', render_bet_candidates(data))
+        rival['pair_stats']['complete_series'] = 8
+        self.assertIn('EADRIATIC David - Fox', render_bet_candidates(data))
+        data['h2h_exclusions'] = [('EADRIATIC', 'david', 'fox')]
+        self.assertNotIn('EADRIATIC David - Fox', render_bet_candidates(data))
+
     def test_number_and_stake_for_both_progressions(self):
         for horizon, initial in [(4, 10), (5, 5), (6, 3)]:
             for played in range(horizon):

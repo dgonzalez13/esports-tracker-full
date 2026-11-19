@@ -14,6 +14,23 @@ class WindowCandidateTests(unittest.TestCase):
                     pair_fixtures=[dict(timestamp=f'2026-11-09T{hour}:00:00+00:00', started=False)
                                    for hour in range(10, 15)])
 
+    def test_eadriatic_repeat_without_calendar_still_requires_known_victory_and_sample(self):
+        rival = self.rival('V', {1: 60, 5: 95})
+        rival['pair_fixtures'] = []
+        for row in rival['pair_stats']['first_win_followups']:
+            row['league'] = 'EADRIATIC'
+        result = first_win_window_candidate(rival, 'EADRIATIC')
+        self.assertEqual(result[0], '9999')
+        self.assertIn('Sin calendario', result[1])
+        self.assertIn('95.00% (n=20)', result[1])
+        data = {'leagues': {'EADRIATIC': {'groups': [{'recent_h2h': {'players': [
+            {'player': 'A', 'rivals': [rival]}]}}]}}}
+        self.assertIn('EADRIATIC A - B', render_first_win_window_candidates(data))
+        rival['pair_stats']['first_win_followups'][1]['sample'] = 4
+        self.assertNotIn('EADRIATIC A - B', render_first_win_window_candidates(data))
+        rival['current_pair_sequence'] = ''
+        self.assertIsNone(first_win_window_candidate(rival, 'EADRIATIC'))
+
     def test_sample_thresholds_and_optional_rows(self):
         for sample in (0, 4, 5, 9, 10, 11):
             rival = self.rival('V', {1: 60, 5: 95})
