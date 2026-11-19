@@ -11,6 +11,14 @@ def six_sample_allowed(rival):
             and failures * 100 <= 5 * sample)
 
 
+def six_recent_exception(rival):
+    total = rival.get('historical_played', 0)
+    recent = rival.get('last20', {})
+    return bool(total and (rival.get('historical_wins', 0)-rival.get('historical_losses', 0))*100 < -10*total
+                and recent.get('available') == 20 and recent.get('gap') is not None
+                and recent['gap'] > 0)
+
+
 def six_rating(rival):
     total = rival.get('historical_played', 0)
     wins = rival.get('historical_wins', 0)
@@ -18,11 +26,15 @@ def six_rating(rival):
     stats = rival.get('pair_stats', {})
     sample = stats.get('complete_series', 0)
     failures = stats.get('zero_win_series')
-    if (not total or wins * 100 <= 30 * total or (wins-losses)*100 < -10*total
+    recent_exception = six_recent_exception(rival)
+    if (not total or wins * 100 <= 30 * total
+            or ((wins-losses)*100 < -10*total and not recent_exception)
             or not six_sample_allowed(rival)):
         return None
-    level = 1 if wins > losses else 2 if (wins-losses)*100 >= -5*total else 3
+    level = 4 if recent_exception else 1 if wins > losses else 2 if (wins-losses)*100 >= -5*total else 3
     warnings = []
+    if recent_exception:
+        warnings.append(f'Dif. historica: {(wins-losses)*100/total:+.2f} pp; Dif.20: {rival["last20"]["gap"]:+.2f} pp (20 partidos)')
     if sample in (8, 9):
         warnings.append(f'Solo {sample} series de 6')
     if failures * 100 >= 5 * sample:

@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 import unittest
 
-from web_tracker.bet_candidates import candidate, six_rating, first_victory_horizon
+from web_tracker.bet_candidates import candidate, six_rating, first_victory_horizon, six_recent_exception
 from web_tracker.generate_site import render_bet_candidates
 from tests.test_underdog_matchups import UnderdogMatchupTests
 from tests.test_six_match_stats import SixMatchTests
@@ -88,6 +88,46 @@ class CandidateTests(unittest.TestCase):
         rival = self.rival()
         rival['pair_fixtures'] = rival['pair_fixtures'][:1]
         self.assertIn('Faltan 5 horarios', candidate(rival, 6)[1])
+
+    def test_six_recent_improvement_requires_twenty_and_strict_positive_gap(self):
+        for available, gap, accepted in [(19, 30, False), (20, None, False),
+                                        (20, -5, False), (20, 0, False), (20, 5, True)]:
+            rival = self.rival()
+            rival.update(historical_wins=31, historical_losses=50,
+                         last20={'available': available, 'gap': gap, 'win_pct': 50})
+            self.assertEqual(candidate(rival, 6) is not None, accepted)
+            self.assertEqual(six_recent_exception(rival), accepted)
+            if accepted:
+                self.assertEqual(six_rating(rival)[0], 4)
+            else:
+                self.assertIsNone(six_rating(rival))
+
+    def test_six_exception_keeps_all_other_filters(self):
+        for updates in [dict(historical_wins=30), dict(current_pair_sequence='V'),
+                        dict(current_pair_sequence='DDDDDD'), dict(pair_fixtures=[]),
+                        dict(pair_stats={'complete_series': 7, 'zero_win_series': 0}),
+                        dict(pair_stats={'complete_series': 19, 'zero_win_series': 1})]:
+            rival = self.rival()
+            rival.update(historical_wins=31, historical_losses=50,
+                         last20={'available': 20, 'gap': 5, 'win_pct': 45})
+            rival.update(updates)
+            self.assertIsNone(candidate(rival, 6), updates)
+
+    def test_recent_exception_label_and_values_are_visible_only_in_six(self):
+        data, rival = UnderdogMatchupTests().data()
+        rival.update(self.rival())
+        rival.update(historical_wins=31, historical_losses=50,
+                     last20={'available': 20, 'gap': 5, 'win_pct': 45})
+        html = render_bet_candidates(data)
+        self.assertIn('candidate-level-4', html)
+        self.assertIn('Excepci\u00f3n por mejora en \u00faltimos 20', html)
+        self.assertIn('Dif. historica: -19.00 pp; Dif.20: +5.00 pp', html)
+        self.assertEqual(html.count('GT David - Fox'), 1)
+        self.assertIsNone(candidate(rival, 4))
+        self.assertIsNone(candidate(rival, 5))
+        rival['historical_losses'] = 41
+        self.assertFalse(six_recent_exception(rival))
+        self.assertEqual(six_rating(rival)[0], 3)
 
     def test_six_levels_and_independent_filters(self):
         for wins, losses, level in [(31, 20, 1), (31, 31, 2), (31, 36, 2),

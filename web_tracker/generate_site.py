@@ -568,6 +568,7 @@ main {
 .candidate-level-1 { color: #12633b; background: #e0f6e8; }
 .candidate-level-2 { color: #715300; background: #fff3c4; }
 .candidate-level-3 { color: #8b350d; background: #ffe3ce; }
+.candidate-level-4 { color: #6b21a8; background: #f3e8ff; }
 .candidate-warning { font-weight: bold; }
 .table-wrap {
     width: 100%;
@@ -1602,7 +1603,8 @@ def render_bet_candidates(data):
                                 warning = (' <span class="candidate-warning">⚠ '
                                            + text(' · '.join(warnings)) + '</span>') if warnings else ''
                                 if level is not None:
-                                    line = f'<span class="candidate-level-{level}">Nivel {level} · {warning} {line}</span>'
+                                    label = 'Excepci\u00f3n por mejora en \u00faltimos 20' if level == 4 else f'Nivel {level}'
+                                    line = f'<span class="candidate-level-{level}">{label} · {warning} {line}</span>'
                             warning = candidate_form_warning(data, league, a, b)
                             line = f'<span class="candidate-entry" data-first-match="{str(first_match).lower()}">{warning}{line}</span>'
                             lists[horizon][identity] = (order, line)
@@ -1624,8 +1626,8 @@ def render_bet_candidates(data):
             '<p class="section-subtitle">4 y 5 partidos: media de V% y V%20 ≥40%, ambos ≥35%. '
             'Se requiere V%20 disponible. 4 partidos: V≤4 ≥90%. 5 partidos: no cumple V≤4 ≥90% '
             '(inferior, sin muestra o plazo agotado), pero V≤5 ≥90%. Las listas de cuatro y cinco no se duplican. n y % corresponden al plazo seleccionado. Los candidatos de 4 o 5 con n &lt;10 pasan a 6 partidos solo si tienen al menos 8 series completas de 6; en caso contrario se omiten. '
-            '6 partidos (criterio habitual, salvo los trasladados por n &lt;10): V% A &gt;30%, Dif. ≥−10 pp, '
-            'al menos 8 series de 6 y como máximo 5% sin V (también para los trasladados desde 4 o 5). No se exige Dif.20. '
+            '6 partidos (criterio habitual, salvo los trasladados por n &lt;10): V% A &gt;30%, Dif. ≥−10 pp o, como excepcion, Dif.20 &gt;0 con 20 enfrentamientos recientes completos, '
+            'al menos 8 series de 6 y como máximo 5% sin V (también para los trasladados desde 4 o 5). La excepcion por mejora reciente se muestra en morado con Dif. historica y Dif.20; para el criterio habitual no se exige Dif.20. '
             'Nivel 1 (verde): Dif. &gt;0; nivel 2 (amarillo): −5 ≤ Dif. ≤0; '
             'nivel 3 (naranja): −10 ≤ Dif. &lt;−5. Advertencias: 8–9 series o 5% sin V. Cada línea de 6 termina con n y el porcentaje de series sin victoria. '
             'Sin victorias de A en SEC. Avisos de forma (ultimas 8 h): rojo-verde, alerta grave; rojo-blanco y blanco-verde, precaucion. Blanco indica estado neutro, no ausencia de datos. '

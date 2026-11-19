@@ -192,3 +192,18 @@ Los workflows de importacion manual, reparacion y actualizacion de jugadores
 refrescan tambien el calendario antes de regenerar la web. Si falla la captura,
 se conserva el calendario anterior con el error y se permite de nuevo el modo
 alternativo. Este refresco no modifica por si solo los jugadores configurados.
+
+
+### Excepcion por mejora en los ultimos 20 enfrentamientos
+
+En candidatos de seis partidos, una diferencia historica V%-D% inferior a -10
+puntos se admite si existen exactamente 20 enfrentamientos recientes y su Dif.20
+es estrictamente positiva (mas victorias que derrotas). Se distingue en morado
+como **Excepcion por mejora en ultimos 20**, mostrando las dos diferencias.
+No basta con que aumente V%20 respecto al historico: Dif.20 debe ser mayor que cero.
+
+Se mantienen V% historico superior al 30%, al menos ocho series completas y un
+maximo del 5% de series sin victoria, ademas de los filtros de secuencia y calendario.
+No se modifican los candidatos de cuatro/cinco ni los avisos de forma actuales.
+El criterio normal con diferencia historica de -10 puntos o mejor sigue funcionando
+sin exigir Dif.20. Es una excepcion estadistica, no una garantia de resultado.
