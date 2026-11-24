@@ -24,6 +24,7 @@ from current_streaks_v2 import _record_time
 from fixture_schedule import load_schedule
 from web_tracker.upcoming_matches import render_upcoming_matches, upcoming_fixtures
 from web_tracker.pair_series_schedule import pair_series_schedule, cancelled_pair_counts
+from web_tracker.daily_pair_watch import daily_pair_sequences
 from web_tracker.eadriatic_inference import infer_eadriatic_pairs, load_starts, official_eadriatic_available
 from web_tracker.bet_candidates import candidate, six_rating, repeat_candidate, first_win_window_candidate
 from web_tracker.historical_pair_series import load_daily_pair_sequences, enrich_pair_stats
@@ -303,6 +304,7 @@ def render_page(data, current_streaks, current_streaks_v2=None, schedule=None):
     {render_upcoming_matches(schedule or {}, estimated_pairs=data.get('eadriatic_possible_pairs', []))}
     {render_eadriatic_possible_pairs(data)}
     {render_recent_group_h2h_dashboard(data)}
+    {render_daily_pair_watch(data)}
     {render_bet_candidates(data)}
     {render_underdog_matchups(data)}
     {render_first_win_followups(data)}
@@ -1397,6 +1399,8 @@ def last20_cells(stats):
 def attach_recent_group_h2h(data, records, reference_time, schedule=None, daily_sequences=None, estimated_starts=None):
     """Use the same bounded eight-hour window as the operational dashboard."""
     records = list(records)
+    day_sequences = daily_pair_sequences(records, schedule, reference_time)
+    data['daily_pair_watch_date'] = reference_time.astimezone(ZoneInfo('Europe/Madrid')).date().isoformat()
     current_sequences, pair_fixtures = pair_series_schedule(records, schedule, reference_time)
     official_available = official_eadriatic_available(schedule, reference_time)
     data['eadriatic_calendar_available'] = official_available
@@ -1445,6 +1449,7 @@ def attach_recent_group_h2h(data, records, reference_time, schedule=None, daily_
         row = calculate_h2h_stats(recent, player, rival, league=league)
         identity = (league, name_key(player), name_key(rival))
         row['calendarless_allowed'] = league == 'EADRIATIC' and not official_available
+        row['daily_pair_sequence'] = day_sequences.get(identity, '')
         row['current_pair_sequence'] = current_sequences.get(identity, '')
         row['pair_fixtures'] = pair_fixtures.get((league, tuple(sorted(identity[1:]))), [])
         row['pair_cancelled'] = cancellations.get((league, tuple(sorted(identity[1:]))), 0)
@@ -1554,6 +1559,42 @@ def render_eadriatic_possible_pairs(data):
                              'Último resultado (Madrid)', 'Horarios estimados pendientes (Madrid)', 'Estado'], rows, numeric_columns={2, 3})
                if rows else '<p>Calendario oficial disponible: se utilizan sus horarios.</p>' if data.get('eadriatic_calendar_available')
                else '<p>No hay parejas recientes importadas con posibles partidos pendientes sin calendario.</p>')
+            + '</section>')
+
+
+def render_daily_pair_watch(data):
+    excluded = {tuple(item) for item in data.get('h2h_exclusions', [])}
+    selected = {}
+    for league, payload in data.get('leagues', {}).items():
+        for group in candidate_groups(data, league, payload):
+            for player in group.get('recent_h2h', {}).get('players', []):
+                for rival in player.get('rivals', []):
+                    a, b = player['player'], rival['rival']
+                    identity = (league, name_key(a), name_key(b))
+                    recent = rival.get('last20', {})
+                    total_pct, recent_pct = rival.get('historical_win_pct'), recent.get('win_pct')
+                    if (identity in excluded or not new_table_pair_allowed(data, league, a, b)
+                            or not rival.get('historical_played') or total_pct is None or total_pct <= 35
+                            or recent.get('available') != 20 or recent_pct is None or recent_pct <= 35):
+                        continue
+                    sequence = rival.get('daily_pair_sequence', '')
+                    green = not sequence.endswith('V')
+                    selected[identity] = ([league, a, b, fmt_pct(total_pct), fmt_pct(recent_pct),
+                                           sequence or 'Sin resultados hoy'], green)
+    items = [selected[key] for key in sorted(selected)]
+    return ('<section class="dashboard-section" id="daily-pair-watch">'
+            '<h2>Parejas con V% total y V%20 superiores al 35%</h2>'
+            '<p class="section-subtitle">Grupos configurados y parejas importadas evaluadas. Ambos '
+            'porcentajes deben ser estrictamente mayores del 35%; V%20 requiere 20 enfrentamientos. '
+            'Secuencia de A frente a B desde medianoche en Madrid hasta la ultima actualizacion. '
+            'Verde: ultimo resultado E o D, o sin resultados registrados hoy. '
+            'Sin resultados registrados no confirma que no se haya jugado.</p>'
+            '<p class="section-subtitle">Dia (Madrid): ' + text(data.get('daily_pair_watch_date', '')) + '</p>'
+            '<style>#daily-pair-watch tr.daily-pair-green td {background:#dcfce7;color:#14532d;}</style>'
+            + (render_table(['Liga', 'Jugador A', 'Rival B', 'V% total', 'V%20', 'Secuencia de hoy'],
+                            [row for row, _ in items], numeric_columns={3, 4}, seq_columns={5},
+                            row_classes=['daily-pair-green' if green else '' for _, green in items])
+               if items else '<p>No hay parejas que cumplan ambos porcentajes con 20 enfrentamientos disponibles.</p>')
             + '</section>')
 
 
