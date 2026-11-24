@@ -1599,18 +1599,18 @@ def render_daily_pair_watch(data, current_streaks=None):
                     rival_marker = markers.get(indicators.get((league, name_key(b))), '')
                     rival_label = f'{rival_marker} {b}' if rival_marker else b
                     selected[identity] = ([league, player_label, rival_label, fmt_pct(total_pct), fmt_pct(recent_pct),
-                                           sequence or 'Sin resultados hoy', hour], 'daily-pair-pending' if '?' in sequence else 'daily-pair-green' if green else '', stamp, metadata)
+                                           sequence or 'Sin resultados (8 h)', hour], 'daily-pair-pending' if '?' in sequence else 'daily-pair-green' if green else '', stamp, metadata)
     items = sorted(selected.values(), key=lambda item: (item[2] is None, item[2] or datetime.max.replace(tzinfo=timezone.utc), item[0][:3]))
     return ('<section class="dashboard-section" id="daily-pair-watch">'
             '<h2>Parejas con V% total y V%20 superiores al 35%</h2>'
             '<p class="section-subtitle">Grupos configurados y parejas importadas evaluadas. Ambos '
             'porcentajes deben ser estrictamente mayores del 35%; V%20 requiere 20 enfrentamientos. '
-            'Secuencia de A frente a B desde medianoche en Madrid hasta la ultima actualizacion. '
-            'Verde: ultimo resultado E o D, o sin resultados registrados hoy. '
+            'Secuencia de A frente a B en las ultimas 8 horas, incluso si cruza medianoche. '
+            'Verde: ultimo resultado E o D, o sin resultados registrados en las ultimas 8 horas. '
             'Los puntos junto a A y B copian sus indicadores de Current Streaks (ultimas 8 horas); no son el color de la fila. Sin resultados registrados no confirma que no se haya jugado. Proximo partido: hora de Madrid, orden cronologico ascendente y solo partidos posteriores a ahora menos 15 minutos; los estimados se indican. ? significa resultado pendiente de un partido anterior a ese limite; la fila se marca en amarillo.</p>'
-            '<p class="section-subtitle">Dia (Madrid): ' + text(data.get('daily_pair_watch_date', '')) + '</p>'
+            '<p class="section-subtitle">Ventana movil de 8 horas.</p>'
             '<style>#daily-pair-watch tr.daily-pair-green td {background:#dcfce7;color:#14532d;} #daily-pair-watch tr.daily-pair-pending td {background:#fef3c7;color:#92400e;} #daily-pair-watch tr[hidden] {display:none;}</style>'
-            + (render_table(['Liga', 'Jugador A', 'Rival B', 'V% total', 'V%20', 'Secuencia de hoy', 'Proximo partido'],
+            + (render_table(['Liga', 'Jugador A', 'Rival B', 'V% total', 'V%20', 'Secuencia (8 h)', 'Proximo partido'],
                             [row for row, _, _, _ in items], numeric_columns={3, 4}, seq_columns={5},
                             row_classes=[color for _, color, _, _ in items])
                if items else '<p>No hay parejas que cumplan ambos porcentajes con 20 enfrentamientos y un partido posterior a ahora menos 15 minutos.</p>')

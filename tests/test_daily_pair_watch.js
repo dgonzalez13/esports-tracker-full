@@ -30,3 +30,15 @@ assert.equal(classes.has('daily-pair-green'), false);
 now = Date.parse('2026-11-24T13:15:00Z'); tick();
 assert.equal(row.hidden, true);
 console.log('Daily pair live cutoff and pending-result checks passed');
+
+now = Date.parse('2026-11-25T01:00:00Z');
+metadata[0] = {events: [
+  {timestamp: '2026-11-24T16:00:00Z', result: 'V'},
+  {timestamp: '2026-11-24T21:00:00Z', result: 'E'}],
+  fixtures: [{timestamp: '2026-11-25T08:00:00Z', estimated: false}]};
+eval(fs.readFileSync(path.join(__dirname, '../web_tracker/daily_pair_watch.js'), 'utf8'));
+assert.equal(row.cells[5].textContent, 'E');
+assert.equal(classes.has('daily-pair-green'), true);
+now = Date.parse('2026-11-25T05:01:00Z'); tick();
+assert.equal(row.cells[5].textContent, 'Sin resultados (8 h)');
+console.log('Rolling eight-hour window across midnight checks passed');

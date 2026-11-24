@@ -4,10 +4,9 @@
   if (!section || !data) return;
   const metadata = JSON.parse(data.textContent);
   const rows = [...section.querySelectorAll('tbody tr')];
-  const formatter = new Intl.DateTimeFormat('en-CA', {timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit'});
   const hour = new Intl.DateTimeFormat('en-GB', {timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'});
   function update() {
-    const now = Date.now(), cutoff = now - 15 * 60000, today = formatter.format(now);
+    const now = Date.now(), cutoff = now - 15 * 60000, windowStart = now - 8 * 3600000;
     const ranked = [];
     rows.forEach((row, index) => {
       const item = metadata[index];
@@ -17,9 +16,9 @@
       if (row.hidden) return;
       const sequence = (item.fallback_sequence || '') + [...item.events]
         .sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp))
-        .filter(e => Date.parse(e.timestamp) <= now && formatter.format(Date.parse(e.timestamp)) === today)
+        .filter(e => Date.parse(e.timestamp) <= now && Date.parse(e.timestamp) >= windowStart)
         .map(e => e.result || (Date.parse(e.timestamp) <= cutoff ? '?' : '')).join('');
-      row.cells[5].textContent = sequence || 'Sin resultados hoy';
+      row.cells[5].textContent = sequence || 'Sin resultados (8 h)';
       row.cells[6].textContent = hour.format(Date.parse(eligible[0].timestamp)) + (eligible[0].estimated ? ' (estimado)' : '');
       row.classList.toggle('daily-pair-pending', sequence.includes('?'));
       row.classList.toggle('daily-pair-green', !sequence.includes('?') && !sequence.endsWith('V'));

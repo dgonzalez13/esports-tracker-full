@@ -29,18 +29,18 @@ class DailyPairWatchTests(unittest.TestCase):
             row = soup.select_one('tbody tr')
             self.assertEqual('daily-pair-green' in row.get('class', []), green)
             if not seq:
-                self.assertIn('Sin resultados hoy', row.get_text())
+                self.assertIn('Sin resultados (8 h)', row.get_text())
 
-    def test_full_madrid_day_inverse_duplicates_calendar_and_cancelled_results(self):
-        records = [perspective(1, 'V', timestamp='2026-11-23T23:00:00Z'),
-                   perspective(1, 'D', player='Fox', rival='David', timestamp='2026-11-23T23:00:00Z'),
-                   perspective(2, 'D', timestamp='2026-11-24T01:00:00Z'),
-                   perspective(3, 'D', timestamp='2026-11-23T22:59:00Z'),
+    def test_eight_hours_inverse_duplicates_calendar_and_cancelled_results(self):
+        records = [perspective(1, 'V', timestamp='2026-11-24T04:00:00Z'),
+                   perspective(1, 'D', player='Fox', rival='David', timestamp='2026-11-24T04:00:00Z'),
+                   perspective(2, 'D', timestamp='2026-11-24T05:00:00Z'),
+                   perspective(3, 'D', timestamp='2026-11-24T03:59:00Z'),
                    perspective(4, 'V', timestamp='2026-11-24T12:01:00Z'),
-                   perspective(5, 'V', timestamp='2026-11-24T04:00:00Z'), {}]
+                   perspective(5, 'V', timestamp='2026-11-24T07:00:00Z'), {}]
         schedule = {'sources': {'GT': {'records': [
             dict(records[0], fixture_status='finished'),
-            dict(perspective(6, 'E', timestamp='2026-11-24T03:00:00Z'), fixture_status='finished'),
+            dict(perspective(6, 'E', timestamp='2026-11-24T06:00:00Z'), fixture_status='finished'),
             dict(records[5], fixture_status='cancelled', result=None)]}}}
         lookup = daily_pair_sequences(records, schedule, self.reference)
         self.assertEqual(lookup[('GT', 'david', 'fox')], 'VDE')
@@ -143,13 +143,26 @@ class DailyPairWatchTests(unittest.TestCase):
         row = data['leagues']['GT']['groups'][0]['recent_h2h']['players'][0]['rivals'][0]
         self.assertEqual(daily_watch_state(row, self.reference)[0], 'EV')
 
-    def test_daily_sequence_is_independent_of_eight_hour_window(self):
+    def test_window_includes_previous_day_and_removes_expired_unknowns(self):
+        from web_tracker.daily_pair_watch import daily_watch_state
+        ref = datetime(2026, 11, 25, 1, tzinfo=timezone.utc)
+        row = {'daily_pair_events': [
+            {'timestamp': '2026-11-24T16:59:00+00:00', 'result': None},
+            {'timestamp': '2026-11-24T17:00:00+00:00', 'result': 'V'},
+            {'timestamp': '2026-11-24T21:00:00+00:00', 'result': 'D'},
+            {'timestamp': '2026-11-25T00:00:00+00:00', 'result': None}],
+            'pair_fixtures': [{'timestamp': '2026-11-25T02:00:00+00:00'}]}
+        self.assertEqual(daily_watch_state(row, ref)[0], 'VD?')
+        row['pair_fixtures'] = [{'timestamp': '2026-11-25T12:00:00+00:00'}]
+        self.assertEqual(daily_watch_state(row, ref+timedelta(hours=9))[0], '')
+
+    def test_sequence_uses_eight_hour_window(self):
         group = {'target': ['David', 'Fox']}
         data = {'leagues': {'GT': {'groups': [group]}}}
         records = [perspective(1, 'V', timestamp='2026-11-24T00:00:00Z')]
         attach_recent_group_h2h(data, records, self.reference)
         row = group['recent_h2h']['players'][0]['rivals'][0]
         self.assertEqual(row['current_pair_sequence'], '')
-        self.assertEqual(row['daily_pair_sequence'], 'V')
+        self.assertEqual(row['daily_pair_sequence'], '')
         self.assertEqual(data['daily_pair_watch_date'], '2026-11-24')
         self.assertEqual(render_page(data, {}).count('id="daily-pair-watch"'), 1)

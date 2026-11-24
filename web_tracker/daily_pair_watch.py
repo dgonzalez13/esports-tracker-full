@@ -1,4 +1,4 @@
-"""Directional pair sequences for the current calendar day in Madrid."""
+"""Directional pair sequences for the rolling eight-hour window."""
 from zoneinfo import ZoneInfo
 from datetime import datetime, timezone, timedelta
 
@@ -7,7 +7,7 @@ from match_history import name_key
 
 
 def daily_pair_events(records, schedule, reference):
-    midnight = reference.astimezone(ZoneInfo('Europe/Madrid')).replace(hour=0, minute=0, second=0, microsecond=0)
+    window_start = reference - timedelta(hours=8)
     calendar = [dict(row, league=league)
                 for league, source in (schedule or {}).get('sources', {}).items()
                 for row in source.get('records', [])]
@@ -27,7 +27,7 @@ def daily_pair_events(records, schedule, reference):
         if key is None or key in cancelled or key in seen or row.get('result') not in {'V', 'E', 'D'}:
             continue
         league, pair, stamp = key
-        if not midnight <= stamp <= reference:
+        if not window_start <= stamp <= reference:
             continue
         seen.add(key)
         a = name_key(row.get('player') or row.get('player_key'))
@@ -42,7 +42,7 @@ def daily_pair_events(records, schedule, reference):
                 or row.get('fixture_status') not in {'scheduled', 'unknown', 'finished'}):
             continue
         league, pair, stamp = key
-        if stamp < midnight:
+        if stamp < window_start:
             continue
         seen.add(key)
         pairs.setdefault((league, pair[0], pair[1]), []).append((stamp, None))
@@ -83,12 +83,12 @@ def daily_watch_state(rival, reference):
     events = {event['timestamp']: event for event in rival.get('daily_pair_events', [])}
     for fixture in fixtures:
         events.setdefault(fixture['timestamp'], dict(timestamp=fixture['timestamp'], result=None))
-    today = reference.astimezone(ZoneInfo('Europe/Madrid')).date()
+    window_start = reference - timedelta(hours=8)
     cutoff = reference - timedelta(minutes=15)
     sequence = ''
     for event in sorted(events.values(), key=lambda event: datetime.fromisoformat(event['timestamp'])):
         stamp = datetime.fromisoformat(event['timestamp'])
-        if stamp.astimezone(ZoneInfo('Europe/Madrid')).date() != today or stamp > reference:
+        if not window_start <= stamp <= reference:
             continue
         sequence += event['result'] or ('?' if stamp <= cutoff else '')
     if 'daily_pair_events' not in rival and not any(event.get('result') for event in events.values()):
