@@ -1,5 +1,6 @@
 """Directional pair sequences for the current calendar day in Madrid."""
 from zoneinfo import ZoneInfo
+from datetime import datetime, timezone
 
 from current_streaks_v2 import _record_time
 from match_history import name_key
@@ -36,3 +37,24 @@ def daily_pair_sequences(records, schedule, reference):
         pairs.setdefault((league, pair[0], pair[1]), []).append((stamp, a_result))
         pairs.setdefault((league, pair[1], pair[0]), []).append((stamp, {'V': 'D', 'D': 'V', 'E': 'E'}[a_result]))
     return {key: ''.join(result for _, result in sorted(rows)) for key, rows in pairs.items()}
+
+
+def next_pair_time(rival):
+    fixtures = rival.get('pair_fixtures', [])
+    estimated = False
+    if not fixtures and not rival.get('next_match'):
+        fixtures = rival.get('inferred_pair', {}).get('estimated_fixtures', [])
+        estimated = bool(fixtures)
+    stamps = []
+    values = [fixture.get('timestamp') for fixture in fixtures] or [rival.get('next_match')]
+    for value in values:
+        if not isinstance(value, str):
+            continue
+        try:
+            stamp = datetime.fromisoformat(value.replace('Z', '+00:00'))
+            if stamp.tzinfo is None:
+                stamp = stamp.replace(tzinfo=timezone.utc)
+            stamps.append(stamp)
+        except ValueError:
+            continue
+    return (min(stamps), estimated) if stamps else (None, False)

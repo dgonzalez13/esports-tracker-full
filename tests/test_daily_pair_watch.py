@@ -61,6 +61,29 @@ class DailyPairWatchTests(unittest.TestCase):
         data['inferred_eadriatic_players'] = [block]
         self.assertIn('<td>David</td>', render_daily_pair_watch(data))
 
+    def test_next_hour_is_madrid_without_date_sorted_chronologically_unknown_last(self):
+        data = self.data()
+        players = data['leagues']['GT']['groups'][0]['recent_h2h']['players']
+        template = players[0]['rivals'][0]
+        players[0]['rivals'] = [dict(template, rival=name, next_match=stamp)
+                                for name, stamp in [('Unknown', None), ('Late', '2026-11-24T15:30:00Z'),
+                                                    ('Early', '2026-11-24T14:00:00Z')]]
+        soup = BeautifulSoup(render_daily_pair_watch(data), 'html.parser')
+        rows = soup.select('tbody tr')
+        self.assertEqual([row.find_all('td')[2].get_text() for row in rows], ['Early', 'Late', 'Unknown'])
+        self.assertEqual([row.find_all('td')[-1].get_text() for row in rows], ['15:00', '16:30', '\u2014'])
+        self.assertTrue(all('daily-pair-green' in row.get('class', []) for row in rows))
+
+    def test_official_time_priority_and_estimated_label(self):
+        data = self.data()
+        row = data['leagues']['GT']['groups'][0]['recent_h2h']['players'][0]['rivals'][0]
+        row['inferred_pair'] = {'estimated_fixtures': [{'timestamp': '2026-11-24T16:00:00Z'}]}
+        self.assertIn('17:00 (estimado)', render_daily_pair_watch(data))
+        row['pair_fixtures'] = [{'timestamp': '2026-11-24T17:00:00Z'}]
+        html = render_daily_pair_watch(data)
+        self.assertIn('<td>18:00</td>', html)
+        self.assertNotIn('17:00 (estimado)', html)
+
     def test_daily_sequence_is_independent_of_eight_hour_window(self):
         group = {'target': ['David', 'Fox']}
         data = {'leagues': {'GT': {'groups': [group]}}}
