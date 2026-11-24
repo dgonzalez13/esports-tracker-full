@@ -96,6 +96,17 @@ class DailyPairWatchTests(unittest.TestCase):
         soup = BeautifulSoup(render_daily_pair_watch(self.data()), 'html.parser')
         self.assertEqual(soup.select_one('tbody tr').find_all('td')[1].get_text(), 'David')
 
+    def test_both_players_receive_their_own_current_streaks_dot(self):
+        streaks = {'leagues': {'GT': [{'player_key': 'david', 'indicator': 'GREEN'},
+                                    {'player_key': 'fox', 'indicator': 'RED'}]}}
+        soup = BeautifulSoup(render_daily_pair_watch(self.data(), streaks), 'html.parser')
+        cells = soup.select_one('tbody tr').find_all('td')
+        self.assertEqual(cells[1].get_text(), '\U0001f7e2 David')
+        self.assertEqual(cells[2].get_text(), '\U0001f534 Fox')
+        streaks['leagues']['GT'][1]['indicator'] = 'NONE'
+        soup = BeautifulSoup(render_daily_pair_watch(self.data(), streaks), 'html.parser')
+        self.assertEqual(soup.select_one('tbody tr').find_all('td')[2].get_text(), 'Fox')
+
     def test_daily_sequence_is_independent_of_eight_hour_window(self):
         group = {'target': ['David', 'Fox']}
         data = {'leagues': {'GT': {'groups': [group]}}}

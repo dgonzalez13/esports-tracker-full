@@ -1589,7 +1589,9 @@ def render_daily_pair_watch(data, current_streaks=None):
                         hour += ' (estimado)'
                     marker = markers.get(indicators.get((league, name_key(a))), '')
                     player_label = f'{marker} {a}' if marker else a
-                    selected[identity] = ([league, player_label, b, fmt_pct(total_pct), fmt_pct(recent_pct),
+                    rival_marker = markers.get(indicators.get((league, name_key(b))), '')
+                    rival_label = f'{rival_marker} {b}' if rival_marker else b
+                    selected[identity] = ([league, player_label, rival_label, fmt_pct(total_pct), fmt_pct(recent_pct),
                                            sequence or 'Sin resultados hoy', hour], green, stamp)
     items = sorted(selected.values(), key=lambda item: (item[2] is None, item[2] or datetime.max.replace(tzinfo=timezone.utc), item[0][:3]))
     return ('<section class="dashboard-section" id="daily-pair-watch">'
@@ -1598,7 +1600,7 @@ def render_daily_pair_watch(data, current_streaks=None):
             'porcentajes deben ser estrictamente mayores del 35%; V%20 requiere 20 enfrentamientos. '
             'Secuencia de A frente a B desde medianoche en Madrid hasta la ultima actualizacion. '
             'Verde: ultimo resultado E o D, o sin resultados registrados hoy. '
-            'El punto junto al jugador copia su indicador de Current Streaks (ultimas 8 horas); no es el color de la fila. Sin resultados registrados no confirma que no se haya jugado. Proximo partido: hora de Madrid, orden cronologico ascendente y sin horario al final; los estimados se indican.</p>'
+            'Los puntos junto a A y B copian sus indicadores de Current Streaks (ultimas 8 horas); no son el color de la fila. Sin resultados registrados no confirma que no se haya jugado. Proximo partido: hora de Madrid, orden cronologico ascendente y sin horario al final; los estimados se indican.</p>'
             '<p class="section-subtitle">Dia (Madrid): ' + text(data.get('daily_pair_watch_date', '')) + '</p>'
             '<style>#daily-pair-watch tr.daily-pair-green td {background:#dcfce7;color:#14532d;}</style>'
             + (render_table(['Liga', 'Jugador A', 'Rival B', 'V% total', 'V%20', 'Secuencia de hoy', 'Proximo partido'],
