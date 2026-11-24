@@ -1,5 +1,5 @@
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from bs4 import BeautifulSoup
 
 from tests.test_h2h_analysis import perspective
@@ -12,9 +12,9 @@ class DailyPairWatchTests(unittest.TestCase):
 
     def data(self, sequence='', total=45, recent=40, available=20):
         row = dict(rival='Fox', historical_win_pct=total, historical_played=100,
-                   last20={'available': available, 'win_pct': recent}, daily_pair_sequence=sequence)
+                   last20={'available': available, 'win_pct': recent}, daily_pair_sequence=sequence, next_match='2026-11-24T12:30:00Z')
         group = {'recent_h2h': {'players': [{'player': 'David', 'rivals': [row]}]}}
-        return {'leagues': {'GT': {'groups': [group]}}, 'daily_pair_watch_date': '2026-11-24'}
+        return {'leagues': {'GT': {'groups': [group]}}, 'daily_pair_watch_date': '2026-11-24', 'daily_pair_watch_reference': self.reference.isoformat()}
 
     def test_strict_thresholds_and_complete_last_twenty(self):
         for total, recent, available, included in [(35, 40, 20, False), (40, 35, 20, False),
@@ -70,13 +70,14 @@ class DailyPairWatchTests(unittest.TestCase):
                                                     ('Early', '2026-11-24T14:00:00Z')]]
         soup = BeautifulSoup(render_daily_pair_watch(data), 'html.parser')
         rows = soup.select('tbody tr')
-        self.assertEqual([row.find_all('td')[2].get_text() for row in rows], ['Early', 'Late', 'Unknown'])
-        self.assertEqual([row.find_all('td')[-1].get_text() for row in rows], ['15:00', '16:30', '\u2014'])
+        self.assertEqual([row.find_all('td')[2].get_text() for row in rows], ['Early', 'Late'])
+        self.assertEqual([row.find_all('td')[-1].get_text() for row in rows], ['15:00', '16:30'])
         self.assertTrue(all('daily-pair-green' in row.get('class', []) for row in rows))
 
     def test_official_time_priority_and_estimated_label(self):
         data = self.data()
         row = data['leagues']['GT']['groups'][0]['recent_h2h']['players'][0]['rivals'][0]
+        row.pop('next_match', None)
         row['inferred_pair'] = {'estimated_fixtures': [{'timestamp': '2026-11-24T16:00:00Z'}]}
         self.assertIn('17:00 (estimado)', render_daily_pair_watch(data))
         row['pair_fixtures'] = [{'timestamp': '2026-11-24T17:00:00Z'}]
@@ -106,6 +107,41 @@ class DailyPairWatchTests(unittest.TestCase):
         streaks['leagues']['GT'][1]['indicator'] = 'NONE'
         soup = BeautifulSoup(render_daily_pair_watch(self.data(), streaks), 'html.parser')
         self.assertEqual(soup.select_one('tbody tr').find_all('td')[2].get_text(), 'Fox')
+
+    def test_strict_fifteen_minute_cutoff_and_overdue_question_in_sequence(self):
+        data = self.data(sequence='')
+        row = data['leagues']['GT']['groups'][0]['recent_h2h']['players'][0]['rivals'][0]
+        row['daily_pair_events'] = [
+            {'timestamp': '2026-11-24T08:00:00+00:00', 'result': 'V'},
+            {'timestamp': '2026-11-24T09:00:00+00:00', 'result': None},
+            {'timestamp': '2026-11-24T10:00:00+00:00', 'result': 'D'}]
+        row['pair_fixtures'] = [{'timestamp': '2026-11-24T09:00:00+00:00'},
+                                {'timestamp': '2026-11-24T12:30:00+00:00'}]
+        soup = BeautifulSoup(render_daily_pair_watch(data), 'html.parser')
+        tr = soup.select_one('tbody tr')
+        self.assertEqual(tr.find_all('td')[5].get_text(), 'V?D')
+        self.assertIn('daily-pair-pending', tr.get('class', []))
+        self.assertNotIn('daily-pair-green', tr.get('class', []))
+        self.assertEqual(tr.find_all('td')[6].get_text(), '13:30')
+        for minute, included in [(44, False), (45, False), (46, True)]:
+            row['pair_fixtures'] = [{'timestamp': f'2026-11-24T11:{minute}:00+00:00'}]
+            html = render_daily_pair_watch(data)
+            self.assertEqual('<td>David</td>' in html, included)
+
+    def test_pending_calendar_is_in_sequence_and_result_clears_question(self):
+        records = [perspective(1, 'E', timestamp='2026-11-24T08:00:00Z')]
+        calendar = {'sources': {'GT': {'records': [
+            dict(perspective(2, None, timestamp='2026-11-24T09:00:00Z'), fixture_status='scheduled'),
+            dict(perspective(3, None, timestamp='2026-11-24T13:00:00Z'), fixture_status='scheduled')]}}}
+        data = {'leagues': {'GT': {'groups': [{'target': ['David', 'Fox']}]}}}
+        attach_recent_group_h2h(data, records, self.reference, calendar)
+        row = data['leagues']['GT']['groups'][0]['recent_h2h']['players'][0]['rivals'][0]
+        from web_tracker.daily_pair_watch import daily_watch_state
+        self.assertEqual(daily_watch_state(row, self.reference)[0], 'E?')
+        records.append(perspective(2, 'V', timestamp='2026-11-24T09:00:00Z'))
+        attach_recent_group_h2h(data, records, self.reference, calendar)
+        row = data['leagues']['GT']['groups'][0]['recent_h2h']['players'][0]['rivals'][0]
+        self.assertEqual(daily_watch_state(row, self.reference)[0], 'EV')
 
     def test_daily_sequence_is_independent_of_eight_hour_window(self):
         group = {'target': ['David', 'Fox']}

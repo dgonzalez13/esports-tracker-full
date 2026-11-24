@@ -24,7 +24,7 @@ from current_streaks_v2 import _record_time
 from fixture_schedule import load_schedule
 from web_tracker.upcoming_matches import render_upcoming_matches, upcoming_fixtures
 from web_tracker.pair_series_schedule import pair_series_schedule, cancelled_pair_counts
-from web_tracker.daily_pair_watch import daily_pair_sequences, next_pair_time
+from web_tracker.daily_pair_watch import daily_pair_sequences, next_pair_time, daily_pair_events, daily_watch_state
 from web_tracker.eadriatic_inference import infer_eadriatic_pairs, load_starts, official_eadriatic_available
 from web_tracker.bet_candidates import candidate, six_rating, repeat_candidate, first_win_window_candidate
 from web_tracker.historical_pair_series import load_daily_pair_sequences, enrich_pair_stats
@@ -1399,7 +1399,9 @@ def last20_cells(stats):
 def attach_recent_group_h2h(data, records, reference_time, schedule=None, daily_sequences=None, estimated_starts=None):
     """Use the same bounded eight-hour window as the operational dashboard."""
     records = list(records)
-    day_sequences = daily_pair_sequences(records, schedule, reference_time)
+    day_events = daily_pair_events(records, schedule, reference_time)
+    day_sequences = {key: ''.join(e['result'] for e in events if e['result']) for key, events in day_events.items()}
+    data['daily_pair_watch_reference'] = reference_time.isoformat()
     data['daily_pair_watch_date'] = reference_time.astimezone(ZoneInfo('Europe/Madrid')).date().isoformat()
     current_sequences, pair_fixtures = pair_series_schedule(records, schedule, reference_time)
     official_available = official_eadriatic_available(schedule, reference_time)
@@ -1450,6 +1452,7 @@ def attach_recent_group_h2h(data, records, reference_time, schedule=None, daily_
         identity = (league, name_key(player), name_key(rival))
         row['calendarless_allowed'] = league == 'EADRIATIC' and not official_available
         row['daily_pair_sequence'] = day_sequences.get(identity, '')
+        row['daily_pair_events'] = day_events.get(identity, [])
         row['current_pair_sequence'] = current_sequences.get(identity, '')
         row['pair_fixtures'] = pair_fixtures.get((league, tuple(sorted(identity[1:]))), [])
         row['pair_cancelled'] = cancellations.get((league, tuple(sorted(identity[1:]))), 0)
@@ -1567,6 +1570,7 @@ def render_daily_pair_watch(data, current_streaks=None):
                   for league, rows in (current_streaks or {}).get('leagues', {}).items()
                   for row in rows if row.get('player_key')}
     markers = {'GREEN': '\U0001f7e2', 'RED': '\U0001f534'}
+    reference = datetime.fromisoformat(data['daily_pair_watch_reference']) if data.get('daily_pair_watch_reference') else datetime.now(timezone.utc)
     excluded = {tuple(item) for item in data.get('h2h_exclusions', [])}
     selected = {}
     for league, payload in data.get('leagues', {}).items():
@@ -1581,9 +1585,12 @@ def render_daily_pair_watch(data, current_streaks=None):
                             or not rival.get('historical_played') or total_pct is None or total_pct <= 35
                             or recent.get('available') != 20 or recent_pct is None or recent_pct <= 35):
                         continue
-                    sequence = rival.get('daily_pair_sequence', '')
+                    sequence, fixture, metadata = daily_watch_state(rival, reference)
+                    if fixture is None:
+                        continue
                     green = not sequence.endswith('V')
-                    stamp, estimated = next_pair_time(rival)
+                    stamp = datetime.fromisoformat(fixture['timestamp'])
+                    estimated = fixture['estimated']
                     hour = stamp.astimezone(ZoneInfo('Europe/Madrid')).strftime('%H:%M') if stamp else '\u2014'
                     if estimated:
                         hour += ' (estimado)'
@@ -1592,7 +1599,7 @@ def render_daily_pair_watch(data, current_streaks=None):
                     rival_marker = markers.get(indicators.get((league, name_key(b))), '')
                     rival_label = f'{rival_marker} {b}' if rival_marker else b
                     selected[identity] = ([league, player_label, rival_label, fmt_pct(total_pct), fmt_pct(recent_pct),
-                                           sequence or 'Sin resultados hoy', hour], green, stamp)
+                                           sequence or 'Sin resultados hoy', hour], 'daily-pair-pending' if '?' in sequence else 'daily-pair-green' if green else '', stamp, metadata)
     items = sorted(selected.values(), key=lambda item: (item[2] is None, item[2] or datetime.max.replace(tzinfo=timezone.utc), item[0][:3]))
     return ('<section class="dashboard-section" id="daily-pair-watch">'
             '<h2>Parejas con V% total y V%20 superiores al 35%</h2>'
@@ -1600,14 +1607,17 @@ def render_daily_pair_watch(data, current_streaks=None):
             'porcentajes deben ser estrictamente mayores del 35%; V%20 requiere 20 enfrentamientos. '
             'Secuencia de A frente a B desde medianoche en Madrid hasta la ultima actualizacion. '
             'Verde: ultimo resultado E o D, o sin resultados registrados hoy. '
-            'Los puntos junto a A y B copian sus indicadores de Current Streaks (ultimas 8 horas); no son el color de la fila. Sin resultados registrados no confirma que no se haya jugado. Proximo partido: hora de Madrid, orden cronologico ascendente y sin horario al final; los estimados se indican.</p>'
+            'Los puntos junto a A y B copian sus indicadores de Current Streaks (ultimas 8 horas); no son el color de la fila. Sin resultados registrados no confirma que no se haya jugado. Proximo partido: hora de Madrid, orden cronologico ascendente y solo partidos posteriores a ahora menos 15 minutos; los estimados se indican. ? significa resultado pendiente de un partido anterior a ese limite; la fila se marca en amarillo.</p>'
             '<p class="section-subtitle">Dia (Madrid): ' + text(data.get('daily_pair_watch_date', '')) + '</p>'
-            '<style>#daily-pair-watch tr.daily-pair-green td {background:#dcfce7;color:#14532d;}</style>'
+            '<style>#daily-pair-watch tr.daily-pair-green td {background:#dcfce7;color:#14532d;} #daily-pair-watch tr.daily-pair-pending td {background:#fef3c7;color:#92400e;} #daily-pair-watch tr[hidden] {display:none;}</style>'
             + (render_table(['Liga', 'Jugador A', 'Rival B', 'V% total', 'V%20', 'Secuencia de hoy', 'Proximo partido'],
-                            [row for row, _, _ in items], numeric_columns={3, 4}, seq_columns={5},
-                            row_classes=['daily-pair-green' if green else '' for _, green, _ in items])
-               if items else '<p>No hay parejas que cumplan ambos porcentajes con 20 enfrentamientos disponibles.</p>')
-            + '</section>')
+                            [row for row, _, _, _ in items], numeric_columns={3, 4}, seq_columns={5},
+                            row_classes=[color for _, color, _, _ in items])
+               if items else '<p>No hay parejas que cumplan ambos porcentajes con 20 enfrentamientos y un partido posterior a ahora menos 15 minutos.</p>')
+            + '</section>'
+            + '<script type="application/json" id="daily-pair-watch-data">'
+            + json.dumps([metadata for _, _, _, metadata in items], ensure_ascii=True).replace('<', r'\u003c')
+            + '</script><script>' + (BASE / 'web_tracker' / 'daily_pair_watch.js').read_text(encoding='utf-8') + '</script>')
 
 
 def candidate_form_warning(data, league, player, rival):
