@@ -84,6 +84,18 @@ class DailyPairWatchTests(unittest.TestCase):
         self.assertIn('<td>18:00</td>', html)
         self.assertNotIn('17:00 (estimado)', html)
 
+    def test_player_dot_matches_current_streaks_and_respects_league(self):
+        for indicator, marker in [('GREEN', '\U0001f7e2'), ('RED', '\U0001f534'), ('NONE', ''), ('UNKNOWN', '')]:
+            streaks = {'leagues': {'GT': [{'player_key': 'david', 'indicator': indicator}],
+                                  'EADRIATIC': [{'player_key': 'david', 'indicator': 'RED'}]}}
+            soup = BeautifulSoup(render_daily_pair_watch(self.data(), streaks), 'html.parser')
+            row = soup.select_one('tbody tr')
+            self.assertEqual(row.find_all('td')[1].get_text(), f'{marker} David' if marker else 'David')
+            self.assertEqual(row.find_all('td')[2].get_text(), 'Fox')
+            self.assertIn('daily-pair-green', row.get('class', []))
+        soup = BeautifulSoup(render_daily_pair_watch(self.data()), 'html.parser')
+        self.assertEqual(soup.select_one('tbody tr').find_all('td')[1].get_text(), 'David')
+
     def test_daily_sequence_is_independent_of_eight_hour_window(self):
         group = {'target': ['David', 'Fox']}
         data = {'leagues': {'GT': {'groups': [group]}}}

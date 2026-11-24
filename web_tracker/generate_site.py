@@ -304,7 +304,7 @@ def render_page(data, current_streaks, current_streaks_v2=None, schedule=None):
     {render_upcoming_matches(schedule or {}, estimated_pairs=data.get('eadriatic_possible_pairs', []))}
     {render_eadriatic_possible_pairs(data)}
     {render_recent_group_h2h_dashboard(data)}
-    {render_daily_pair_watch(data)}
+    {render_daily_pair_watch(data, current_streaks_v2)}
     {render_bet_candidates(data)}
     {render_underdog_matchups(data)}
     {render_first_win_followups(data)}
@@ -1562,7 +1562,11 @@ def render_eadriatic_possible_pairs(data):
             + '</section>')
 
 
-def render_daily_pair_watch(data):
+def render_daily_pair_watch(data, current_streaks=None):
+    indicators = {(league, row['player_key']): row.get('indicator')
+                  for league, rows in (current_streaks or {}).get('leagues', {}).items()
+                  for row in rows if row.get('player_key')}
+    markers = {'GREEN': '\U0001f7e2', 'RED': '\U0001f534'}
     excluded = {tuple(item) for item in data.get('h2h_exclusions', [])}
     selected = {}
     for league, payload in data.get('leagues', {}).items():
@@ -1583,7 +1587,9 @@ def render_daily_pair_watch(data):
                     hour = stamp.astimezone(ZoneInfo('Europe/Madrid')).strftime('%H:%M') if stamp else '\u2014'
                     if estimated:
                         hour += ' (estimado)'
-                    selected[identity] = ([league, a, b, fmt_pct(total_pct), fmt_pct(recent_pct),
+                    marker = markers.get(indicators.get((league, name_key(a))), '')
+                    player_label = f'{marker} {a}' if marker else a
+                    selected[identity] = ([league, player_label, b, fmt_pct(total_pct), fmt_pct(recent_pct),
                                            sequence or 'Sin resultados hoy', hour], green, stamp)
     items = sorted(selected.values(), key=lambda item: (item[2] is None, item[2] or datetime.max.replace(tzinfo=timezone.utc), item[0][:3]))
     return ('<section class="dashboard-section" id="daily-pair-watch">'
@@ -1592,7 +1598,7 @@ def render_daily_pair_watch(data):
             'porcentajes deben ser estrictamente mayores del 35%; V%20 requiere 20 enfrentamientos. '
             'Secuencia de A frente a B desde medianoche en Madrid hasta la ultima actualizacion. '
             'Verde: ultimo resultado E o D, o sin resultados registrados hoy. '
-            'Sin resultados registrados no confirma que no se haya jugado. Proximo partido: hora de Madrid, orden cronologico ascendente y sin horario al final; los estimados se indican.</p>'
+            'El punto junto al jugador copia su indicador de Current Streaks (ultimas 8 horas); no es el color de la fila. Sin resultados registrados no confirma que no se haya jugado. Proximo partido: hora de Madrid, orden cronologico ascendente y sin horario al final; los estimados se indican.</p>'
             '<p class="section-subtitle">Dia (Madrid): ' + text(data.get('daily_pair_watch_date', '')) + '</p>'
             '<style>#daily-pair-watch tr.daily-pair-green td {background:#dcfce7;color:#14532d;}</style>'
             + (render_table(['Liga', 'Jugador A', 'Rival B', 'V% total', 'V%20', 'Secuencia de hoy', 'Proximo partido'],
