@@ -86,6 +86,18 @@ def candidate_fixtures(rival, league, remaining):
     return inferred.get('estimated_fixtures', [])[:remaining]
 
 
+def remaining_first_win_text(rival):
+    """Use the historical no-win prefix matching the current series, not all series."""
+    played = len(rival.get('current_pair_sequence', rival.get('sequence', '')))
+    if rival.get('pair_cancelled'):
+        return '[V restante: sin dato comparable por cancelaciones]'
+    row = first_victory_sample(rival, 6)
+    label = f'V del {played + 1} al 6 | sin V en los {played} previos'
+    if not row.get('sample') or row.get('win_pct') is None:
+        return f'[{label}: sin muestra (n=0)]'
+    return f'[{label}: {row["win_pct"]:.2f}% (n={row["sample"]})]'
+
+
 def candidate(rival, horizon, league=None):
     sequence = rival.get('current_pair_sequence', rival.get('sequence', ''))
     effective_total = max(0, 6 - rival.get('pair_cancelled', 0))
@@ -125,6 +137,7 @@ def candidate(rival, horizon, league=None):
     missing = target - len(sequence) - len(fixtures)
     if missing and fixtures:
         line += f' --- Faltan {missing} horarios por publicar'
+    line += ' ' + remaining_first_win_text(rival)
     if horizon == 6:
         stats = rival['pair_stats']
         sample = stats['complete_series']

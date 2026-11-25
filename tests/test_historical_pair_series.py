@@ -13,6 +13,22 @@ class ArchiveSeriesTests(unittest.TestCase):
     reference = datetime(2026, 9, 4, tzinfo=timezone.utc)
     pair = ('GT', 'david', 'fox')
 
+    def test_remaining_win_excludes_series_won_before_current_step(self):
+        result = self.stats('', {'2026-08-30': 'VDDDDD',
+                                 '2026-08-31': 'DDDVD',
+                                 '2026-09-01': 'DDDDDD'})
+        row = next(r for r in result['pair_horizons']
+                   if r['initial_without_win'] == 3 and r['horizon'] == 6)
+        self.assertEqual(row['sample'], 2)
+        self.assertEqual(row['win_pct'], 50)
+
+    def test_all_early_wins_leave_no_comparable_remaining_sample(self):
+        result = self.stats('', {'2026-08-30': 'VDDDDD', '2026-08-31': 'DDVDDD'})
+        row = next(r for r in result['pair_horizons']
+                   if r['initial_without_win'] == 3 and r['horizon'] == 6)
+        self.assertEqual(row['sample'], 0)
+        self.assertIsNone(row['win_pct'])
+
     def rows(self, seq):
         return [perspective(i, result, timestamp=(datetime(2026, 9, 1, 12, tzinfo=timezone.utc)
                                                  + timedelta(minutes=i)).isoformat())

@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 import unittest
 
-from web_tracker.bet_candidates import candidate, six_rating, first_victory_horizon, six_recent_exception
+from web_tracker.bet_candidates import candidate, six_rating, first_victory_horizon, six_recent_exception, remaining_first_win_text
 from web_tracker.generate_site import render_bet_candidates
 from tests.test_underdog_matchups import UnderdogMatchupTests
 from tests.test_six_match_stats import SixMatchTests
@@ -9,6 +9,31 @@ from six_match_stats import calculate_six_match_stats
 
 
 class CandidateTests(unittest.TestCase):
+    def test_remaining_win_uses_current_prefix_and_separate_sample(self):
+        rival = self.rival()
+        rival['current_pair_sequence'] = 'DED'
+        rival['pair_stats']['pair_horizons'].extend([
+            dict(initial_without_win=0, horizon=6, sample=20, win_pct=100),
+            dict(initial_without_win=3, horizon=6, sample=3, win_pct=200/3),
+        ])
+        for horizon in (4, 5, 6):
+            if horizon == 5:
+                for row in rival['pair_stats']['pair_horizons']:
+                    if row['horizon'] == 4:
+                        row['win_pct'] = 80
+            line = candidate(rival, horizon)[1]
+            self.assertIn('V del 4 al 6 | sin V en los 3 previos: 66.67% (n=3)', line)
+
+    def test_remaining_win_distinguishes_no_sample_from_zero_percent(self):
+        rival = self.rival()
+        rival['current_pair_sequence'] = 'DDD'
+        self.assertIn('sin muestra (n=0)', remaining_first_win_text(rival))
+        rival['pair_stats']['pair_horizons'].append(
+            dict(initial_without_win=3, horizon=6, sample=2, win_pct=0))
+        self.assertIn('0.00% (n=2)', remaining_first_win_text(rival))
+        rival['pair_cancelled'] = 1
+        self.assertIn('sin dato comparable por cancelaciones', remaining_first_win_text(rival))
+
     def rival(self):
         return dict(historical_played=100, historical_wins=50, historical_losses=20,
                     historical_win_pct=50, wins=0, sequence='', current_pair_sequence='',
