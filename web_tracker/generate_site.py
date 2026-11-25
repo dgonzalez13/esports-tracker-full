@@ -23,6 +23,7 @@ from match_history import name_key
 from current_streaks_v2 import _record_time
 from fixture_schedule import load_schedule
 from web_tracker.upcoming_matches import render_upcoming_matches, upcoming_fixtures
+from web_tracker.player_indicators import decorate_player_names
 from web_tracker.pair_series_schedule import pair_series_schedule, cancelled_pair_counts
 from web_tracker.daily_pair_watch import daily_pair_sequences, next_pair_time, daily_pair_events, daily_watch_state
 from web_tracker.eadriatic_inference import infer_eadriatic_pairs, load_starts, official_eadriatic_available
@@ -280,7 +281,7 @@ def metric(label, value, hint=None):
 
 
 def render_page(data, current_streaks, current_streaks_v2=None, schedule=None):
-    return f"""<!doctype html>
+    html = f"""<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -316,6 +317,7 @@ def render_page(data, current_streaks, current_streaks_v2=None, schedule=None):
 </body>
 </html>
 """
+    return decorate_player_names(html, current_streaks_v2)
 
 
 def render_styles():
@@ -926,7 +928,7 @@ def render_session_streak_panel(league, rows):
         row_classes=["streak-group-shaded" if int(row.get("group_index", 0)) % 2 == 0 else "" for row in rows],
     )
     return (
-        '<article class="streak-panel"><div class="league-head">'
+        f'<article class="streak-panel" data-league="{text(league)}"><div class="league-head">'
         f'<h3>{text(LEAGUES.get(league, {}).get("title", league))}</h3>'
         f'{metadata_badge("Visible players", len(rows))}</div>{body}'
         '<p class="section-subtitle">Shading identifies players belonging to the same tracked group.</p></article>'
@@ -994,7 +996,7 @@ def render_league_groups(league, payload, status_lookup):
     ]
 
     return (
-        '<div class="league-block">'
+        f'<div class="league-block" data-league="{text(league)}">'
         '<div class="league-head">'
         f"<h2>{text(LEAGUES.get(league, {}).get('title', league))}</h2>"
         '<div class="badge-row">'
